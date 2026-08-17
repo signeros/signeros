@@ -104,6 +104,17 @@ HomeScreen::HomeScreen(AppWindow *app, QWidget *parent) : QWidget(parent), app_(
     bottom->addStretch(1);
     outer->addLayout(bottom);
 
+    // Which SignerOS this is, on the screen the machine sits on. Its own row
+    // under the button rather than beside it: the button is centred by a
+    // stretch on each side, and anything sharing that row pushes it off centre.
+    // Compiled in from VERSION at the repo root, so it is the same string as
+    // the name of the image file this was flashed from.
+    QLabel *version = theme::dim(
+        QStringLiteral("SignerOS " SIGNEROS_VERSION_STR), this);
+    version->setAlignment(Qt::AlignCenter);
+    version->setFont(theme::monoFont(12));
+    outer->addWidget(version);
+
     connect(app_, &AppWindow::dataStatusChanged, this,
             [this](bool) { refreshDataHint(); });
 }

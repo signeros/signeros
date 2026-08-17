@@ -48,7 +48,7 @@ const char *envOr(const char *name, const char *fallback)
 void printUsage()
 {
     std::fputs(
-        "SignerOS PSBT signer\n"
+        "SignerOS " SIGNEROS_VERSION_STR " - PSBT signer\n"
         "\n"
         "usage: btc_signer_gui [options]\n"
         "\n"
@@ -395,7 +395,11 @@ int main(int argc, char *argv[])
             printUsage();
             return 0;
         } else if (std::strcmp(a, "--version") == 0) {
-            std::printf("btc_signer_gui 1.0.0 (libwally-core %s, default network %s)\n",
+            // One version, from VERSION at the repo root: the same string the
+            // image file name carries and the kiosk shows on screen.
+            std::printf("SignerOS %s (btc_signer_gui, libwally-core %s, "
+                        "default network %s)\n",
+                        SIGNEROS_VERSION_STR,
                         signeros::PsbtEngine::libraryVersion().c_str(),
                         SIGNEROS_DEFAULT_NETWORK);
             return 0;
@@ -455,7 +459,7 @@ int main(int argc, char *argv[])
 
     QApplication app(argc, argv);
     app.setApplicationName(QStringLiteral("SignerOS"));
-    app.setApplicationVersion(QStringLiteral("1.0.0"));
+    app.setApplicationVersion(QStringLiteral(SIGNEROS_VERSION_STR));
 
 #ifdef SIGNEROS_TOUCHPAD
     // After QApplication, not before: the pointer gain comes from the screen

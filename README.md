@@ -255,7 +255,14 @@ scripts/
 ├── test_in_qemu.sh                  UEFI boot + signing + pixel verification
 ├── make_test_data.py                independent PSBT fixture + verifier
 ├── host_selftest.sh                 fast core-only loop
-└── flash_usb.sh                     write and verify a stick
+└── flash_usb.sh                     write and verify a stick - and unmount it
+                                       first, because a desktop that mounts
+                                       PSBT_DATA the instant the write ends
+                                       rewrites the FAT dirty flag and fails
+                                       the readback on a perfect stick
+
+VERSION                              one line: the release version, and the
+                                       only place it is written down
 ```
 
 ---
@@ -936,6 +943,30 @@ moves a cursor or clicks a cell. Arrow movement, click-to-cell, the word-count
 selector and the live red marking have been reasoned about and built; they have
 not been operated. `make gui` is the way to operate them, and doing so on a real
 touchscreen would additionally cover the one path `usb-tablet` cannot.
+
+---
+
+## Versioning
+
+`VERSION` at the repo root holds one line - `0.1.0` - and it is the only place
+the release version is written down. Everything that needs it reads it from
+there, so cutting a release is that one edit followed by a build:
+
+| Where it ends up | How |
+|---|---|
+| `output/images/signeros-<version>-x86_64.img` | `post-image.sh` renames what genimage produced, then leaves `signeros.img` as a symlink to it, so every script and every instruction that names the plain file still works. The same for `signeros-test-<version>-x86_64.img`. An image from a previous version is deleted rather than left in the directory next to the new one |
+| `/etc/signeros-build` inside the initramfs | `post-build.sh` stamps `SIGNEROS_VERSION=`, so the version is part of what `bzImage` hashes to - the published hash is a hash *of a version*, not of an anonymous build |
+| the splash, the home screen and the shutdown screen | compiled in as `SIGNEROS_VERSION_STR`, passed by the package makefile as a `-D`. `btc_signer_gui --version` prints the same string |
+
+`SIGNEROS_VERSION=0.2.0-rc1 make image` overrides the file for a build you do
+not want to commit a version bump for. `build.sh` validates the string in its
+first second - it becomes a file name, a C string literal and an on-screen
+label - and forces the kiosk's configure step when it changes, because a
+changed `-D` alone does not invalidate a cmake stamp and the image would
+otherwise be named for a version the binary inside it does not report.
+
+`make check-scripts` fails on a malformed `VERSION`, and `make version` prints
+what this tree currently builds as.
 
 ---
 

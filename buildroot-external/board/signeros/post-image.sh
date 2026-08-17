@@ -67,6 +67,17 @@ resolve_in_repo() {
 	esac
 }
 
+# The release version, from VERSION at the repo root. scripts/build.sh exports
+# it (and validates it there, where the error is cheap); a bare `make` inside
+# buildroot/ has no such export, so read the same file rather than inventing a
+# different answer. The genimage configs cannot take a variable in an image
+# name, so the file is renamed after it is generated - see below.
+SIGNEROS_VERSION="${SIGNEROS_VERSION:-}"
+if [ -z "$SIGNEROS_VERSION" ] && [ -r "$REPO_ROOT/VERSION" ]; then
+	SIGNEROS_VERSION="$(tr -d '[:space:]' < "$REPO_ROOT/VERSION")"
+fi
+[ -n "$SIGNEROS_VERSION" ] || SIGNEROS_VERSION="0.0.0-dev"
+
 SELFTEST_BZIMAGE="${SIGNEROS_SELFTEST_BZIMAGE:-}"
 if [ -n "$SELFTEST_BZIMAGE" ]; then
 	MODE="self-test"
@@ -74,12 +85,20 @@ if [ -n "$SELFTEST_BZIMAGE" ]; then
 	ESP_DIR="$BINARIES_DIR/efi-part-test"
 	GENIMAGE_CFG="$BOARD_DIR/genimage-test.cfg"
 	IMAGE_NAME="signeros-test.img"
+	IMAGE_VERSIONED="signeros-test-$SIGNEROS_VERSION-x86_64.img"
+	IMAGE_STALE_GLOB="signeros-test-*-x86_64.img"
 else
 	MODE="production"
 	KERNEL="$BINARIES_DIR/bzImage"
 	ESP_DIR="$BINARIES_DIR/efi-part"
 	GENIMAGE_CFG="$BOARD_DIR/genimage.cfg"
 	IMAGE_NAME="signeros.img"
+	IMAGE_VERSIONED="signeros-$SIGNEROS_VERSION-x86_64.img"
+	# Deliberately not signeros-*-x86_64.img: that would also match the
+	# self-test image, and deleting the other mode's artefact from under it
+	# is exactly the kind of confusion between the two builds this tree has
+	# already been bitten by once.
+	IMAGE_STALE_GLOB="signeros-[0-9]*-x86_64.img"
 fi
 
 # ---------------------------------------------------------------------------
@@ -211,7 +230,7 @@ K_UKI=$(kib "$BOOTX64")
 K_ESP=$((SIGNEROS_ESP_SIZE_MIB * 1024))
 
 printf '\n'
-printf '  %s\n' "$MODE image"
+printf '  %s image, SignerOS %s\n' "$MODE" "$SIGNEROS_VERSION"
 printf '  bootx64.efi ......... %6d KiB   ESP payload, %d%% of %d KiB\n' \
 	"$K_UKI" "$((K_UKI * 100 / K_ESP))" "$K_ESP"
 printf '                                     kernel + initramfs + command line,\n'
@@ -233,9 +252,31 @@ fi
 # ---------------------------------------------------------------------------
 # Build the image
 # ---------------------------------------------------------------------------
-say "generating $IMAGE_NAME"
+# An image from an earlier build of a *different* version is the one artefact in
+# this directory that can be mistaken for this one - same shape, same place, and
+# nothing in the file says which build it came from. Remove it, and remove the
+# symlink too: genimage writes through it otherwise, and the rename below would
+# then be a file onto itself.
+rm -f "$BINARIES_DIR/$IMAGE_NAME"
+for stale in "$BINARIES_DIR"/$IMAGE_STALE_GLOB; do
+	if [ -e "$stale" ] && [ "$(basename "$stale")" != "$IMAGE_VERSIONED" ]; then
+		say "removing an image from an earlier version: $(basename "$stale")"
+		rm -f "$stale"
+	fi
+done
+
+say "generating $IMAGE_VERSIONED"
 "$GENIMAGE_SH" -c "$GENIMAGE_CFG"
 [ -f "$BINARIES_DIR/$IMAGE_NAME" ] || die "genimage did not produce $IMAGE_NAME"
+
+# The version belongs in the file name: it is the name that gets uploaded to a
+# release, and a downloaded signeros.img says nothing about what it is. The
+# plain name stays as a symlink because scripts/test_in_qemu.sh, flash_usb.sh,
+# `make flash` and every instruction in the README refer to it - and because a
+# symlink is the one form of "both names work" that cannot drift into two
+# different images.
+mv -f "$BINARIES_DIR/$IMAGE_NAME" "$BINARIES_DIR/$IMAGE_VERSIONED"
+ln -sfn "$IMAGE_VERSIONED" "$BINARIES_DIR/$IMAGE_NAME"
 
 # Intermediate filesystem images are not artefacts; drop them so it is obvious
 # which files are the deliverables.

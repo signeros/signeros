@@ -40,6 +40,7 @@ make test-gui                # just run 2 (framebuffer pixel check)
 make gui                     # open the production kiosk in a QEMU window
 make menuconfig / source / clean / distclean
 make flash DEV=/dev/sdX [EXPAND=1]
+make version                 # what this tree builds as, from VERSION
 ```
 
 Narrower invocations (no `make` equivalent):
@@ -306,6 +307,18 @@ If a guardrail check fails, the check is almost certainly right. Fix the cause.
   nothing is actually clipped: `revealedSecret()` (`ui/secret_buffers.h`) breaks long
   secrets into lines, `chunked()` does the same for xpubs, and every label holding an
   unbreakable token is `QSizePolicy::Ignored` horizontally.
+- **The version lives in `VERSION`, and nowhere else.** One line at the repo
+  root. `build.sh` reads and validates it, exports `SIGNEROS_VERSION`, and from
+  there it reaches three places: the image file names
+  (`signeros-<version>-x86_64.img`, with `signeros.img` left as a symlink so the
+  scripts and the README keep working), the `SIGNEROS_VERSION=` line
+  `post-build.sh` stamps into `/etc/signeros-build` - which is inside the
+  initramfs, so the version is part of what `bzImage` hashes to - and a `-D` the
+  package makefile passes to cmake, which is what the splash, home and shutdown
+  screens show and what `--version` prints. Do not add a second place: a version
+  string that disagrees with the file name it was flashed from is worse than no
+  version at all. `build.sh` forces `btc-signer-gui-reconfigure` when the version
+  changes, because a changed `-D` does not invalidate a cmake stamp on its own.
 - **Binary size is permanently resident RAM** (the rootfs unpacks into tmpfs), which is
   why everything builds `MinSizeRel`/`-Os` — except that `BR2_OPTIMIZE_S=y` plus glibc
   does not link, so the *system* is `BR2_OPTIMIZE_2`. `build.sh` refuses that

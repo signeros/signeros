@@ -89,6 +89,42 @@ if [ "$DO_CLEAN" -eq 1 ]; then
 fi
 
 # ---------------------------------------------------------------------------
+# The release version of SignerOS itself, as opposed to Buildroot's.
+#
+# One line in VERSION at the repo root is the authority, and everything that
+# needs it reads it from there: the names the images come out with, the stamp
+# post-build.sh writes into /etc/signeros-build, and the version compiled into
+# the kiosk. Cutting a release is one edit followed by a build.
+#
+# Exported rather than passed as an argument, because Buildroot hands its
+# environment to post-build.sh and post-image.sh - and to the package makefile
+# that turns it into a -D for the compiler. SIGNEROS_VERSION=... in the
+# environment overrides the file, for a candidate build you do not want to
+# commit a version bump for.
+#
+# Validated here, in the first second, for the same reason the Secure Boot key
+# pair is: it ends up in a file name, a C string literal and an on-screen label,
+# and none of those is a good place to discover a stray quote 40 minutes in.
+# ---------------------------------------------------------------------------
+if [ -z "${SIGNEROS_VERSION:-}" ]; then
+	[ -r "$REPO_DIR/VERSION" ] || die "$REPO_DIR/VERSION is missing.
+It holds one line - the release version, e.g. 0.1.0 - and every part of the
+build reads it from there."
+	SIGNEROS_VERSION="$(tr -d '[:space:]' < "$REPO_DIR/VERSION")"
+fi
+case "$SIGNEROS_VERSION" in
+[0-9]*.[0-9]*.[0-9]*) ;;
+*) die "SIGNEROS_VERSION is '$SIGNEROS_VERSION', which is not a version.
+Expected MAJOR.MINOR.PATCH with an optional suffix, e.g. 0.1.0 or 0.2.0-rc1." ;;
+esac
+case "$SIGNEROS_VERSION" in
+*[!0-9A-Za-z.+-]*) die "SIGNEROS_VERSION contains a character that cannot go in
+a file name or a C string: '$SIGNEROS_VERSION'. Letters, digits, '.', '-' and
+'+' only." ;;
+esac
+export SIGNEROS_VERSION
+
+# ---------------------------------------------------------------------------
 # Host prerequisites. Buildroot checks most of this itself, but failing here
 # with a clear message beats failing thirty minutes into a toolchain build.
 # ---------------------------------------------------------------------------
@@ -241,10 +277,30 @@ else
 fi
 
 # ---------------------------------------------------------------------------
+# A version bump has to reach the binary, not just the file names.
+#
+# The kiosk gets its version as a -D on the compiler command line, and Buildroot
+# will not re-run cmake for a changed -D on its own: the package's configure
+# stamp is still valid, so an incremental build after an edit to VERSION would
+# produce an image named 0.2.0 around a kiosk that says 0.1.0 on the splash. The
+# last version built is remembered next to the configuration and the package's
+# configure step is forced when it changes.
+# ---------------------------------------------------------------------------
+VERSION_STAMP="$O/.signeros-version"
+if [ -f "$O/.config" ] && [ -d "$O/build" ] &&
+   [ "$(cat "$VERSION_STAMP" 2>/dev/null || true)" != "$SIGNEROS_VERSION" ]; then
+	if compgen -G "$O/build/btc-signer-gui-*/.stamp_configured" > /dev/null; then
+		say "version is now $SIGNEROS_VERSION; reconfiguring the kiosk so the"
+		say "binary carries it too"
+		make "${MAKE_ARGS[@]}" btc-signer-gui-reconfigure
+	fi
+fi
+
+# ---------------------------------------------------------------------------
 # Build
 # ---------------------------------------------------------------------------
-say "building with $JOBS job(s) - the first run builds a toolchain and Qt, so"
-say "expect 30-90 minutes depending on the machine"
+say "building SignerOS $SIGNEROS_VERSION with $JOBS job(s) - the first run"
+say "builds a toolchain and Qt, so expect 30-90 minutes depending on the machine"
 start=$(date +%s)
 
 make "${MAKE_ARGS[@]}" -j"$JOBS"
@@ -262,14 +318,27 @@ elapsed=$(( $(date +%s) - start ))
 printf '\n'
 good "build finished in $((elapsed / 60))m $((elapsed % 60))s"
 
+# Only now, so that an interrupted or failed build does not claim to have
+# produced this version.
+printf '%s\n' "$SIGNEROS_VERSION" > "$VERSION_STAMP"
+
 IMAGES="$O/images"
-printf '\nArtefacts in %s:\n' "$IMAGES"
+printf '\nArtefacts in %s (SignerOS %s):\n' "$IMAGES" "$SIGNEROS_VERSION"
+# The images carry the version in their names - that name is what gets uploaded
+# to a release - and signeros.img / signeros-test.img are symlinks to them, so
+# every script and every instruction that names the plain file still works.
+#
 # bzImage is the unsigned unified kernel image: kernel, initramfs and command
 # line in one PE binary. It is what the ESP's bootx64.efi is made from, and the
 # file to compare hashes on when checking a reproducible build against someone
 # else's (signeros.img differs per signing key).
-for f in signeros.img signeros-test.img bzImage bzImage-selftest; do
-	[ -f "$IMAGES/$f" ] && printf '  %-20s %s\n' "$f" "$(du -h "$IMAGES/$f" | cut -f1)"
+for f in "signeros-$SIGNEROS_VERSION-x86_64.img" \
+         "signeros-test-$SIGNEROS_VERSION-x86_64.img" \
+         bzImage bzImage-selftest; do
+	[ -f "$IMAGES/$f" ] && printf '  %-36s %s\n' "$f" "$(du -h "$IMAGES/$f" | cut -f1)"
+done
+for f in signeros.img signeros-test.img; do
+	[ -L "$IMAGES/$f" ] && printf '  %-36s -> %s\n' "$f" "$(readlink "$IMAGES/$f")"
 done
 
 cat <<EOF

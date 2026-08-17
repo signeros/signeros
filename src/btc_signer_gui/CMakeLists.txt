@@ -21,6 +21,23 @@ project(btc_signer_gui VERSION 1.0.0 LANGUAGES C CXX)
 # files is testable without a display.
 #
 
+# The SignerOS release version, which the binary reports and the kiosk shows.
+#
+# Buildroot passes it in from VERSION at the repo root (see the package makefile
+# and scripts/build.sh); a standalone build - scripts/host_selftest.sh, or an
+# IDE pointed at this directory - reads the same file two levels up. A build
+# from a source tree copied away from the repo has neither, and gets a string
+# that is obviously not a release rather than a plausible wrong number.
+set(SIGNEROS_VERSION "" CACHE STRING "SignerOS release version")
+if(NOT SIGNEROS_VERSION AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../../VERSION")
+    file(READ "${CMAKE_CURRENT_SOURCE_DIR}/../../VERSION" SIGNEROS_VERSION)
+    string(STRIP "${SIGNEROS_VERSION}" SIGNEROS_VERSION)
+endif()
+if(NOT SIGNEROS_VERSION)
+    set(SIGNEROS_VERSION "0.0.0-dev")
+endif()
+message(STATUS "SignerOS version: ${SIGNEROS_VERSION}")
+
 set(SIGNEROS_QT_MAJOR "5" CACHE STRING "Qt major version to build against (5 or 6)")
 set(SIGNEROS_NETWORK "mainnet" CACHE STRING "Compiled-in default Bitcoin network")
 option(SIGNEROS_WORD_SUGGESTIONS "Show BIP39 word suggestions while typing" ON)
@@ -124,6 +141,7 @@ if(WALLY_SECP_LIBRARY)
 endif()
 target_compile_definitions(signer_core PUBLIC
     SIGNEROS_DEFAULT_NETWORK="${SIGNEROS_NETWORK}"
+    SIGNEROS_VERSION_STR="${SIGNEROS_VERSION}"
 )
 
 # ---------------------------------------------------------------------------

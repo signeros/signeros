@@ -8,12 +8,19 @@ REPO  := $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 O     ?= $(REPO)/output
 JOBS  ?= $(shell nproc 2>/dev/null || echo 4)
 
+# The release version. One line in VERSION at the repo root is the authority for
+# the whole tree - the image file names, the stamp in the initramfs and the
+# string the kiosk shows all come from it. Override it for a one-off build with
+# `make image SIGNEROS_VERSION=0.2.0-rc1`; the scripts read the same variable.
+SIGNEROS_VERSION ?= $(strip $(shell cat $(REPO)/VERSION 2>/dev/null))
+export SIGNEROS_VERSION
+
 .DEFAULT_GOAL := help
 .PHONY: help all image app keys reconfigure test test-selftest test-gui gui host-test source \
-        menuconfig flash clean distclean check-scripts
+        menuconfig flash clean distclean check-scripts version
 
 help:
-	@echo "SignerOS"
+	@echo "SignerOS $(SIGNEROS_VERSION)"
 	@echo
 	@echo "  make image           build the full appliance image (30-90 min first time)"
 	@echo "  make app             re-sync and rebuild ONLY the kiosk, then re-make"
@@ -33,6 +40,7 @@ help:
 	@echo "  make menuconfig      inspect or adjust the Buildroot configuration"
 	@echo "  make flash DEV=/dev/sdX [EXPAND=1]"
 	@echo "  make check-scripts   shell and Python syntax checks"
+	@echo "  make version         print the version this tree builds as"
 	@echo "  make clean           remove $(O)"
 	@echo "  make distclean       also remove the Buildroot checkout"
 	@echo
@@ -128,7 +136,17 @@ check-scripts:
 	done; \
 	python3 -m py_compile $(REPO)/scripts/*.py && echo "  ok   scripts/*.py"; \
 	python3 $(REPO)/scripts/make_test_data.py self-check > /dev/null \
-		&& echo "  ok   fixture crypto matches published test vectors"
+		&& echo "  ok   fixture crypto matches published test vectors"; \
+	printf '%s' "$(SIGNEROS_VERSION)" \
+		| grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)?$$' \
+		|| { echo "  FAIL VERSION is '$(SIGNEROS_VERSION)', which is not a version"; exit 1; }; \
+	echo "  ok   VERSION is $(SIGNEROS_VERSION)"
+
+# The images come out as signeros-$(SIGNEROS_VERSION)-x86_64.img, with
+# signeros.img left as a symlink to the newest one. Edit VERSION and rebuild;
+# nothing else in the tree needs touching.
+version:
+	@echo "$(SIGNEROS_VERSION)"
 
 clean:
 	@O=$(O) $(REPO)/scripts/build.sh --clean

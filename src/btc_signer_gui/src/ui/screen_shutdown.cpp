@@ -87,7 +87,8 @@ void ShutdownScreen::onEnter()
                          "on shutdown, or immediately if you cancel and go back.")
         : QStringLiteral("No key material is currently loaded."));
 
-    QString build = QStringLiteral("libwally-core %1  -  network %2  -  pages locked: %3")
+    QString build = QStringLiteral("SignerOS " SIGNEROS_VERSION_STR
+                                   "  -  libwally-core %1  -  network %2  -  pages locked: %3")
                         .arg(QString::fromStdString(PsbtEngine::libraryVersion()),
                              QString::fromLatin1(networkName(app_->config().network)),
                              allPagesLocked() ? QStringLiteral("yes")

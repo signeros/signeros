@@ -422,8 +422,9 @@ void SplashScreen::paintEvent(QPaintEvent *)
         p.setFont(f);
         p.setPen(withAlpha(theme::textDim(), 120));
         const QString id =
-            QStringLiteral("libwally %1  ·  %2  ·  press any key to continue")
-                .arg(QString::fromStdString(PsbtEngine::libraryVersion()),
+            QStringLiteral("SignerOS %1  ·  libwally %2  ·  %3  ·  press any key to continue")
+                .arg(QStringLiteral(SIGNEROS_VERSION_STR),
+                     QString::fromStdString(PsbtEngine::libraryVersion()),
                      QString::fromLatin1(networkName(app_->config().network)));
         const int w = QFontMetrics(f).horizontalAdvance(id);
         p.drawText(QPointF(full.width() - w - unit * 0.7, full.height() - unit * 0.35), id);

@@ -75,10 +75,27 @@ find "$TARGET_DIR/usr/lib" -maxdepth 1 -name '*.a' -delete 2>/dev/null
 find "$TARGET_DIR/usr/lib" -maxdepth 1 -name '*.la' -delete 2>/dev/null
 
 # Stamp the build so the GUI's shutdown screen can show what is running.
+#
+# The version comes from VERSION at the repo root, the same line the image file
+# names and the compiled-in string come from; scripts/build.sh exports it, and a
+# bare `make` inside buildroot/ falls back to reading the file. It lands inside
+# the initramfs, so it is part of what bzImage hashes to - which is what makes
+# the published hash a hash *of a version* rather than of an anonymous build.
+SIGNEROS_VERSION="${SIGNEROS_VERSION:-}"
+if [ -z "$SIGNEROS_VERSION" ] && [ -r "$BOARD_DIR/../../../VERSION" ]; then
+	SIGNEROS_VERSION="$(tr -d '[:space:]' < "$BOARD_DIR/../../../VERSION")"
+fi
+# Removed first, not truncated: the previous build left this file mode 0444, and
+# a redirect into a read-only file fails - silently enough that the stamp inside
+# every incremental image was whatever the first build wrote. Harmless while it
+# only carried a timestamp; not harmless now that it names the version.
+rm -f "$TARGET_DIR/etc/signeros-build"
 {
+	echo "SIGNEROS_VERSION=${SIGNEROS_VERSION:-0.0.0-dev}"
 	echo "SIGNEROS_BUILD_ID=${SOURCE_DATE_EPOCH:-unknown}"
 	echo "SIGNEROS_KERNEL=$(basename "$(ls -d "${BUILD_DIR:-/nonexistent}"/linux-* 2>/dev/null | head -1)" 2>/dev/null || echo unknown)"
-} > "$TARGET_DIR/etc/signeros-build"
+} > "$TARGET_DIR/etc/signeros-build" \
+	|| fail "could not write $TARGET_DIR/etc/signeros-build"
 chmod 0444 "$TARGET_DIR/etc/signeros-build"
 
 ok "target tree fixups applied"
