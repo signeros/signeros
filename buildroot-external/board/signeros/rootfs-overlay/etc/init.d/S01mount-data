@@ -1,0 +1,77 @@
+#!/bin/sh
+#
+# S01mount-data - bring up the zero-trust data partition.
+#
+# Finds partition 2 of the USB stick by filesystem label (PSBT_DATA), mounts it
+# on /mnt/data with rw,noexec,nodev,nosuid,sync, and leaves a watcher running so
+# that a stick inserted after boot is picked up without a restart.
+#
+# A missing partition is NOT a boot failure: the kiosk still comes up and shows
+# a "waiting for data partition" screen. The user gets a legible message on the
+# framebuffer either way, which matters on a machine with no network, no serial
+# console and no shell.
+
+# shellcheck source=../../usr/lib/signeros/functions.sh
+. /usr/lib/signeros/functions.sh
+
+DATAWATCH=/usr/sbin/signeros-datawatch
+PIDFILE=/run/signeros-datawatch.pid
+
+start() {
+	signeros_load_config
+
+	log "looking for data partition labelled $DATA_LABEL (waiting up to ${DATA_WAIT_SECS}s)"
+
+	# One synchronous attempt first, so that by the time the GUI starts the
+	# files are usually already listed.
+	"$DATAWATCH" --once
+	_rc=$?
+
+	if [ "$_rc" -eq 0 ]; then
+		log "data partition ready at $MOUNT_POINT"
+	else
+		log "data partition not available yet; the watcher will keep trying"
+	fi
+
+	# Background watcher: handles late insertion and removal.
+	start-stop-daemon --start --quiet --background \
+		--make-pidfile --pidfile "$PIDFILE" \
+		--exec "$DATAWATCH" -- --daemon \
+		|| log "WARNING: could not start the data watcher"
+
+	# Never propagate a mount failure: the kiosk is a better place to explain
+	# it to the user than a halted boot.
+	return 0
+}
+
+stop() {
+	signeros_load_config
+
+	start-stop-daemon --stop --quiet --oknodo \
+		--pidfile "$PIDFILE" --retry 5 2>/dev/null
+	rm -f "$PIDFILE"
+
+	# Flush and unmount. `sync` mount option means committed writes are
+	# already on the medium, but the directory entry for the file we just
+	# wrote deserves the same certainty.
+	"$DATAWATCH" --umount
+	return 0
+}
+
+status() {
+	signeros_load_config
+	if grep -q " $MOUNT_POINT " /proc/mounts 2>/dev/null; then
+		grep " $MOUNT_POINT " /proc/mounts
+		return 0
+	fi
+	echo "$MOUNT_POINT: not mounted"
+	return 3
+}
+
+case "$1" in
+	start)   start ;;
+	stop)    stop ;;
+	restart) stop; start ;;
+	status)  status ;;
+	*) echo "Usage: $0 {start|stop|restart|status}"; exit 1 ;;
+esac

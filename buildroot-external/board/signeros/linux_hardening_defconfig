@@ -1,0 +1,645 @@
+################################################################################
+# SignerOS kernel hardening fragment
+#
+# Merged on top of the in-tree arch/x86/configs/x86_64_defconfig by Buildroot
+# (BR2_LINUX_KERNEL_CONFIG_FRAGMENT_FILES), followed by `make olddefconfig`.
+#
+# The invariants below are re-checked against the *generated* .config by
+# board/signeros/post-build.sh, which fails the build if any of them was
+# silently dropped by kconfig dependency resolution. Never trust a fragment
+# you have not verified in the resulting .config.
+#
+# Design rules encoded here:
+#   1. No network stack at all - not disabled drivers, no stack.
+#   2. No driver for any non-removable storage: the device cannot read or
+#      write an internal disk even if one is present.
+#   3. Only two filesystem parsers (vfat, exfat) are reachable from untrusted
+#      removable media.
+#   4. IOMMU always on and strict, and every classic DMA-attack bus removed.
+#   5. No modules, no kexec, no /dev/mem, no BPF, no perf, no ptrace-y
+#      debugging surfaces. Nothing can be injected into a running kernel.
+################################################################################
+
+# ==============================================================================
+# 1. NETWORKING: REMOVED ENTIRELY
+#
+# CONFIG_NET=n deletes the whole stack: no sockets, no AF_UNIX, no AF_NETLINK,
+# no packet schedulers, and every network device driver becomes unbuildable.
+# This is the reason SignerOS uses BusyBox mdev instead of (e)udev - udev
+# requires AF_NETLINK for uevents. Nothing else in userspace needs a socket.
+# ==============================================================================
+# CONFIG_NET is not set
+# CONFIG_WIRELESS is not set
+# CONFIG_WLAN is not set
+# CONFIG_RFKILL is not set
+# CONFIG_BT is not set
+# CONFIG_NFC is not set
+# CONFIG_WWAN is not set
+# CONFIG_ETHERNET is not set
+# CONFIG_USB_NET_DRIVERS is not set
+# CONFIG_USB_USBNET is not set
+# CONFIG_USB_RTL8152 is not set
+# CONFIG_USB_LAN78XX is not set
+# CONFIG_PCMCIA_NETWORK is not set
+# CONFIG_NETDEVICES is not set
+# CONFIG_NET_9P is not set
+# CONFIG_CIFS is not set
+# CONFIG_NFS_FS is not set
+# CONFIG_NFSD is not set
+# CONFIG_SUNRPC is not set
+
+# ==============================================================================
+# 2. BOOT / RAM-ONLY ROOT FILESYSTEM
+#
+# There is no bootloader. This kernel IS the boot payload: the initramfs is
+# linked into it (section 2a) and the command line is compiled into it
+# (section 2b), so the EFI-stub bzImage is a unified kernel image that the
+# firmware loads directly as EFI/BOOT/bootx64.efi. One PE binary, one
+# signature, nothing outside it that boot depends on.
+#
+# The kernel unpacks the built-in cpio into tmpfs and never touches a block
+# device for the root filesystem.
+# ==============================================================================
+CONFIG_64BIT=y
+
+# EXPERT is load-bearing, not a preference.
+#
+# Many "General setup" symbols carry their prompt as `bool "..." if EXPERT`.
+# When EXPERT is off the prompt is invisible, the symbol is not user-settable,
+# and `make olddefconfig` therefore DISCARDS a `# CONFIG_X is not set` line from
+# a fragment and reapplies the symbol's default - usually y. That is how
+# IO_URING, COREDUMP, NAMESPACES, PROC_PAGE_MONITOR, MODIFY_LDT_SYSCALL,
+# X86_VSYSCALL_EMULATION and VGA_CONSOLE all came back on despite being listed
+# as disabled below. Setting EXPERT changes no behaviour by itself; it only
+# makes those prompts visible so that our choices are honoured.
+CONFIG_EXPERT=y
+
+# ------------------------------------------------------------------------------
+# 2a. THE INITRAMFS IS INSIDE THE KERNEL
+#
+# BR2_TARGET_ROOTFS_INITRAMFS=y in the defconfig points CONFIG_INITRAMFS_SOURCE
+# at $(BINARIES_DIR)/rootfs.cpio and rebuilds the kernel once the cpio exists.
+# CONFIG_INITRAMFS_SOURCE is therefore Buildroot's to set, not ours.
+#
+# Every CONFIG_RD_* decompressor is OFF, and that is deliberate on two counts.
+#
+#   1. Attack surface. RD_* exists only to decompress an initrd handed over by
+#      a bootloader. Nothing hands this kernel an initrd - there is no
+#      bootloader - so those decompressors are unreachable code that can only
+#      ever be reached by something we do not want to happen.
+#
+#   2. It is the only deterministic way to pin the built-in initramfs
+#      compression. "Built-in initramfs compression mode" is a kconfig *choice*
+#      guarded by `depends on INITRAMFS_SOURCE != ""`, and Buildroot sets
+#      INITRAMFS_SOURCE in its fixup step, which runs AFTER our fragment is
+#      merged and after the olddefconfig that follows the merge. So at the
+#      moment this file is applied the choice is invisible and any member we
+#      name here is silently discarded; the later olddefconfig then picks the
+#      first *visible* member, which is GZIP while RD_GZIP=y. With every RD_*
+#      off, INITRAMFS_COMPRESSION_NONE (which has no dependencies) is the only
+#      visible member and the choice can land nowhere else.
+#
+# NONE is also what the kconfig help recommends: the cpio gets compressed once
+# more anyway, together with the rest of the kernel, by CONFIG_KERNEL_XZ
+# (BR2_LINUX_KERNEL_XZ=y in the defconfig). One compression pass over kernel
+# and rootfs together beats two nested ones. Swap the defconfig to
+# BR2_LINUX_KERNEL_ZSTD=y if the xz pass makes the edit-build loop painful; it
+# costs a couple of MiB of ESP payload and saves most of the compression time.
+#
+# post-build.sh verifies all of this against the generated .config, so a kernel
+# bump that reorders the choice fails the build instead of quietly shipping a
+# gzip-in-xz initramfs.
+CONFIG_BLK_DEV_INITRD=y
+CONFIG_INITRAMFS_COMPRESSION_NONE=y
+# CONFIG_RD_GZIP is not set
+# CONFIG_RD_BZIP2 is not set
+# CONFIG_RD_LZMA is not set
+# CONFIG_RD_XZ is not set
+# CONFIG_RD_LZO is not set
+# CONFIG_RD_LZ4 is not set
+# CONFIG_RD_ZSTD is not set
+
+# ------------------------------------------------------------------------------
+# 2b. THE COMMAND LINE IS INSIDE THE KERNEL
+#
+# CONFIG_CMDLINE_OVERRIDE=y is the whole point of the unified kernel image, and
+# it is load-bearing security, not tidiness.
+#
+# Secure Boot signs the PE binary. It does NOT sign the command line: that
+# comes from whoever launched the image, as the loaded image's LoadOptions.
+#
+# The recommended enrolment keeps Microsoft's certificates in db, because on
+# almost any machine you would boot this on, something already depends on them.
+# On a Linux host that something is the distro's own bootloader: Ubuntu's
+# shimx64.efi is signed by "Microsoft Corporation UEFI CA 2011", and shim then
+# vouches for grubx64.efi with Canonical's key. Clear db and that machine stops
+# booting its own operating system - Windows is only the most obvious case, not
+# the only one.
+#
+# The cost of keeping those certificates is that a legitimately MS-signed shim
+# and distro GRUB remain loadable on that machine, and either will happily load
+# this bzImage with a command line of the attacker's choosing. `rdinit=/bin/sh`
+# there would walk straight past the kiosk.
+#
+# With OVERRIDE the firmware-supplied command line is ignored twice over:
+# arch/x86/kernel/setup.c replaces boot_command_line with the built-in one, and
+# drivers/firmware/efi/libstub/x86-stub.c skips parsing LoadOptions altogether
+# (it parses CONFIG_CMDLINE instead). That second half matters - it is why
+# efi=disable_early_pci_dma below is still honoured at stub time, before
+# ExitBootServices, rather than being silently dropped.
+#
+# The consequence to keep in mind: this command line cannot be varied at boot
+# by anyone, including us. That is why the self-test image is a second kernel
+# build with a different CONFIG_CMDLINE (board/signeros/cmdline-selftest, built
+# by the signeros-test-image target in external.mk) rather than a second boot
+# entry.
+#
+# Grouped by purpose:
+#
+#   ro quiet loglevel=3 console=tty1 consoleblank=0
+#       Root is a RAM cpio and stays read-only; the panel shows the signer, not
+#       a boot log. consoleblank=0 stops the framebuffer console blanking the
+#       screen while somebody is reading a transaction.
+#
+#   rdinit=/sbin/init
+#       The root filesystem is the built-in initramfs and is never left, so
+#       init is rdinit.
+#
+#   IOMMU
+#       Forced on and strict on both vendors, no passthrough, so a hostile
+#       device cannot DMA outside the buffers mapped for it. Duplicates the
+#       compiled-in defaults on purpose: platforms differ.
+#
+#   Memory / speculation
+#       init_on_alloc + init_on_free means freed pages that held key material
+#       are zeroed by the kernel even if userspace forgot. mitigations=auto,nosmt
+#       disables SMT: a signing appliance has no throughput requirement worth a
+#       cross-thread side channel.
+#
+#   lockdown=confidentiality
+#       Blocks every remaining path from userspace into kernel memory.
+#
+#   signeros.*
+#       Read by /etc/init.d/S01mount-data and the kiosk (see signeros.conf).
+CONFIG_CMDLINE_BOOL=y
+CONFIG_CMDLINE="ro quiet loglevel=3 console=tty1 consoleblank=0 vt.global_cursor_default=0 rdinit=/sbin/init intel_iommu=on amd_iommu=on iommu=force iommu.strict=1 iommu.passthrough=0 efi=disable_early_pci_dma init_on_alloc=1 init_on_free=1 slab_nomerge page_alloc.shuffle=1 randomize_kstack_offset=on vsyscall=none lockdown=confidentiality mitigations=auto,nosmt signeros.data_label=PSBT_DATA"
+CONFIG_CMDLINE_OVERRIDE=y
+
+CONFIG_TMPFS=y
+CONFIG_TMPFS_POSIX_ACL=y
+CONFIG_DEVTMPFS=y
+# CONFIG_DEVTMPFS_MOUNT: Buildroot's own kernel fixup force-enables this for
+# every non-static device-creation choice, so asserting it off here could
+# never hold. Harmless: it is a no-op when booting from an initramfs, and
+# /etc/inittab mounts devtmpfs on /dev explicitly.
+CONFIG_PROC_FS=y
+CONFIG_SYSFS=y
+CONFIG_EFI=y
+# EFI_STUB is what makes bzImage a PE binary the firmware can execute directly.
+# Without it there is no bootx64.efi to sign and nothing boots at all.
+CONFIG_EFI_STUB=y
+# The compile-time half of efi=disable_early_pci_dma: clear the busmaster bit on
+# every PCI bridge across ExitBootServices, closing the window between firmware
+# tearing down its IOMMU configuration and Linux setting up its own. Set here as
+# well as on the command line so the mitigation does not depend on command-line
+# parsing surviving a future refactor.
+CONFIG_EFI_DISABLE_PCI_DMA=y
+CONFIG_EFI_PARTITION=y
+CONFIG_MSDOS_PARTITION=y
+CONFIG_RELOCATABLE=y
+CONFIG_CC_OPTIMIZE_FOR_SIZE=y
+# CONFIG_TRIM_UNUSED_KSYMS depends on MODULES, which is off. Unattainable.
+
+# No debug info in the kernel: it is dead weight in a signed boot payload, it
+# doubles the build time, and CONFIG_DEBUG_INFO_BTF would pull in pahole as an
+# extra host dependency for a feature (BPF type info) this kernel cannot use -
+# CONFIG_BPF_SYSCALL is off.
+CONFIG_DEBUG_INFO_NONE=y
+# CONFIG_DEBUG_INFO_BTF is not set
+# CONFIG_DEBUG_INFO_DWARF5 is not set
+# CONFIG_GDB_SCRIPTS is not set
+
+# UEFI variables are a persistence surface (and a brickable one). SignerOS
+# never needs to read or write them, so no userspace interface is compiled in.
+# CONFIG_EFI_VARS is not set
+# CONFIG_EFIVAR_FS is not set
+# CONFIG_EFI_TEST is not set
+# CONFIG_EFI_CAPSULE_LOADER is not set
+# CONFIG_EFI_RUNTIME_MAP is not set
+# CONFIG_EFI_BOOTLOADER_CONTROL is not set
+
+# ==============================================================================
+# 3. IOMMU / DMA-ATTACK MITIGATION
+#
+# Both vendors' IOMMUs are compiled in and defaulted to ON in strict
+# (non-passthrough, non-lazy) mode, so a malicious device on any bus is
+# confined to the buffers actually mapped for it. CONFIG_CMDLINE in section 2b
+# additionally passes intel_iommu=on iommu.strict=1 iommu.passthrough=0 for
+# kernels/platforms where the default differs.
+# ==============================================================================
+CONFIG_IOMMU_SUPPORT=y
+CONFIG_IOMMU_API=y
+CONFIG_INTEL_IOMMU=y
+CONFIG_INTEL_IOMMU_DEFAULT_ON=y
+CONFIG_INTEL_IOMMU_SVM=y
+# CONFIG_INTEL_IOMMU_FLOPPY_WA is not set
+CONFIG_AMD_IOMMU=y
+# CONFIG_AMD_IOMMU_V2 no longer exists (removed upstream in 6.7).
+CONFIG_IOMMU_DEFAULT_DMA_STRICT=y
+# CONFIG_IOMMU_DEFAULT_DMA_LAZY is not set
+# CONFIG_IOMMU_DEFAULT_PASSTHROUGH is not set
+# CONFIG_IOMMU_DEBUGFS is not set
+
+# Buses whose entire purpose is giving an external connector DMA. Removed.
+# CONFIG_USB4 is not set
+# CONFIG_USB4_DEBUGFS_WRITE is not set
+# CONFIG_THUNDERBOLT is not set
+# CONFIG_FIREWIRE is not set
+# CONFIG_FIREWIRE_OHCI is not set
+# CONFIG_PCMCIA is not set
+# CONFIG_CARDBUS is not set
+# CONFIG_YENTA is not set
+# CONFIG_HOTPLUG_PCI is not set
+# CONFIG_HOTPLUG_PCI_PCIE is not set
+# CONFIG_VFIO is not set
+# CONFIG_UIO is not set
+
+# ==============================================================================
+# 4. GRAPHICS: KMS/DRM ONLY
+#
+# simpledrm takes over the UEFI GOP framebuffer on literally any UEFI machine,
+# which is what makes a single image portable; the native drivers below then
+# take over where they can bind. fbdev emulation is what exposes /dev/fb0 for
+# the Qt linuxfb QPA plugin, and fbcon is what lets the init scripts print a
+# mount failure on the panel with a plain `echo > /dev/tty1`.
+#
+# GPU firmware is NOT bundled by default (it would add >100 MB of permanently
+# resident RAM). Without it, amdgpu/nouveau simply fail to bind and simpledrm
+# keeps the display. Add configs/fragments/gpu-firmware.fragment if you need
+# native modesetting on a specific machine.
+# ==============================================================================
+CONFIG_DRM=y
+CONFIG_DRM_FBDEV_EMULATION=y
+CONFIG_DRM_SIMPLEDRM=y
+CONFIG_SYSFB_SIMPLEFB=y
+CONFIG_DRM_I915=y
+CONFIG_DRM_AMDGPU=y
+# CONFIG_DRM_AMDGPU_SI is not set
+# CONFIG_DRM_AMDGPU_CIK is not set
+CONFIG_DRM_NOUVEAU=y
+# CONFIG_NOUVEAU_LEGACY_CTX_SUPPORT is not set
+CONFIG_DRM_BOCHS=y
+CONFIG_FB=y
+CONFIG_FB_EFI=y
+CONFIG_FRAMEBUFFER_CONSOLE=y
+CONFIG_FRAMEBUFFER_CONSOLE_DETECT_PRIMARY=y
+# CONFIG_FONTS is the gate: without it the individual FONT_* symbols are not
+# settable and only the default 8x16 font is compiled in. The larger Terminus
+# font is not cosmetic here - the framebuffer console is the only channel the
+# init scripts have to report a failed data-partition mount, and 8x16 is
+# unreadable on a HiDPI panel.
+CONFIG_FONTS=y
+CONFIG_FONT_8x16=y
+CONFIG_FONT_TER16x32=y
+CONFIG_VT=y
+CONFIG_VT_CONSOLE=y
+CONFIG_UNIX98_PTYS=y
+# CONFIG_LEGACY_PTYS is not set
+# CONFIG_VGA_CONSOLE is not set
+# CONFIG_DRM_LOAD_EDID_FIRMWARE is not set
+# CONFIG_DRM_VIRTIO_GPU is not set
+# CONFIG_DRM_QXL is not set
+# CONFIG_DRM_VMWGFX is not set
+
+# No sound, no cameras, no TV tuners: pure attack surface for a signer.
+# CONFIG_SOUND is not set
+# CONFIG_SND is not set
+# CONFIG_MEDIA_SUPPORT is not set
+# CONFIG_USB_VIDEO_CLASS is not set
+# CONFIG_USB_GSPCA is not set
+# CONFIG_VIDEO_DEV is not set
+# CONFIG_DVB_CORE is not set
+
+# ==============================================================================
+# 5. INPUT: local keyboard / mouse / touchscreen only
+# ==============================================================================
+CONFIG_INPUT=y
+CONFIG_INPUT_EVDEV=y
+CONFIG_INPUT_KEYBOARD=y
+CONFIG_KEYBOARD_ATKBD=y
+CONFIG_INPUT_MOUSE=y
+CONFIG_MOUSE_PS2=y
+CONFIG_INPUT_TOUCHSCREEN=y
+CONFIG_SERIO=y
+CONFIG_SERIO_I8042=y
+CONFIG_HID=y
+CONFIG_HID_GENERIC=y
+CONFIG_HID_MULTITOUCH=y
+CONFIG_USB_HID=y
+# CONFIG_USB_HIDDEV is not set
+# CONFIG_INPUT_JOYSTICK is not set
+# CONFIG_INPUT_JOYDEV is not set
+# CONFIG_INPUT_MISC is not set
+# CONFIG_INPUT_UINPUT is not set
+
+# ------------------------------------------------------------------------------
+# 5a. Laptop touchpads: the transports the panel devices actually hang off
+#
+# The list above is enough for a desktop - a PS/2 or USB keyboard and a USB
+# mouse - and it is exactly what produced the first bring-up failure on real
+# hardware: the keyboard worked (atkbd on i8042) and the touchpad did not exist
+# at all, because on every laptop built in roughly the last decade the touchpad
+# is not on the i8042 controller. It is one of:
+#
+#   * HID over I2C     - an ACPI-declared device on an Intel LPSS or AMD MP2
+#                        I2C controller, raising a GPIO interrupt. Needs
+#                        i2c-hid-acpi + the I2C host driver + pinctrl/GPIOLIB.
+#                        This is the common case on anything modern.
+#   * Synaptics RMI4   - PS/2 for detection, then the real protocol over SMBus
+#                        (i2c-i801). Needs RMI4_CORE + RMI4_SMB.
+#   * Elan / Elantech  - either PS/2 (MOUSE_PS2_ELANTECH) or I2C
+#                        (MOUSE_ELAN_I2C).
+#
+# CONFIG_PINCTRL was off entirely, which is the load-bearing part: without a
+# pin controller there is no GPIO interrupt for an I2C-HID device to signal on,
+# so i2c-hid probes and then never reports an event even when everything else
+# is present.
+#
+# This is a deliberate widening of the driver surface. It is bounded: no new
+# bus is exposed to the outside of the machine (I2C/SMBus here reach only
+# on-board devices), and nothing here can enumerate over USB. If you know the
+# exact model this image runs on, trim this block down to that machine's
+# touchpad - `cat /proc/bus/input/devices` on the target names it.
+# ------------------------------------------------------------------------------
+CONFIG_PINCTRL=y
+CONFIG_GPIOLIB=y
+CONFIG_GPIO_ACPI=y
+CONFIG_PINCTRL_INTEL=y
+CONFIG_PINCTRL_INTEL_PLATFORM=y
+CONFIG_PINCTRL_BAYTRAIL=y
+CONFIG_PINCTRL_CHERRYVIEW=y
+CONFIG_PINCTRL_BROXTON=y
+CONFIG_PINCTRL_GEMINILAKE=y
+CONFIG_PINCTRL_SUNRISEPOINT=y
+CONFIG_PINCTRL_CANNONLAKE=y
+CONFIG_PINCTRL_ICELAKE=y
+CONFIG_PINCTRL_JASPERLAKE=y
+CONFIG_PINCTRL_LAKEFIELD=y
+CONFIG_PINCTRL_TIGERLAKE=y
+CONFIG_PINCTRL_ALDERLAKE=y
+CONFIG_PINCTRL_ELKHARTLAKE=y
+CONFIG_PINCTRL_METEORLAKE=y
+CONFIG_PINCTRL_METEORPOINT=y
+CONFIG_PINCTRL_AMD=y
+
+# I2C host controllers the touchpad can hang off. I2C_I801 (already on for
+# SMBus) covers RMI4; the LPSS/Designware and AMD MP2 controllers are what
+# carry I2C-HID.
+CONFIG_COMMON_CLK=y
+CONFIG_MFD_INTEL_LPSS=y
+CONFIG_MFD_INTEL_LPSS_ACPI=y
+CONFIG_MFD_INTEL_LPSS_PCI=y
+CONFIG_I2C_DESIGNWARE_CORE=y
+CONFIG_I2C_DESIGNWARE_PLATFORM=y
+CONFIG_I2C_DESIGNWARE_PCI=y
+CONFIG_I2C_AMD_MP2=y
+
+# HID over I2C. I2C_HID was already on but had no transport driver, which is
+# indistinguishable from "not enabled" at runtime.
+CONFIG_I2C_HID=y
+CONFIG_I2C_HID_CORE=y
+CONFIG_I2C_HID_ACPI=y
+
+# Native touchpad protocols.
+CONFIG_MOUSE_PS2_ELANTECH=y
+CONFIG_MOUSE_PS2_ELANTECH_SMBUS=y
+CONFIG_MOUSE_ELAN_I2C=y
+CONFIG_MOUSE_ELAN_I2C_I2C=y
+CONFIG_MOUSE_ELAN_I2C_SMBUS=y
+CONFIG_RMI4_CORE=y
+CONFIG_RMI4_I2C=y
+CONFIG_RMI4_SMB=y
+CONFIG_RMI4_F11=y
+CONFIG_RMI4_F12=y
+CONFIG_RMI4_F30=y
+
+# ==============================================================================
+# 6. STORAGE: REMOVABLE USB MASS STORAGE, AND NOTHING ELSE
+#
+# There is no driver for SATA, NVMe, SD/MMC, SCSI HBAs or virtio-blk. Any
+# internal disk in the machine is invisible to SignerOS: it cannot be read,
+# written, or accidentally used for swap.
+# ==============================================================================
+CONFIG_USB_SUPPORT=y
+CONFIG_USB=y
+CONFIG_USB_PCI=y
+CONFIG_USB_XHCI_HCD=y
+CONFIG_USB_XHCI_PCI=y
+CONFIG_USB_EHCI_HCD=y
+CONFIG_USB_EHCI_PCI=y
+CONFIG_USB_OHCI_HCD=y
+CONFIG_USB_OHCI_HCD_PCI=y
+CONFIG_USB_UHCI_HCD=y
+CONFIG_USB_STORAGE=y
+CONFIG_SCSI=y
+CONFIG_BLK_DEV_SD=y
+# CONFIG_SCSI_LOWLEVEL is not set
+# CONFIG_USB_UAS is not set
+# CONFIG_ATA is not set
+# CONFIG_SATA_AHCI is not set
+# CONFIG_ATA_PIIX is not set
+# CONFIG_BLK_DEV_NVME is not set
+# CONFIG_NVME_CORE is not set
+# CONFIG_MMC is not set
+# CONFIG_MMC_SDHCI is not set
+# CONFIG_MEMSTICK is not set
+# CONFIG_VIRTIO_BLK is not set
+# CONFIG_SCSI_VIRTIO is not set
+# CONFIG_VIRTIO_PCI is not set
+# CONFIG_VIRTIO_MENU is not set
+# CONFIG_MD is not set
+# CONFIG_BLK_DEV_DM is not set
+# CONFIG_BLK_DEV_LOOP is not set
+# CONFIG_BLK_DEV_RAM is not set
+# CONFIG_NVMEM is not set
+# RTC_NVMEM is what selects NVMEM - it exposes the RTC's own NVRAM to
+# userspace. Off, so the line above can actually hold.
+# CONFIG_RTC_NVMEM is not set
+# CONFIG_SWAP is not set
+
+# ==============================================================================
+# 7. FILESYSTEMS: only what the two partitions need
+#
+# Every filesystem driver is a parser fed by attacker-controlled media. We
+# ship exactly two: vfat (ESP + data) and exfat (large data partitions).
+# ==============================================================================
+CONFIG_FAT_FS=y
+CONFIG_VFAT_FS=y
+CONFIG_FAT_DEFAULT_CODEPAGE=437
+CONFIG_FAT_DEFAULT_IOCHARSET="utf8"
+CONFIG_FAT_DEFAULT_UTF8=y
+CONFIG_EXFAT_FS=y
+CONFIG_EXFAT_DEFAULT_IOCHARSET="utf8"
+CONFIG_NLS=y
+CONFIG_NLS_DEFAULT="utf8"
+CONFIG_NLS_CODEPAGE_437=y
+CONFIG_NLS_ISO8859_1=y
+CONFIG_NLS_UTF8=y
+# CONFIG_EXT2_FS is not set
+# CONFIG_EXT3_FS is not set
+# CONFIG_EXT4_FS is not set
+# CONFIG_JBD2 is not set
+# CONFIG_XFS_FS is not set
+# CONFIG_BTRFS_FS is not set
+# CONFIG_F2FS_FS is not set
+# CONFIG_NTFS_FS is not set
+# CONFIG_NTFS3_FS is not set
+# CONFIG_ISO9660_FS is not set
+# CONFIG_UDF_FS is not set
+# CONFIG_SQUASHFS is not set
+# CONFIG_HFS_FS is not set
+# CONFIG_HFSPLUS_FS is not set
+# CONFIG_JFS_FS is not set
+# CONFIG_REISERFS_FS is not set
+# CONFIG_FUSE_FS is not set
+# CONFIG_OVERLAY_FS is not set
+# CONFIG_QUOTA is not set
+# CONFIG_AUTOFS_FS is not set
+
+# ==============================================================================
+# 8. KERNEL SELF-PROTECTION
+# ==============================================================================
+CONFIG_STRICT_KERNEL_RWX=y
+# CONFIG_STRICT_DEVMEM depends on DEVMEM, which is off below - there is no
+# /dev/mem for it to filter access to.
+CONFIG_DEBUG_WX=y
+CONFIG_RANDOMIZE_BASE=y
+CONFIG_RANDOMIZE_MEMORY=y
+CONFIG_RANDOMIZE_KSTACK_OFFSET=y
+CONFIG_RANDOMIZE_KSTACK_OFFSET_DEFAULT=y
+CONFIG_STACKPROTECTOR=y
+CONFIG_STACKPROTECTOR_STRONG=y
+CONFIG_VMAP_STACK=y
+CONFIG_THREAD_INFO_IN_TASK=y
+CONFIG_HARDENED_USERCOPY=y
+CONFIG_FORTIFY_SOURCE=y
+CONFIG_INIT_ON_ALLOC_DEFAULT_ON=y
+CONFIG_INIT_ON_FREE_DEFAULT_ON=y
+CONFIG_INIT_STACK_ALL_ZERO=y
+CONFIG_ZERO_CALL_USED_REGS=y
+CONFIG_SHUFFLE_PAGE_ALLOCATOR=y
+CONFIG_SLAB_FREELIST_RANDOM=y
+CONFIG_SLAB_FREELIST_HARDENED=y
+# CONFIG_SLAB_MERGE_DEFAULT is not set
+# Renamed upstream to CONFIG_MITIGATION_PAGE_TABLE_ISOLATION, set below.
+CONFIG_MITIGATION_RETPOLINE=y
+CONFIG_SCHED_STACK_END_CHECK=y
+CONFIG_DEBUG_LIST=y
+CONFIG_DEBUG_SG=y
+CONFIG_DEBUG_VIRTUAL=y
+CONFIG_BUG_ON_DATA_CORRUPTION=y
+CONFIG_SECURITY=y
+CONFIG_SECURITY_DMESG_RESTRICT=y
+CONFIG_SECURITY_YAMA=y
+CONFIG_SECURITY_LOCKDOWN_LSM=y
+CONFIG_SECURITY_LOCKDOWN_LSM_EARLY=y
+CONFIG_LOCK_DOWN_KERNEL_FORCE_CONFIDENTIALITY=y
+CONFIG_LSM="lockdown,yama"
+CONFIG_STATIC_USERMODEHELPER=y
+CONFIG_STATIC_USERMODEHELPER_PATH=""
+
+# ==============================================================================
+# 9. REMOVED SUBSYSTEMS
+#
+# Each of these is either a code-injection path into the running kernel, a
+# way to read kernel memory, or a way for the system to write state anywhere.
+# STATIC_USERMODEHELPER_PATH="" above also means /proc/sys/kernel/hotplug can
+# never spawn a process - device nodes come from devtmpfs and a `mdev -s`
+# scan, and the data partition is picked up by polling (signeros-datawatch).
+# ==============================================================================
+# CONFIG_MODULES is not set
+# CONFIG_KEXEC is not set
+# CONFIG_KEXEC_FILE is not set
+# CONFIG_CRASH_DUMP is not set
+# CONFIG_PROC_VMCORE is not set
+# CONFIG_PROC_KCORE is not set
+# CONFIG_PROC_PAGE_MONITOR is not set
+# CONFIG_DEVMEM is not set
+# CONFIG_DEVPORT is not set
+# CONFIG_DEVKMEM is not set
+# CONFIG_X86_MSR is not set
+# CONFIG_X86_CPUID is not set
+# CONFIG_HIBERNATION is not set
+# CONFIG_SUSPEND is not set
+# CONFIG_PM_DEBUG is not set
+# CONFIG_ACPI_CUSTOM_METHOD is not set
+# CONFIG_ACPI_TABLE_UPGRADE is not set
+# CONFIG_ACPI_CONFIGFS is not set
+# CONFIG_BPF_SYSCALL is not set
+# CONFIG_BPF_JIT is not set
+# CONFIG_IO_URING is not set
+# CONFIG_USERFAULTFD is not set
+# CONFIG_KPROBES is not set
+# CONFIG_UPROBES is not set
+# CONFIG_FTRACE is not set
+# CONFIG_FUNCTION_TRACER is not set
+# CONFIG_PROFILING is not set
+# CONFIG_PERF_EVENTS cannot be disabled: arch/x86 does `select PERF_EVENTS`.
+# The runtime mitigation is kernel.perf_event_paranoid=3, set by S00early.
+# CONFIG_OPROFILE is not set
+# CONFIG_MAGIC_SYSRQ is not set
+# CONFIG_BINFMT_MISC is not set
+# CONFIG_IA32_EMULATION is not set
+# CONFIG_X86_X32_ABI is not set
+# CONFIG_X86_VSYSCALL_EMULATION is not set
+CONFIG_LEGACY_VSYSCALL_NONE=y
+# CONFIG_MODIFY_LDT_SYSCALL is not set
+# CONFIG_COMPAT_BRK is not set
+# CONFIG_DEBUG_FS is not set
+# CONFIG_COREDUMP is not set
+# CONFIG_CHECKPOINT_RESTORE is not set
+# CONFIG_SYSFS_SYSCALL is not set
+# CONFIG_KVM is not set
+# CONFIG_VIRTUALIZATION is not set
+# CONFIG_XEN is not set
+# CONFIG_PARAVIRT is not set
+# CONFIG_HYPERVISOR_GUEST is not set
+# CONFIG_CGROUPS is not set
+# CONFIG_NAMESPACES is not set
+# CONFIG_AUDIT is not set
+# CONFIG_WATCHDOG is not set
+# CONFIG_PRINTK_INDEX is not set
+# CONFIG_GCOV_KERNEL is not set
+
+# ==============================================================================
+# 10. TIME, ENTROPY, MISC
+#
+# RTC only exists so signed_<timestamp>.psbt gets a sensible filename. Note
+# that ECDSA signing itself needs no entropy: libwally uses RFC6979
+# deterministic nonces, so a cold or lying RNG cannot leak a private key
+# through a biased k. /dev/urandom is used only to blind the secp256k1
+# context against side channels.
+# ==============================================================================
+CONFIG_RTC_CLASS=y
+CONFIG_RTC_DRV_CMOS=y
+CONFIG_RTC_HCTOSYS=y
+CONFIG_HW_RANDOM=y
+# CONFIG_RANDOM_TRUST_CPU no longer exists; the equivalent is the
+# random.trust_cpu= kernel command line parameter.
+# CONFIG_RANDOM_TRUST_BOOTLOADER is not set
+CONFIG_TTY=y
+CONFIG_SERIAL_8250=y
+CONFIG_SERIAL_8250_CONSOLE=y
+CONFIG_PRINTK=y
+CONFIG_PRINTK_TIME=y
+CONFIG_EARLY_PRINTK=y
+CONFIG_MULTIUSER=y
+CONFIG_POSIX_TIMERS=y
+CONFIG_EVENTFD=y
+CONFIG_SIGNALFD=y
+CONFIG_TIMERFD=y
+CONFIG_EPOLL=y
+CONFIG_FUTEX=y
+CONFIG_SHMEM=y
+CONFIG_ADVISE_SYSCALLS=y
+CONFIG_MEMBARRIER=y

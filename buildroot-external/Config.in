@@ -1,0 +1,6 @@
+menu "SignerOS packages"
+
+source "$BR2_EXTERNAL_SIGNEROS_PATH/package/libwally-core/Config.in"
+source "$BR2_EXTERNAL_SIGNEROS_PATH/package/btc-signer-gui/Config.in"
+
+endmenu

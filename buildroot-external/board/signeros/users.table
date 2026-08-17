@@ -1,0 +1,14 @@
+# SignerOS users
+#
+# The GUI runs as an unprivileged user with no password, no valid shell and no
+# supplementary groups. It reaches /dev/fb0, /dev/dri/*, /dev/input/* and
+# /dev/tty0 because mdev.conf hands those nodes to group `signer`, not because
+# the account is in `video`/`input` - that keeps the account's authority
+# limited to exactly the nodes we name.
+#
+# It cannot mount, unmount or power off the machine. Requesting shutdown is
+# done by exiting with status 42, which the root-owned session supervisor
+# turns into a secure poweroff.
+#
+# <username> <uid> <group> <gid> <password> <home> <shell> <groups> <comment>
+signer 1000 signer 1000 ! /home/signer /bin/false - SignerOS kiosk user

@@ -1,0 +1,273 @@
+#!/bin/sh
+#
+# signeros-datawatch - locate, mount and keep watch over the untrusted data
+# partition (partition 2 of the USB stick, filesystem label PSBT_DATA).
+#
+# All of the mount logic lives here so that the boot-time attempt and the
+# "user plugged the stick in after boot" case cannot drift apart.
+#
+#   --once     one attempt (polled for DATA_WAIT_SECS), then exit
+#   --daemon   poll forever: mount when the volume appears, clean up when it
+#              disappears
+#   --umount   flush and unmount
+#
+# Why polling and not hotplug: there is no udev on this image (udev needs
+# AF_NETLINK and the kernel has no network stack), and
+# CONFIG_STATIC_USERMODEHELPER_PATH="" means the kernel cannot spawn a hotplug
+# helper either. devtmpfs still creates the block device node the instant the
+# stick enumerates, so a 1-second poll of blkid is all that is needed - and it
+# has no privileged listener that could be attacked.
+
+# shellcheck source=../lib/signeros/functions.sh
+. /usr/lib/signeros/functions.sh
+
+PIDFILE=/run/signeros-datawatch.pid
+POLL_SECS=1
+
+signeros_load_config
+
+# ---------------------------------------------------------------------------
+# fs_type_of <device>   -> vfat | exfat | <other> | empty
+# label_of <device>     -> filesystem label
+#
+# BusyBox blkid prints one line per volume:
+#   /dev/sda2: LABEL="PSBT_DATA" UUID="1234-ABCD" TYPE="vfat"
+# ---------------------------------------------------------------------------
+blkid_field() {
+	# $1 = device, $2 = field name
+	#
+	# The [ :] before the key is load-bearing, not decoration: without it,
+	# asking for TYPE would match the SEC_TYPE="msdos" that BusyBox blkid
+	# prints for FAT volumes and report the wrong filesystem. A word-boundary
+	# escape would also work on glibc, but this needs no regex extension.
+	/sbin/blkid "$1" 2>/dev/null \
+		| sed -n "s/.*[ :]$2=\"\\([^\"]*\\)\".*/\\1/p" | head -n1
+}
+
+# ---------------------------------------------------------------------------
+# find_data_dev
+#
+# Prints the device to mount, or nothing.
+#
+# Deliberate rules:
+#   * DATA_DEV from the config/command line wins outright.
+#   * Otherwise every block device whose label matches DATA_LABEL is a
+#     candidate, sorted for determinism.
+#   * More than one candidate is reported loudly rather than resolved
+#     silently. Signing the wrong file because two sticks had the same label
+#     is exactly the class of surprise this device exists to avoid.
+# ---------------------------------------------------------------------------
+find_data_dev() {
+	if [ -n "$DATA_DEV" ]; then
+		if [ -b "/dev/$DATA_DEV" ]; then
+			echo "/dev/$DATA_DEV"
+		elif [ -b "$DATA_DEV" ]; then
+			echo "$DATA_DEV"
+		fi
+		return
+	fi
+
+	# Partitions first, then whole disks. A USB stick formatted with no
+	# partition table at all - `mkfs.vfat /dev/sdb`, which is what cameras and
+	# some card readers produce - shows up as /dev/sdb with a FAT boot sector at
+	# offset 0 and no /dev/sdb1. Refusing to see those would be a support
+	# nightmare, and it costs nothing to accept them: the label and filesystem
+	# type checks below still exclude the boot disk, whose sector 0 holds a GPT
+	# rather than a FAT superblock.
+	_candidates=""
+	_count=0
+	for _dev in /dev/sd[a-z][0-9]* /dev/sd[a-z]; do
+		[ -b "$_dev" ] || continue
+		[ "$(blkid_field "$_dev" LABEL)" = "$DATA_LABEL" ] || continue
+		case "$(blkid_field "$_dev" TYPE)" in
+			vfat|exfat) ;;
+			*) continue ;;
+		esac
+		_candidates="$_candidates $_dev"
+		_count=$((_count + 1))
+	done
+
+	# shellcheck disable=SC2086 # deliberate word splitting to take the first
+	set -- $_candidates
+	_first="${1:-}"
+
+	# Announced through the kiosk, not with panel_msg. A second stick can only
+	# be plugged in while the machine is running, which is exactly when Qt owns
+	# the framebuffer - a VT write then lands on top of the transaction the
+	# operator is reading. warn_user also announces once instead of on every
+	# poll. Note that both this and the log line below stay off stdout: this
+	# function's stdout is its return value.
+	if [ "$_count" -gt 1 ]; then
+		warn_user "Several volumes are labelled $DATA_LABEL; using $_first." \
+			"Remove the extra stick and reboot if that is not the one you meant."
+	else
+		warn_user_clear
+	fi
+
+	[ -n "$_first" ] && echo "$_first"
+}
+
+# ---------------------------------------------------------------------------
+# mount_data <device>
+#
+# The zero-trust mount. Options, and why each one is there:
+#
+#   rw         the whole point: signed_<ts>.psbt has to be written back
+#   noexec     nothing on an untrusted stick is ever executed
+#   nodev      no device nodes can be smuggled in on it
+#   nosuid     setuid/setgid bits on the stick mean nothing
+#   sync       every write hits the medium before write() returns, so pulling
+#              the stick after "Signed" cannot lose the signature
+#   uid/gid    the mount, not the account, is what gives the unprivileged
+#              kiosk access. Root keeps the mount point itself.
+#   fmask=0117 files are 0660 (rw for the kiosk, nothing for anyone else)
+#   dmask=0007 directories 0770
+#
+# FAT and exFAT do not accept the same option set, so the two are built
+# separately rather than hoping the kernel ignores the extras.
+# ---------------------------------------------------------------------------
+mount_data() {
+	_dev="$1"
+
+	# Nothing but a block device gets past here. It costs one test, and it turns
+	# "the caller handed us something that is not a device path" into a legible
+	# line instead of a filesystem-type complaint about a string that was never
+	# a device in the first place.
+	if [ ! -b "$_dev" ]; then
+		log "refusing to mount '$_dev': not a block device"
+		return 1
+	fi
+
+	_type=$(blkid_field "$_dev" TYPE)
+
+	_common="rw,noexec,nodev,nosuid,sync,uid=1000,gid=1000,fmask=0117,dmask=0007"
+	case "$_type" in
+	vfat)
+		_opts="$_common,iocharset=utf8,shortname=mixed,flush,errors=remount-ro"
+		;;
+	exfat)
+		_opts="$_common,iocharset=utf8,errors=remount-ro"
+		;;
+	*)
+		log "refusing to mount $_dev: filesystem type '$_type' is not vfat or exfat"
+		return 1
+		;;
+	esac
+
+	mkdir -p "$MOUNT_POINT" 2>/dev/null
+
+	if ! mount -t "$_type" -o "$_opts" "$_dev" "$MOUNT_POINT" 2>/dev/null; then
+		log "mount of $_dev ($_type) on $MOUNT_POINT FAILED"
+		return 1
+	fi
+
+	# Verify the flags actually took. A mount that silently came up without
+	# noexec/nosuid must not be presented to the user as the safe one.
+	_actual=$(sed -n "s|^[^ ]* $MOUNT_POINT [^ ]* \\([^ ]*\\) .*|\\1|p" /proc/mounts | head -n1)
+	for _flag in rw noexec nodev nosuid; do
+		case ",$_actual," in
+			*",$_flag,"*) ;;
+			*)
+				log "SECURITY: $MOUNT_POINT came up without '$_flag' (got: $_actual); unmounting"
+				umount "$MOUNT_POINT" 2>/dev/null
+				return 1
+				;;
+		esac
+	done
+
+	log "mounted $_dev ($_type) on $MOUNT_POINT [$_actual]"
+	return 0
+}
+
+umount_data() {
+	if grep -q " $MOUNT_POINT " /proc/mounts 2>/dev/null; then
+		sync
+		if umount "$MOUNT_POINT" 2>/dev/null; then
+			log "unmounted $MOUNT_POINT"
+		else
+			# The kiosk may still hold a file open; give it a moment.
+			sleep 1
+			sync
+			umount -l "$MOUNT_POINT" 2>/dev/null \
+				&& log "lazily unmounted $MOUNT_POINT" \
+				|| log "WARNING: could not unmount $MOUNT_POINT"
+		fi
+	fi
+	return 0
+}
+
+is_mounted() {
+	grep -q " $MOUNT_POINT " /proc/mounts 2>/dev/null
+}
+
+# ---------------------------------------------------------------------------
+# Attempt for up to DATA_WAIT_SECS. USB enumeration on a cold boot regularly
+# takes a couple of seconds after init starts.
+# ---------------------------------------------------------------------------
+try_mount_for() {
+	_deadline="$1"
+	_elapsed=0
+	while [ "$_elapsed" -le "$_deadline" ]; do
+		if is_mounted; then
+			return 0
+		fi
+		_dev=$(find_data_dev)
+		if [ -n "$_dev" ]; then
+			mount_data "$_dev" && return 0
+		fi
+		sleep "$POLL_SECS"
+		_elapsed=$((_elapsed + POLL_SECS))
+	done
+	return 1
+}
+
+case "${1:---once}" in
+--once)
+	if try_mount_for "${DATA_WAIT_SECS:-8}"; then
+		exit 0
+	fi
+	panel_error "data partition not found" \
+		"No volume labelled $DATA_LABEL is present." \
+		"" \
+		"Partition 2 of the USB stick must be FAT32 or exFAT and" \
+		"carry the filesystem label $DATA_LABEL. Put unsigned PSBT" \
+		"files in its root directory." \
+		"" \
+		"Insert the stick now - it will be picked up automatically," \
+		"the signer does not need a restart."
+	exit 1
+	;;
+
+--daemon)
+	echo $$ > "$PIDFILE" 2>/dev/null
+	log "datawatch running (polling for $DATA_LABEL every ${POLL_SECS}s)"
+	while :; do
+		if is_mounted; then
+			# Still there? A stick pulled without unmounting leaves
+			# the mount behind with every access returning EIO.
+			_src=$(sed -n "s|^\\([^ ]*\\) $MOUNT_POINT .*|\\1|p" /proc/mounts | head -n1)
+			if [ -n "$_src" ] && [ ! -b "$_src" ]; then
+				log "data volume $_src disappeared; cleaning up"
+				umount -l "$MOUNT_POINT" 2>/dev/null
+			fi
+		else
+			_dev=$(find_data_dev)
+			if [ -n "$_dev" ]; then
+				log "data volume appeared at $_dev"
+				mount_data "$_dev"
+			fi
+		fi
+		sleep "$POLL_SECS"
+	done
+	;;
+
+--umount)
+	umount_data
+	exit 0
+	;;
+
+*)
+	echo "Usage: $0 {--once|--daemon|--umount}" >&2
+	exit 1
+	;;
+esac

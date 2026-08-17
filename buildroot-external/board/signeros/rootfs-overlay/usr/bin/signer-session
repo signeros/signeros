@@ -1,0 +1,306 @@
+#!/bin/sh
+#
+# signer-session - root-owned supervisor for the kiosk.
+#
+# Responsibilities, in order of importance:
+#
+#   1. Drop privileges. The signer runs as uid 1000 with no groups; everything
+#      it can reach it reaches through /etc/mdev.conf ownership and the data
+#      partition's mount options.
+#   2. Turn the kiosk's "power off" request into an actual poweroff. The
+#      unprivileged process cannot call reboot(2), so it exits with status 42
+#      and this script - which is root - runs the secure shutdown. That is the
+#      whole privilege interface between the GUI and the system: one integer.
+#   3. Pick a QPA plugin that will actually produce pixels on this machine, and
+#      fall back if the first choice fails.
+#   4. Restart the kiosk if it crashes, and stop restarting it if that is
+#      clearly not working, leaving a legible message on the panel.
+
+# shellcheck source=../lib/signeros/functions.sh
+. /usr/lib/signeros/functions.sh
+
+SIGNER_BIN=/usr/bin/btc_signer_gui
+EXIT_POWEROFF=42
+MAX_RAPID_FAILURES=5
+RAPID_SECS=5
+
+signeros_load_config
+
+# ---------------------------------------------------------------------------
+# Resource limits, inherited across setuidgid into the kiosk.
+#
+#   -l unlimited  lets the kiosk mlockall() its address space. There is no swap
+#                 device on this system, but mlock also excludes those pages
+#                 from any future one and from core dumps.
+#   -c 0          no core dumps. A core file of this process would be a seed
+#                 on disk. CONFIG_COREDUMP is off in the kernel too; belt and
+#                 braces, because this one is cheap.
+# ---------------------------------------------------------------------------
+ulimit -l unlimited 2>/dev/null
+ulimit -c 0 2>/dev/null
+
+# ---------------------------------------------------------------------------
+# Take ownership of the panel VT.
+#
+# Without this the framebuffer console keeps the keyboard: every key the
+# operator presses is echoed onto the panel by the kernel, on top of whatever
+# the GUI is drawing, and Ctrl-C on the panel would be a way to interrupt the
+# signer. Qt does prevent that - QFbVtHandler asks the VT for KDSKBMUTE /
+# KDSKBMODE=K_OFF - but only on file descriptor 0, and only if it is a tty:
+#
+#     if (isatty(0))
+#         m_tty = 0;
+#
+# S99signer starts this script through `start-stop-daemon --background`, which
+# calls setsid() and then points stdin at /dev/null, so fd 0 was never a tty
+# and Qt silently skipped the whole VT handover.
+#
+# Opening the VT here fixes both halves of that. It gives Qt a tty on fd 0, and
+# because start-stop-daemon made this process a session leader with no
+# controlling terminal, the open also makes the VT this session's controlling
+# terminal - which is what the kernel requires before it will accept the VT
+# ioctls from an unprivileged process:
+#
+#     if (current->signal->tty == tty || capable(CAP_SYS_TTY_CONFIG))
+#             perm = 1;
+#
+# The kiosk has no capabilities at all, so without the controlling terminal
+# every one of those ioctls would return EPERM even with the descriptor open.
+# The descriptor is opened here, while still root, and inherited across
+# setuidgid - the same arrangement as /dev/kmsg below.
+#
+# Consequence worth knowing: once the VT is muted the kernel no longer sees
+# Ctrl-Alt-Del, so the ::ctrlaltdel line in /etc/inittab only applies before
+# the GUI is up. Shutting down from the panel is the GUI's own button, which
+# reaches the same /usr/sbin/secure-poweroff.
+# ---------------------------------------------------------------------------
+# Tested before the redirection, not with `|| true` after it: a failed
+# redirection on `exec` terminates a non-interactive shell outright.
+if [ -c "$SIGNEROS_PANEL" ] && [ -r "$SIGNEROS_PANEL" ]; then
+	exec < "$SIGNEROS_PANEL"
+	log "panel VT $SIGNEROS_PANEL acquired as controlling terminal"
+else
+	log "WARNING: $SIGNEROS_PANEL is not a readable character device;"
+	log "WARNING: the framebuffer console will keep the keyboard"
+fi
+
+# ---------------------------------------------------------------------------
+# Environment for a display-server-less Qt process.
+# ---------------------------------------------------------------------------
+export HOME=/run/signer
+export XDG_RUNTIME_DIR=/run/signer
+export TMPDIR=/tmp
+
+# No fontconfig on the image: Qt is pointed straight at the font directory.
+export QT_QPA_FONTDIR="$FONT_DIR"
+# QT_QPA_FB_HIDECURSOR is deliberately NOT set here. The kiosk decides, from
+# what it finds in /dev/input: hidden on the touchscreen panel this appliance is
+# built around, drawn on a machine driven by a mouse or a trackpad, where an
+# invisible cursor means the operator cannot see where a click will land. Setting
+# it here would pre-empt that - the kiosk writes it with overwrite=0 so anything
+# already in the environment wins. Set it to 0 or 1 to force the issue.
+export QT_QPA_FB_TSLIB=0
+export QT_ENABLE_HIGHDPI_SCALING=1
+# Never let Qt try to reach a session bus or an accessibility bridge.
+export QT_ACCESSIBILITY=0
+export QT_NO_GLIB=1
+
+# Configuration the kiosk itself reads.
+export SIGNEROS_NETWORK="$NETWORK"
+export SIGNEROS_DATA_DIR="$MOUNT_POINT"
+export SIGNEROS_DATA_LABEL="$DATA_LABEL"
+export SIGNEROS_WRITE_FINAL_TX="$WRITE_FINAL_TX"
+
+# ---------------------------------------------------------------------------
+# plugin_exists <name>   e.g. plugin_exists libqeglfs.so
+# ---------------------------------------------------------------------------
+plugin_exists() {
+	for _dir in /usr/lib/qt/plugins/platforms /usr/lib/qt5/plugins/platforms \
+	            /usr/lib/qt6/plugins/platforms /usr/lib/plugins/platforms; do
+		[ -e "$_dir/$1" ] && return 0
+	done
+	return 1
+}
+
+# ---------------------------------------------------------------------------
+# pick_qpa
+#
+# eglfs when there is a DRM device and the plugin was built; linuxfb otherwise.
+# linuxfb still draws on the KMS framebuffer - via the kernel's DRM fbdev
+# emulation - it just does it without a GL stack.
+# ---------------------------------------------------------------------------
+pick_qpa() {
+	case "$QPA" in
+	linuxfb|eglfs)
+		echo "$QPA"
+		return
+		;;
+	esac
+
+	if [ -e /dev/dri/card0 ] && plugin_exists libqeglfs.so; then
+		echo eglfs
+	else
+		echo linuxfb
+	fi
+}
+
+uptime_secs() {
+	cut -d. -f1 /proc/uptime 2>/dev/null || echo 0
+}
+
+# ---------------------------------------------------------------------------
+# claim_input_devices
+#
+# Re-apply /etc/mdev.conf to the device nodes that exist now.
+#
+# S00early already ran `mdev -s`, but that was before USB enumeration had
+# finished: xHCI probing and usbhid binding are asynchronous, and this image has
+# no hotplug path at all to fix things up afterwards. udev needs AF_NETLINK and
+# there is no network stack; CONFIG_STATIC_USERMODEHELPER_PATH="" stops the
+# kernel spawning a helper. So every input device that appeared after S00early
+# kept devtmpfs's default root:root 0600 and was invisible to the kiosk, which
+# runs as uid 1000 in no supplementary group.
+#
+# The symptoms that came out of that were not obviously permission problems:
+#
+#   * No pointer. On a QEMU machine only the PS/2 nodes were readable, and the
+#     tablet the emulator actually routes pointer input to was not.
+#   * Keystrokes echoed onto the panel by the framebuffer console. The kiosk
+#     asks for EVIOCGRAB on every keyboard it opens, which is what stops the VT
+#     seeing them - but it can only grab a device it can open. The USB keyboard
+#     was not one of those, so the console kept reading it.
+#
+# Here rather than earlier because S01mount-data has already spent up to
+# DATA_WAIT_SECS waiting for the USB data partition by now, so enumeration is
+# done. Re-run before each kiosk start so a restart also re-claims.
+#
+# Note this is boot-time repair, not hotplug: Qt reads its device list once at
+# startup, so a keyboard plugged in later still needs the kiosk to restart.
+# ---------------------------------------------------------------------------
+claim_input_devices() {
+	/sbin/mdev -s 2>/dev/null
+	return 0
+}
+
+# ---------------------------------------------------------------------------
+# input_report
+#
+# Everything needed to answer "why does the keyboard or the touchpad not work
+# on this machine", printed on the panel, because a machine with no network, no
+# serial cable and no shell has nowhere else to put it.
+#
+# Enabled with signeros.inputdebug=1 on the kernel command line. Off by
+# default: it lists device nodes and driver names, which is exactly the sort of
+# detail an appliance should not volunteer, and it draws over the GUI.
+#
+# Read it in this order:
+#   1. /proc/bus/input/devices - what the KERNEL bound a driver to. A touchpad
+#      missing here is a driver problem: see section 5a of
+#      board/signeros/linux_hardening_defconfig.
+#   2. ls -l /dev/input - whether group `signer` can actually read those nodes.
+#      Anything not root:signer means `mdev -s` did not apply /etc/mdev.conf.
+#   3. The kiosk's own stderr, which in this mode goes to the panel instead of
+#      /dev/kmsg: one QT_QPA_EVDEV_*_PARAMETERS line per class of device it
+#      handed to Qt, plus a "touchpad ..." line per pad it drives itself (Qt
+#      has no handler for those - see src/ui/touchpad.h). A pad listed by the
+#      kernel in (1) but absent from both is one this build classified as a
+#      touchscreen: it will tap but the pointer will not move.
+# ---------------------------------------------------------------------------
+input_report() {
+	panel_clear
+	panel_msg "SignerOS input debug (signeros.inputdebug=1)" \
+		"platform: $1" ""
+	panel_msg "--- kernel input devices (name / handlers) ---"
+	sed -n 's/^N: Name=/  /p;s/^H: Handlers=/    handlers:/p' \
+		/proc/bus/input/devices > "$SIGNEROS_PANEL" 2>/dev/null
+	panel_msg "" "--- /dev/input ownership ---"
+	ls -l /dev/input > "$SIGNEROS_PANEL" 2>/dev/null
+	panel_msg "" "--- i2c / hid / input driver messages ---"
+	dmesg 2>/dev/null \
+		| grep -iE 'i2c[_-]hid|elan|synaptics|rmi4|psmouse|atkbd|hid-multitouch' \
+		| tail -n 12 > "$SIGNEROS_PANEL" 2>/dev/null
+	panel_msg "" "starting kiosk in 8s; its stderr follows on this screen"
+	sleep 8
+}
+
+# ---------------------------------------------------------------------------
+# Supervision loop
+# ---------------------------------------------------------------------------
+platform=$(pick_qpa)
+failures=0
+
+# Before input_report, so the ownership listing it prints reflects what the
+# kiosk will actually be able to open rather than the state S00early left.
+claim_input_devices
+
+if [ "$(cmdline_get inputdebug 0)" = "1" ]; then
+	input_report "$platform"
+	kiosk_log="$SIGNEROS_PANEL"
+else
+	kiosk_log=/dev/kmsg
+fi
+
+log "starting kiosk (platform=$platform, network=$NETWORK)"
+
+while : ; do
+	started=$(uptime_secs)
+
+	claim_input_devices
+
+	# The command from the specification, with the platform resolved for
+	# this machine:
+	#
+	#     /usr/bin/btc_signer_gui -platform eglfs
+	#
+	# stdout/stderr go to /dev/kmsg (opened here, while still root, so the
+	# unprivileged child inherits an already-open fd). Qt diagnostics then
+	# land in the kernel ring buffer where `dmesg` and the serial console can
+	# see them, instead of being painted over the transaction on the panel.
+	# With signeros.inputdebug=1 they go to the panel instead - that is the
+	# whole point of that mode.
+	setuidgid signer "$SIGNER_BIN" -platform "$platform" >> "$kiosk_log" 2>&1
+	rc=$?
+
+	stopped=$(uptime_secs)
+	elapsed=$((stopped - started))
+
+	if [ "$rc" -eq "$EXIT_POWEROFF" ]; then
+		log "kiosk requested secure shutdown"
+		exec /usr/sbin/secure-poweroff
+	fi
+
+	log "kiosk exited with status $rc after ${elapsed}s"
+
+	# A QPA plugin that cannot open a screen dies immediately. Try the other
+	# one once before giving up - a machine where eglfs fails is exactly the
+	# machine where linuxfb works.
+	if [ "$elapsed" -lt "$RAPID_SECS" ] && [ "$platform" = "eglfs" ]; then
+		log "eglfs failed to start; falling back to linuxfb"
+		platform=linuxfb
+		failures=0
+		continue
+	fi
+
+	if [ "$elapsed" -lt "$RAPID_SECS" ]; then
+		failures=$((failures + 1))
+	else
+		failures=0
+	fi
+
+	if [ "$failures" -ge "$MAX_RAPID_FAILURES" ]; then
+		panel_error "the signer application will not start" \
+			"btc_signer_gui exited $failures times in a row" \
+			"with status $rc (platform: $platform)." \
+			"" \
+			"This is a build or hardware problem, not something" \
+			"you can fix by retrying. Nothing has been signed and" \
+			"no key material was entered." \
+			"" \
+			"Power the machine off and check dmesg on a test build:" \
+			"  scripts/test_in_qemu.sh --gui"
+		log "giving up after $failures rapid failures"
+		exit 1
+	fi
+
+	sleep 2
+done

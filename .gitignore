@@ -1,0 +1,54 @@
+# Buildroot checkout (pinned and re-cloned by scripts/build.sh)
+/buildroot/
+
+# Build output: toolchain, staging, target, images, host tools
+/output/
+
+# Downloaded source tarballs, if BR2_DL_DIR points inside the tree
+/dl/
+
+# Secure Boot signing keys (scripts/make_sb_keys.sh). The private key must never
+# be committed: whoever holds it can build an image your appliance will boot.
+/keys/
+
+# ...and the same rule again, by shape rather than by location. keys/ is only
+# where make_sb_keys.sh puts them by default; --dir writes anywhere, and an
+# early run of it left a second pair loose in the repository root, which the
+# line above does not cover. Nothing in this tree is legitimately named like
+# this, so the blunt version costs nothing and closes the case where the
+# mistake is a path nobody thought of.
+*.key
+*.crt
+*.cer
+*.der
+*.pem
+*.p12
+*.pfx
+
+# Python bytecode from the fixture generator
+__pycache__/
+*.pyc
+
+# Test fixtures. make_test_data.py requires --out-dir, so these normally land
+# under output/ and are covered already; this is the same by-shape rule the keys
+# above get, for the run that was pointed at the tree instead. test_mnemonic.txt
+# is a real BIP39 mnemonic even when it is only a testnet one, and the habit of
+# seeing one in a diff is the thing worth not acquiring.
+test_mnemonic.txt
+expected.json
+*.psbt
+*.psbt.bad
+
+# Images and boot payloads. output/ holds them, but flash.sh and a hand copy
+# both write wherever they are told.
+*.img
+*.efi
+bzImage
+
+# Editor noise
+*.swp
+*~
+.vscode/
+.idea/
+compile_commands.json
+signeros-web/README.md

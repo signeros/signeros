@@ -1,0 +1,1281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0d1117">
+<meta name="description" content="SignerOS — a USB stick that turns a computer you already own into an offline Bitcoin signing device. It cannot go online, it cannot touch the machine's hard drives, and it leaves nothing behind.">
+<title>SignerOS — Air-Gapped Bitcoin Signing OS</title>
+<style>
+/* No webfonts, no CDN, no analytics: this page makes zero network requests.
+   The palette is the kiosk's own — src/btc_signer_gui/src/ui/theme.h. */
+:root{
+  --bg:#0d1117; --bg2:#10151c; --panel:#161b22; --panel2:#11161d;
+  --line:#30363d; --line2:#222932;
+  --ink:#e6edf3; --dim:#9aa4b2; --mut:#6b7683;
+  --amber:#f7931a; --amber2:#ffb54d; --green:#3fb950; --red:#f85149; --warnc:#d29922;
+  --disp:ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+  --sans:ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+  --mono:ui-monospace,'SFMono-Regular','Cascadia Mono','DejaVu Sans Mono',Menlo,Consolas,monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.65;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+::selection{background:var(--amber);color:#0a0a0a}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--line);border:2px solid var(--bg)}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:1160px;margin:0 auto;padding:0 24px}
+section{scroll-margin-top:84px}
+
+/* grain */
+.noise{position:fixed;inset:-60%;width:220%;height:220%;pointer-events:none;z-index:999;opacity:.05;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation:grain 9s steps(10) infinite}
+@keyframes grain{0%,100%{transform:translate(0,0)}20%{transform:translate(-2%,2%)}40%{transform:translate(2%,-1%)}60%{transform:translate(-1%,-2%)}80%{transform:translate(1%,2%)}}
+
+/* nav */
+nav.top{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(7,9,13,.93);border-bottom:1px solid var(--line2)}
+.topin{display:flex;align-items:center;justify-content:space-between;height:58px}
+.brand{font-family:var(--mono);font-size:14px;letter-spacing:.06em}
+.brand b{color:var(--amber);font-weight:600}
+.navlinks{display:flex;gap:26px}
+.navlinks a{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);transition:color .2s}
+.navlinks a:hover{color:var(--amber)}
+.ghpill{font-family:var(--mono);font-size:11px;letter-spacing:.1em;border:1px solid var(--line);padding:7px 13px;color:var(--dim);transition:.2s}
+.ghpill:hover{border-color:var(--amber);color:var(--amber);transform:translateY(-1px)}
+
+/* hero */
+.hero{padding:150px 0 90px;position:relative;background:
+  radial-gradient(1000px 500px at 85% -10%,rgba(247,147,26,.07),transparent 60%),
+  radial-gradient(700px 400px at 0% 110%,rgba(113,224,138,.04),transparent 60%),var(--bg)}
+.hero-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:56px;align-items:start}
+.term{border:1px solid var(--line);background:var(--panel2);border-radius:4px;box-shadow:0 24px 60px rgba(0,0,0,.55);position:relative;overflow:hidden}
+.term::after{content:"";position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(255,255,255,.022) 0 1px,transparent 1px 3px)}
+.term-head{display:flex;align-items:center;gap:7px;padding:11px 14px;border-bottom:1px solid var(--line);position:relative;z-index:2}
+.dot{width:9px;height:9px;border-radius:1px}
+.dot.a{background:var(--amber)}.dot.g{background:var(--green)}.dot.d{background:var(--mut)}
+.term-title{margin-left:10px;font-family:var(--mono);font-size:11px;color:var(--mut);letter-spacing:.08em}
+.term-body{padding:18px 18px 22px;font-family:var(--mono);font-size:12.5px;line-height:1.9;min-height:186px;position:relative;z-index:2}
+.lg{color:var(--dim)}.lg .ok{color:var(--green);font-weight:600}.lg .pr{color:var(--amber)}
+.crt{display:inline-block;width:8px;height:15px;background:var(--amber);vertical-align:-2px;animation:blink 1s steps(2) infinite}
+@keyframes blink{50%{opacity:0}}
+.display{font-family:var(--disp);font-weight:700;font-size:clamp(2.6rem,6.4vw,4.6rem);line-height:1;letter-spacing:.01em;margin:34px 0 18px;text-transform:uppercase}
+.display .blk{color:var(--amber)}
+.lede{font-size:clamp(1.05rem,1.6vw,1.22rem);color:var(--dim);max-width:34em}
+.lede em{color:var(--ink);font-style:normal;border-bottom:1px solid var(--amber)}
+.chips{display:flex;flex-wrap:wrap;gap:9px;margin:26px 0 30px}
+.chip{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;border:1px solid var(--line);color:var(--dim);padding:6px 11px}
+.chip.hot{border-color:rgba(247,147,26,.5);color:var(--amber)}
+.btnrow{display:flex;flex-wrap:wrap;gap:14px}
+.btn{display:inline-block;font-family:var(--mono);font-size:12.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;padding:14px 24px;border:1px solid var(--line);border-radius:2px;cursor:pointer;transition:transform .18s ease,box-shadow .18s ease,border-color .18s,color .18s;background:transparent;color:var(--ink)}
+.btn-solid{background:var(--amber);border-color:var(--amber);color:#0a0a0a;box-shadow:4px 4px 0 rgba(247,147,26,.22)}
+.btn-solid:hover{transform:translate(-2px,-2px);box-shadow:7px 7px 0 rgba(247,147,26,.3)}
+.btn-ghost:hover{border-color:var(--amber);color:var(--amber);transform:translate(-2px,-2px);box-shadow:5px 5px 0 rgba(247,147,26,.12)}
+.hero-right .term{margin-top:8px}
+.spec-list{list-style:none;padding:20px;font-family:var(--mono);font-size:12.5px}
+.spec-list li{display:flex;gap:12px;padding:11px 0;border-bottom:1px dashed var(--line2);color:var(--dim)}
+.spec-list li:last-child{border-bottom:0}
+.spec-list .n{color:var(--amber)}
+.spec-foot{padding:12px 20px;border-top:1px solid var(--line);font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;color:var(--green)}
+.stamp{margin-top:22px;border:2px solid rgba(247,147,26,.45);color:rgba(247,147,26,.8);font-family:var(--mono);font-size:10px;letter-spacing:.3em;text-align:center;padding:9px;transform:rotate(-2deg);width:max-content;margin-left:auto}
+.hfade{opacity:0;transform:translateY(18px);animation:hf .8s cubic-bezier(.2,.7,.2,1) forwards}
+@keyframes hf{to{opacity:1;transform:none}}
+.scrollcue{position:absolute;bottom:22px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:10px;letter-spacing:.3em;color:var(--mut);animation:bob 2.2s ease-in-out infinite}
+@keyframes bob{50%{transform:translate(-50%,7px)}}
+
+/* ticker */
+.ticker{border-top:1px solid var(--line2);border-bottom:1px solid var(--line2);background:var(--bg2);overflow:hidden;white-space:nowrap}
+.tk-track{display:inline-flex;animation:tk 34s linear infinite;padding:13px 0}
+.ticker:hover .tk-track{animation-play-state:paused}
+.tk-track span{font-family:var(--mono);font-size:11.5px;letter-spacing:.2em;color:var(--dim);padding-right:8px}
+.tk-track i{font-style:normal;color:var(--amber);padding-right:8px}
+@keyframes tk{to{transform:translateX(-50%)}}
+
+/* sections */
+.sec{padding:110px 0;border-top:1px solid var(--line2)}
+.shead{display:flex;align-items:center;gap:18px;margin-bottom:14px}
+.snum{font-family:var(--mono);font-size:12px;letter-spacing:.2em;color:var(--amber);white-space:nowrap}
+.srule{flex:1;height:1px;background:var(--line2)}
+.stag{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;color:var(--mut);text-transform:uppercase;white-space:nowrap}
+.h2{font-family:var(--disp);font-weight:700;font-size:clamp(1.7rem,3.6vw,2.6rem);text-transform:uppercase;letter-spacing:.005em;line-height:1.12;margin-bottom:18px}
+.intro{color:var(--dim);max-width:52em;margin-bottom:8px}
+
+/* reveal / line mask */
+.rv{opacity:0;transform:translateY(22px);transition:opacity .7s ease,transform .7s cubic-bezier(.2,.7,.2,1);transition-delay:var(--d,0s)}
+.rv.in{opacity:1;transform:none}
+.lm{overflow:hidden}
+.lm>span{display:block;transform:translateY(112%);transition:transform .85s cubic-bezier(.2,.7,.2,1)}
+.lm.in>span{transform:none}
+
+/* premise */
+.cols{display:grid;grid-template-columns:.92fr 1.08fr;gap:64px;align-items:start}
+.col-stick{position:sticky;top:96px}
+.col-stick .body{color:var(--dim);margin:18px 0 26px;max-width:30em}
+.tlink{font-family:var(--mono);font-size:12px;letter-spacing:.12em;color:var(--amber);border-bottom:1px dashed rgba(247,147,26,.4);padding-bottom:3px;transition:.2s}
+.tlink:hover{color:var(--amber2);border-bottom-style:solid}
+.pblock{border-top:1px solid var(--line);padding:28px 10px;display:grid;grid-template-columns:70px 1fr;gap:18px;transition:background .25s}
+.pblock:last-child{border-bottom:1px solid var(--line)}
+.pblock:hover{background:rgba(247,147,26,.03)}
+.pnum{font-family:var(--mono);font-size:13px;color:var(--mut);transition:color .25s;padding-top:4px}
+.pblock:hover .pnum{color:var(--amber)}
+.pblock h3{font-family:var(--disp);font-weight:700;font-size:1.5rem;letter-spacing:.05em;text-transform:uppercase;margin-bottom:8px}
+.pblock p{color:var(--dim);font-size:.95rem;max-width:36em}
+.ptags{display:flex;flex-wrap:wrap;gap:7px;margin-top:14px}
+.ptag{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--green);border:1px solid rgba(113,224,138,.25);padding:4px 9px}
+
+/* app mock */
+.appwin{border:1px solid var(--line);background:var(--panel);border-radius:6px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.5);margin-top:34px}
+.atabs{display:flex;border-bottom:1px solid var(--line);background:var(--bg2);overflow-x:auto}
+.atab{font-family:var(--mono);font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;padding:15px 22px;color:var(--mut);border-right:1px solid var(--line2);cursor:pointer;transition:.2s;white-space:nowrap;background:none;border-top:none;border-bottom:none;border-left:none}
+.atab:hover{color:var(--dim)}
+.atab.on{color:var(--amber);background:var(--panel2);box-shadow:inset 0 -2px 0 var(--amber)}
+.apanel{display:none;padding:30px;min-height:340px}
+.apanel.on{display:block;animation:fup .45s cubic-bezier(.2,.7,.2,1)}
+@keyframes fup{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.alabel{font-family:var(--mono);font-size:10.5px;letter-spacing:.18em;color:var(--mut);margin:20px 0 12px}
+.alabel:first-child{margin-top:0}
+.seed-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;max-width:640px}
+.wcell{font-family:var(--mono);font-size:12.5px;border:1px solid var(--line);background:var(--panel2);padding:9px 11px;display:flex;gap:9px}
+.wcell b{color:var(--mut);font-weight:400;font-size:10px;padding-top:2px}
+.wcell.pop{animation:wp .4s cubic-bezier(.2,.7,.2,1) both;animation-delay:var(--d)}
+@keyframes wp{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:none}}
+.xbox{display:flex;gap:10px;align-items:stretch;max-width:760px}
+.xout{flex:1;font-family:var(--mono);font-size:11.5px;line-height:1.7;word-break:break-all;background:var(--panel2);border:1px solid var(--line);padding:13px 15px;color:var(--amber2);min-height:52px}
+.copy{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;border:1px solid var(--line);background:transparent;color:var(--dim);padding:0 15px;cursor:pointer;transition:.2s;white-space:nowrap}
+.copy:hover{border-color:var(--amber);color:var(--amber)}
+.copy.did{border-color:var(--green);color:var(--green)}
+.note{font-family:var(--mono);font-size:10.5px;color:var(--mut);margin-top:14px;letter-spacing:.06em}
+.mne{font-family:var(--mono);font-size:12.5px;background:var(--panel2);border:1px solid var(--line);padding:14px 16px;color:var(--ink);word-break:break-word;max-width:760px}
+.srow{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
+.psbtsrc{font-family:var(--mono);font-size:11.5px;color:var(--dim);background:var(--panel2);border:1px dashed var(--line);padding:14px 16px;word-break:break-all;max-width:760px}
+.vrow{display:flex;justify-content:space-between;gap:16px;font-family:var(--mono);font-size:12px;border-bottom:1px dashed var(--line2);padding:10px 2px;color:var(--dim);max-width:820px;flex-wrap:wrap}
+.vrow>span{min-width:0;word-break:break-all}
+.vrow b{color:var(--ink);font-weight:500;word-break:break-all;text-align:right;margin-left:auto}
+.vrow.warn b{color:var(--amber)}
+#signStatus{margin-top:22px;font-family:var(--mono);font-size:12.5px}
+.bar{height:3px;background:var(--line2);max-width:560px;margin:14px 0;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--amber);transition:width .5s ease}
+.signed{color:var(--green)}
+.simnote{font-family:var(--mono);font-size:11px;color:var(--mut);margin-top:16px;letter-spacing:.04em}
+.simnote i{color:var(--amber);font-style:normal}
+/* wizard walkthrough: one .apage per real screen of the app */
+.apage{display:none}
+.apage.on{display:block;animation:fup .35s cubic-bezier(.2,.7,.2,1)}
+.pagenav{display:flex;align-items:center;gap:16px;border-top:1px solid var(--line);background:var(--bg2);padding:14px 30px}
+.pgbtn{font-family:var(--mono);font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;background:transparent;border:1px solid var(--line);color:var(--dim);padding:9px 16px;cursor:pointer;transition:.2s}
+.pgbtn:hover:not(:disabled){border-color:var(--amber);color:var(--amber)}
+.pgbtn:disabled{opacity:.32;cursor:default}
+.pgind{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--mut);margin-left:auto;margin-right:auto}
+.cardwarn,.cardok{border:1px solid rgba(210,153,34,.45);background:rgba(210,153,34,.06);padding:16px 18px;max-width:760px}
+.cardok{border-color:rgba(63,185,80,.4);background:rgba(63,185,80,.05)}
+.cardwarn h5,.cardok h5{font-family:var(--mono);font-size:11px;letter-spacing:.18em;color:var(--warnc,#d29922);margin-bottom:9px}
+.cardok h5{color:var(--green)}
+.cardwarn p,.cardok p{font-size:.9rem;color:var(--dim);margin-bottom:9px}
+.cardwarn p:last-child,.cardok p:last-child{margin-bottom:0}
+.btnstrip{display:flex;flex-wrap:wrap;gap:8px;max-width:760px}
+.fkey{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;border:1px solid var(--line);background:var(--panel2);color:var(--dim);padding:9px 15px}
+.fkey.on{border-color:var(--amber);color:var(--amber);background:rgba(247,147,26,.08)}
+.fkey.prim{background:var(--amber);border-color:var(--amber);color:#10141c;font-weight:600}
+.wizfoot{display:flex;flex-wrap:wrap;gap:9px;align-items:center;margin-top:24px;padding-top:16px;border-top:1px dashed var(--line2)}
+.wizfoot .sp{flex:1}
+.meter{height:10px;background:var(--panel2);border:1px solid var(--line);max-width:560px;margin:12px 0 8px}
+.meter i{display:block;height:100%;background:var(--amber)}
+.pad{border:1px dashed var(--line);background:var(--panel2);color:var(--mut);font-size:.86rem;text-align:center;padding:26px 14px;max-width:760px;line-height:1.7}
+.wcell.hid{color:var(--mut)}
+.wcell.act{border-color:var(--amber);color:var(--amber)}
+.wcell.bad{border-color:var(--red);color:var(--red)}
+.filebox{font-family:var(--mono);font-size:11.5px;line-height:1.75;background:var(--panel2);border:1px solid var(--line);padding:15px 17px;max-width:820px;overflow-x:auto;white-space:pre;color:var(--dim)}
+.filebox b{color:var(--amber2);font-weight:500}
+.filebox u{color:var(--ink);text-decoration:none}
+.flist{max-width:640px;border:1px solid var(--line);background:var(--panel2)}
+.flist div{font-family:var(--mono);font-size:12px;padding:11px 14px;border-bottom:1px solid var(--line2);color:var(--dim);display:flex;justify-content:space-between;gap:14px}
+.flist div:last-child{border-bottom:0}
+.flist div.sel{color:var(--amber);background:rgba(247,147,26,.07)}
+.big{font-family:var(--mono);font-size:15px;color:var(--ink);letter-spacing:.06em}
+
+/* ritual */
+.ritual{display:flex;overflow-x:auto;margin-top:40px;padding-bottom:14px;scroll-snap-type:x proximity}
+.step{min-width:225px;max-width:225px;border-left:1px solid var(--line);padding:6px 22px 10px;position:relative;scroll-snap-align:start;transition:background .25s}
+.step:hover{background:rgba(247,147,26,.03)}
+.step::before{content:"→";position:absolute;top:6px;right:14px;color:var(--mut);font-family:var(--mono)}
+.step:last-child::before{content:""}
+.step .sn{font-family:var(--mono);font-size:26px;color:var(--mut);transition:color .25s}
+.step:hover .sn{color:var(--amber)}
+.step h4{font-family:var(--disp);font-weight:700;font-size:1.2rem;letter-spacing:.06em;text-transform:uppercase;margin:10px 0 8px}
+.step p{font-size:.86rem;color:var(--dim)}
+.step .where{display:inline-block;margin-top:12px;font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;padding:4px 8px;border:1px solid var(--line2);color:var(--mut)}
+.step .where.hot{color:var(--amber);border-color:rgba(247,147,26,.4)}
+.step .where.cold{color:var(--green);border-color:rgba(113,224,138,.3)}
+
+/* topology */
+.ttoggle{display:flex;flex-wrap:wrap;gap:0;margin:34px 0 0;border:1px solid var(--line);width:max-content;max-width:100%}
+.tbtn{font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;padding:13px 24px;color:var(--mut);cursor:pointer;background:none;border:none;transition:.2s}
+.tbtn.on{background:var(--amber);color:#0a0a0a;font-weight:600}
+.frame{border:1px solid var(--line);background:var(--panel);padding:40px 34px;margin-top:-1px;position:relative}
+.frame::before{content:"";position:absolute;inset:0;background:radial-gradient(600px 300px at 50% 0%,rgba(247,147,26,.05),transparent 70%);pointer-events:none}
+.topo{display:none;position:relative;z-index:2}
+.topo.on{display:block;animation:fup .5s cubic-bezier(.2,.7,.2,1)}
+.tflow{display:flex;align-items:stretch;justify-content:center;gap:0;flex-wrap:wrap}
+.node{border:1px solid var(--line);background:var(--panel2);padding:18px 20px;min-width:200px;position:relative}
+.node h5{font-family:var(--mono);font-size:12px;letter-spacing:.1em;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.node p{font-size:.8rem;color:var(--dim);line-height:1.5}
+.pulse{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pl 1.8s ease-in-out infinite}
+.pulse.off{background:var(--amber)}
+@keyframes pl{50%{opacity:.25}}
+.tarrow{display:flex;flex-direction:column;justify-content:center;align-items:center;padding:0 18px;font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--mut);gap:6px}
+.tarrow .ln{color:var(--amber);letter-spacing:0;font-size:14px}
+.msgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:26px}
+.conn-svg{width:100%;height:64px;display:block}
+.conn-svg path{fill:none;stroke:var(--amber);stroke-width:1.5;stroke-dasharray:6 6;opacity:.55;animation:dash 1.4s linear infinite}
+@keyframes dash{to{stroke-dashoffset:-24}}
+.tcap{margin-top:26px;font-family:var(--mono);font-size:12px;color:var(--dim);border-left:2px solid var(--amber);padding-left:14px}
+.tcap b{color:var(--ink);font-weight:600}
+
+/* step-by-step walkthrough (2-of-2) */
+.wt{margin-top:4px}
+.wstep{border-top:1px solid var(--line);padding:26px 4px;display:grid;grid-template-columns:62px 1fr;gap:18px;transition:background .25s}
+.wstep:last-child{border-bottom:1px solid var(--line)}
+.wstep:hover{background:rgba(247,147,26,.03)}
+.wn{font-family:var(--mono);font-size:13px;color:var(--mut);padding-top:5px;transition:color .25s}
+.wstep:hover .wn{color:var(--amber)}
+.wstep h4{font-family:var(--disp);font-weight:700;font-size:1.24rem;letter-spacing:.05em;text-transform:uppercase;margin-bottom:9px}
+.wstep p{color:var(--dim);font-size:.92rem;max-width:46em;margin-bottom:11px}
+.wstep p:last-child{margin-bottom:0}
+.wstep b{color:var(--ink);font-weight:600}
+.wstep .where{display:inline-block;margin-bottom:11px;font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;padding:4px 8px;border:1px solid var(--line2);color:var(--mut)}
+.wstep .where.hot{color:var(--amber);border-color:rgba(247,147,26,.4)}
+.wstep .where.cold{color:var(--green);border-color:rgba(113,224,138,.3)}
+.wpath{font-family:var(--mono);font-size:11.5px;background:var(--panel2);border-left:2px solid var(--amber);padding:10px 13px;margin:0 0 11px;color:var(--ink);max-width:46em;overflow-x:auto;white-space:nowrap}
+.wpath i{color:var(--mut);font-style:normal;user-select:none}
+.wwarn{font-family:var(--mono);font-size:11px;color:var(--red);letter-spacing:.04em;max-width:46em}
+
+/* download */
+.dlgrid{display:grid;grid-template-columns:1.05fr .95fr;gap:26px;margin-top:40px}
+.dlcard{border:1px solid var(--line);background:var(--panel);padding:34px;position:relative;overflow:hidden}
+.dlcard::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:var(--amber)}
+.dllabel{font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;color:var(--mut);margin-bottom:18px}
+.dlname{font-family:var(--mono);font-size:clamp(.95rem,2vw,1.25rem);color:var(--amber2);word-break:break-all;font-weight:500}
+.dlmeta{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0 28px}
+.dlmeta span{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;border:1px solid var(--line2);color:var(--dim);padding:5px 10px}
+.dlmeta span.hl{border-color:rgba(247,147,26,.4);color:var(--amber)}
+.dlsub{margin-top:20px;font-family:var(--mono);font-size:11px;color:var(--mut)}
+.dlsub a{color:var(--dim);border-bottom:1px dashed var(--line);transition:.2s}
+.dlsub a:hover{color:var(--amber);border-color:var(--amber)}
+.verify{border:1px solid var(--line);background:var(--bg2);padding:34px}
+.verify h3{font-family:var(--disp);font-weight:700;letter-spacing:.06em;font-size:1.3rem;text-transform:uppercase;margin-bottom:8px}
+.verify .vsub{font-size:.88rem;color:var(--dim);margin-bottom:22px}
+.hashbox{display:flex;align-items:stretch;gap:10px;margin-bottom:24px}
+.hash{flex:1;font-family:var(--mono);font-size:11.5px;word-break:break-all;background:var(--panel2);border:1px solid var(--line);padding:13px 15px;color:var(--green);line-height:1.7}
+.cmd{font-family:var(--mono);font-size:12px;background:var(--panel2);border-left:2px solid var(--amber);padding:11px 14px;margin:10px 0;color:var(--ink);overflow-x:auto}
+.cmd b{color:var(--mut);font-weight:400;user-select:none}
+.vwarn{font-family:var(--mono);font-size:11px;color:var(--red);margin-top:18px;letter-spacing:.04em}
+
+/* burn */
+.reqs{display:flex;flex-wrap:wrap;gap:10px;margin:34px 0}
+.req{font-family:var(--mono);font-size:11px;letter-spacing:.1em;border:1px dashed var(--line);color:var(--dim);padding:10px 15px}
+.req i{font-style:normal;color:var(--amber);margin-right:7px}
+.otabs{display:flex;border:1px solid var(--line);border-bottom:none;width:max-content}
+.otab{font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;padding:13px 26px;background:var(--bg2);color:var(--mut);cursor:pointer;border:none;border-right:1px solid var(--line);transition:.2s}
+.otab:last-child{border-right:none}
+.otab.on{background:var(--panel);color:var(--amber);box-shadow:inset 0 2px 0 var(--amber)}
+.opanel{display:none;border:1px solid var(--line);background:var(--panel);padding:36px}
+.opanel.on{display:block;animation:fup .4s ease}
+.opanel h3{font-family:var(--disp);font-weight:700;font-size:1.35rem;letter-spacing:.05em;text-transform:uppercase;margin-bottom:6px}
+.opanel .osub{color:var(--dim);font-size:.92rem;margin-bottom:24px}
+.olist{list-style:none;counter-reset:st;max-width:640px}
+.olist li{counter-increment:st;position:relative;padding:13px 0 13px 52px;border-bottom:1px dashed var(--line2);color:var(--dim);font-size:.93rem}
+.olist li::before{content:counter(st,decimal-leading-zero);position:absolute;left:0;top:14px;font-family:var(--mono);font-size:12px;color:var(--amber)}
+.olist b{color:var(--ink);font-weight:600}
+.olist code,.body code,p code{font-family:var(--mono);font-size:.86em;background:var(--panel2);border:1px solid var(--line2);padding:2px 7px;color:var(--amber2)}
+.extlink{color:var(--amber);border-bottom:1px dashed rgba(247,147,26,.4);transition:.2s}
+.extlink:hover{color:var(--amber2);border-bottom-style:solid}
+.easy{border:1px solid rgba(247,147,26,.45);background:rgba(247,147,26,.05);padding:22px 26px;margin-top:30px;max-width:640px}
+.easy h4{font-family:var(--mono);font-size:11px;letter-spacing:.2em;color:var(--amber);margin-bottom:10px}
+.easy p{font-size:.9rem;color:var(--dim)}
+.dd-toggle{font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;color:var(--amber);background:none;border:1px dashed rgba(247,147,26,.4);padding:11px 18px;cursor:pointer;margin-top:26px;transition:.2s}
+.dd-toggle:hover{background:rgba(247,147,26,.08)}
+.ddzone{border-left:2px solid var(--red);background:rgba(255,106,91,.04);padding:22px 26px;margin-top:18px;max-width:680px;animation:fup .4s ease}
+.ddzone h5{font-family:var(--mono);font-size:11px;letter-spacing:.16em;color:var(--red);margin-bottom:12px}
+.ddzone p{font-size:.88rem;color:var(--dim);margin-bottom:10px}
+.ddzone .cmd{margin:12px 0}
+
+/* secure boot */
+.sbgrid{display:grid;grid-template-columns:1fr 1fr;gap:26px;margin-top:38px;align-items:start}
+.sbcol{border:1px solid var(--line);background:var(--panel);padding:32px}
+.sbcol h3{font-family:var(--disp);font-weight:700;font-size:1.3rem;letter-spacing:.05em;text-transform:uppercase;display:flex;gap:12px;align-items:center;margin-bottom:18px}
+.sbadge{font-family:var(--mono);font-size:10px;letter-spacing:.16em;padding:5px 10px}
+.sbadge.dis{background:rgba(255,106,91,.12);color:var(--red);border:1px solid rgba(255,106,91,.4)}
+.sbadge.en{background:rgba(113,224,138,.1);color:var(--green);border:1px solid rgba(113,224,138,.35)}
+.vtable{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px;margin-top:8px}
+.vtable td{padding:10px 6px;border-bottom:1px dashed var(--line2);color:var(--dim)}
+.vtable td:last-child{color:var(--amber2);text-align:right}
+.vtable tr:hover td{color:var(--ink)}
+.warnbig{margin-top:26px;border:1px solid var(--red);background:rgba(255,106,91,.06);padding:30px;display:flex;gap:22px;align-items:flex-start}
+.warnbig .wic{font-family:var(--mono);font-size:26px;color:var(--red);line-height:1;flex-shrink:0}
+.warnbig h4{font-family:var(--disp);font-weight:700;font-size:1.5rem;letter-spacing:.05em;text-transform:uppercase;color:var(--red);margin-bottom:8px}
+.warnbig p{color:var(--dim);font-size:.93rem;max-width:56em}
+.sbnote{margin-top:26px;color:var(--dim);font-size:.92rem;max-width:60em}
+
+/* faq */
+.faq{margin-top:34px;border-bottom:1px solid var(--line)}
+details{border-top:1px solid var(--line)}
+summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:20px;padding:22px 6px;font-family:var(--mono);font-size:13.5px;letter-spacing:.04em;color:var(--ink);transition:color .2s}
+summary::-webkit-details-marker{display:none}
+summary:hover{color:var(--amber)}
+summary::after{content:"+";font-size:20px;color:var(--amber);transition:transform .3s;flex-shrink:0}
+details[open] summary::after{transform:rotate(45deg)}
+details .a{padding:0 6px 26px;color:var(--dim);font-size:.93rem;max-width:58em;animation:fup .35s ease}
+details .a code{font-size:.85em}
+
+/* donate */
+.donate{text-align:center}
+.donate .h2{margin-bottom:10px}
+.dongrid{display:grid;grid-template-columns:auto 1fr;gap:46px;align-items:center;text-align:left;margin-top:46px;max-width:820px;margin-left:auto;margin-right:auto}
+.qrbox{position:relative;width:224px;height:224px;background:#fff;padding:12px;border:1px solid var(--line);box-shadow:8px 8px 0 rgba(247,147,26,.15)}
+.qrbox img{width:100%;height:100%;object-fit:contain;display:block}
+.scanline{position:absolute;left:12px;right:12px;height:2px;background:rgba(247,147,26,.85);box-shadow:0 0 12px rgba(247,147,26,.8);animation:scan 3s ease-in-out infinite;pointer-events:none}
+@keyframes scan{0%,100%{top:14px}50%{top:calc(100% - 16px)}}
+.qr-fallback{display:none;place-items:center;position:absolute;inset:12px;background:#fff;color:#333;font-family:var(--mono);font-size:10px;text-align:center;line-height:1.8}
+.addrbox{display:flex;gap:10px;align-items:stretch;margin-top:16px}
+.addr{flex:1;font-family:var(--mono);font-size:12.5px;word-break:break-all;background:var(--panel2);border:1px solid var(--line);padding:15px 17px;color:var(--amber2);line-height:1.7;text-align:left}
+.dlabel{font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;color:var(--mut);text-align:left}
+.dnote{font-family:var(--mono);font-size:11px;color:var(--mut);margin-top:18px;letter-spacing:.04em;text-align:left}
+.doncopy{padding:0 22px}
+
+/* footer */
+footer{border-top:1px solid var(--line);padding:54px 0 44px;background:var(--bg2)}
+.fgrid{display:flex;justify-content:space-between;gap:34px;flex-wrap:wrap}
+.fcol{font-family:var(--mono);font-size:11.5px;color:var(--mut);line-height:2.1}
+.fcol b{color:var(--dim);font-weight:500;letter-spacing:.12em}
+.fcol a{color:var(--dim);transition:.2s}
+.fcol a:hover{color:var(--amber)}
+.disc{margin-top:36px;padding-top:22px;border-top:1px dashed var(--line2);font-family:var(--mono);font-size:10.5px;color:var(--mut);line-height:1.9;max-width:70em}
+
+@media(max-width:960px){
+  .hero-grid,.cols,.dlgrid,.sbgrid,.dongrid{grid-template-columns:1fr}
+  .col-stick{position:static}
+  .hero{padding-top:120px}
+  .seed-grid{grid-template-columns:repeat(3,1fr)}
+  .msgrid{grid-template-columns:1fr;gap:12px}
+  .conn-svg{display:none}
+  .tflow{gap:14px}
+  .tarrow{transform:rotate(90deg);padding:8px 0}
+}
+@media(max-width:720px){
+  .navlinks{display:none}
+  .seed-grid{grid-template-columns:repeat(2,1fr)}
+  .pblock,.wstep{grid-template-columns:1fr;gap:6px}
+  .apanel{padding:22px 18px}
+  .opanel,.sbcol,.verify,.dlcard{padding:24px 20px}
+  .stamp{margin-left:0}
+}
+@media(prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{animation:none!important;transition:none!important}
+  .rv,.hfade{opacity:1;transform:none}
+  .lm>span{transform:none}
+  .noise,.scanline,.scrollcue{display:none}
+}
+</style>
+</head>
+<body>
+<div class="noise" aria-hidden="true"></div>
+
+<nav class="top">
+  <div class="wrap topin">
+    <a class="brand" href="#top">SIGNER<b>://</b>OS</a>
+    <div class="navlinks">
+      <a href="#app">The App</a>
+      <a href="#ritual">Ritual</a>
+      <a href="#download">Download</a>
+      <a href="#flash">Write USB</a>
+      <a href="#secureboot">Secure Boot</a>
+      <a href="#faq">FAQ</a>
+    </div>
+    <a class="ghpill" href="https://github.com/signeros/signeros" target="_blank" rel="noopener">⟨/⟩ GITHUB</a>
+  </div>
+</nav>
+
+<!-- ══════════ HERO ══════════ -->
+<header class="hero" id="top">
+  <div class="wrap hero-grid">
+    <div>
+      <div class="term hfade" style="animation-delay:.1s">
+        <div class="term-head"><span class="dot a"></span><span class="dot g"></span><span class="dot d"></span><span class="term-title">signeros — boot log</span></div>
+        <div class="term-body" id="bootLog"></div>
+      </div>
+      <h1 class="display hfade" id="bigTitle" style="animation-delay:.25s"><span id="titleTxt">SIGNEROS</span><span class="blk">▮</span></h1>
+      <p class="lede hfade" style="animation-delay:.4s">A USB stick that turns a computer you already own into an <em>offline Bitcoin signing device</em>. While it is running, that machine cannot go online and cannot see its own hard drives. Switch it off and everything you did is gone.</p>
+      <div class="chips hfade" style="animation-delay:.55s">
+        <span class="chip hot">NEVER ONLINE</span>
+        <span class="chip hot">LEAVES NO TRACE</span>
+        <span class="chip">BOOTS FROM USB</span>
+        <span class="chip">SIGNS PSBT FILES</span>
+        <span class="chip">FREE &amp; OPEN SOURCE</span>
+      </div>
+      <div class="btnrow hfade" style="animation-delay:.7s">
+        <a class="btn btn-solid" href="#download">▼ Download the image</a>
+        <a class="btn btn-ghost" href="https://github.com/signeros/signeros" target="_blank" rel="noopener">Source on GitHub</a>
+      </div>
+    </div>
+    <aside class="hero-right hfade" style="animation-delay:.5s">
+      <div class="term">
+        <div class="term-head"><span class="dot a"></span><span class="dot g"></span><span class="dot d"></span><span class="term-title">the only app on board</span></div>
+        <ul class="spec-list">
+          <li><span class="n">[1]</span><span>CREATE A WALLET — a fresh seed on this machine, watch-only file out</span></li>
+          <li><span class="n">[2]</span><span>EXPORT WATCH-ONLY KEYS — for recovery words you already have</span></li>
+          <li><span class="n">[3]</span><span>SIGN A TRANSACTION — review a .psbt, sign it, write it back</span></li>
+        </ul>
+        <div class="spec-foot">● YOUR KEYS ARE ERASED THE MOMENT THEY ARE DONE WITH</div>
+      </div>
+      <div class="stamp">NO INTERNET · NO HARD DRIVES · NOTHING LEFT BEHIND</div>
+    </aside>
+  </div>
+  <div class="scrollcue">SCROLL ▾</div>
+</header>
+
+<!-- ticker -->
+<div class="ticker" aria-hidden="true">
+  <div class="tk-track">
+    <span>IT CANNOT GO ONLINE <i>◆</i></span><span>IT CANNOT SEE YOUR HARD DRIVES <i>◆</i></span><span>UNSIGNED FILE IN → SIGNED FILE OUT <i>◆</i></span><span>YOUR WORDS NEVER GET SAVED <i>◆</i></span><span>ONE APP, ONE PURPOSE <i>◆</i></span><span>FREE AND OPEN SOURCE <i>◆</i></span><span>BUILD IT YOURSELF AND CHECK <i>◆</i></span>
+    <span>IT CANNOT GO ONLINE <i>◆</i></span><span>IT CANNOT SEE YOUR HARD DRIVES <i>◆</i></span><span>UNSIGNED FILE IN → SIGNED FILE OUT <i>◆</i></span><span>YOUR WORDS NEVER GET SAVED <i>◆</i></span><span>ONE APP, ONE PURPOSE <i>◆</i></span><span>FREE AND OPEN SOURCE <i>◆</i></span><span>BUILD IT YOURSELF AND CHECK <i>◆</i></span>
+  </div>
+</div>
+
+<!-- ══════════ 01 PREMISE ══════════ -->
+<section class="sec" id="premise">
+  <div class="wrap">
+    <div class="shead rv"><span class="snum">01</span><span class="srule"></span><span class="stag">The premise</span></div>
+    <div class="cols">
+      <div class="col-stick">
+        <h2 class="h2 lm rv"><span>The safest computer is the one that was never connected.</span></h2>
+        <p class="body rv" style="--d:.1s">SignerOS starts from a USB stick and runs entirely in the computer's memory. It has no way to reach the internet, no way to touch the machine's hard drives, and nowhere to keep a history. The only place it can save anything is the stick you booted from, and the only things it saves there are files that are safe to share — a signed transaction, or the public keys your everyday wallet needs to watch your balance. Switch the power off and the session, your recovery words included, is gone.</p>
+        <a class="tlink rv" style="--d:.2s" href="#ritual">See the signing ritual ↓</a>
+      </div>
+      <div class="col-flow">
+        <div class="pblock rv"><div class="pnum">A-01</div><div><h3>It cannot go online</h3><p>There is nothing to switch off and nothing to remember to switch off. The ability to use a network was left out of this system entirely, so Wi-Fi, Ethernet and Bluetooth do not merely fail — they are not there. Plugging in a cable does nothing at all, and neither would a program that somehow got onto the stick and wanted to phone home.</p><div class="ptags"><span class="ptag">NO WI-FI</span><span class="ptag">NO ETHERNET</span><span class="ptag">NO BLUETOOTH</span></div></div></div>
+        <div class="pblock rv" style="--d:.08s"><div class="pnum">A-02</div><div><h3>It leaves the computer alone</h3><p>The whole system lives in memory and never installs itself. It cannot even see the hard drives of the machine you borrowed — your Windows or Linux installation is invisible to it, so it cannot be read, changed or infected. Nothing you do is written anywhere except, when you ask for it, one file on your own stick.</p><div class="ptags"><span class="ptag">NOTHING INSTALLED</span><span class="ptag">YOUR DISKS UNTOUCHED</span></div></div></div>
+        <div class="pblock rv" style="--d:.16s"><div class="pnum">A-03</div><div><h3>One app, and no way out of it</h3><p>The stick boots straight into the signer and there is nothing else on it: no desktop, no browser, no file manager, no command line, no way to install anything. Fewer moving parts means fewer places for something to hide — and a much smaller amount of code for anyone to check.</p><div class="ptags"><span class="ptag">1 APPLICATION</span><span class="ptag">NOTHING ELSE TO RUN</span></div></div></div>
+        <div class="pblock rv" style="--d:.24s"><div class="pnum">A-04</div><div><h3>No trace afterwards</h3><p>Any reasonably modern PC with a USB port becomes a signer for as long as it is switched on — an old laptop is ideal, and it does not need to be a good one. Take the stick out, start the machine normally, and it is as if SignerOS was never there.</p><div class="ptags"><span class="ptag">USE ANY PC</span><span class="ptag">START IT, THEN FORGET IT</span></div></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ 02 THE KIOSK ══════════ -->
+<section class="sec" id="app">
+  <div class="wrap">
+    <div class="shead rv"><span class="snum">02</span><span class="srule"></span><span class="stag">The app</span></div>
+    <h2 class="h2 lm rv"><span>Three things. Create a wallet. Export keys. Sign.</span></h2>
+    <p class="intro rv" style="--d:.1s">There is one app on the stick and its first screen offers exactly those three choices. Below is a walkthrough of each one, screen by screen, with the same headings, buttons and warnings you will see on the machine. It is a redrawing rather than a photograph — but the words are the real ones, and so is everything else on it: the wallet shown is a famous test seed (<code>abandon … about</code>) that has been public for years and holds nothing, so every key and address here is genuine and anyone can check it.</p>
+
+    <div class="appwin rv" style="--d:.15s">
+      <div class="atabs" role="tablist">
+        <button class="atab on" data-t="m1" role="tab">01 · Create a wallet</button>
+        <button class="atab" data-t="m2" role="tab">02 · Export watch-only keys</button>
+        <button class="atab" data-t="m3" role="tab">03 · Sign a transaction</button>
+      </div>
+
+      <!-- ── 01 CREATE A WALLET — eight pages ── -->
+      <div class="apanel on" id="m1">
+        <div class="apage on">
+          <p class="alabel">▸ “CREATE A NEW WALLET”</p>
+          <div class="cardwarn">
+            <h5>READ THIS FIRST</h5>
+            <p>This machine will generate a seed and show you the recovery words once. The words are never written to the USB stick, to this machine, or to anywhere else. There is no backup, no copy and no recovery service.</p>
+            <p>Anyone who reads those words owns everything the wallet will ever hold. Anyone who cannot read them — including you, if you lose the paper — has lost it permanently.</p>
+            <p>The only file that will be written is a watch-only one: the public keys your everyday wallet needs to see this wallet's balance and prepare payments for it. It cannot spend anything.</p>
+          </div>
+          <p class="alabel">▸ HOW MANY WORDS</p>
+          <div class="btnstrip"><span class="fkey on">12 words</span><span class="fkey">15 words</span><span class="fkey">18 words</span><span class="fkey">21 words</span><span class="fkey">24 words</span></div>
+          <p class="note">// Both lengths are far beyond anything anyone can guess — nobody has ever broken a properly generated 12-word seed. 24 is the convention for large, long-lived holdings; 12 is meaningfully easier to write down without making a mistake, and a copying error is a real risk where guessing is not.</p>
+          <div class="wizfoot"><span class="fkey">Back</span><span class="sp"></span><span class="fkey prim">I understand - continue</span></div>
+        </div>
+
+        <div class="apage">
+          <p class="alabel">▸ “WHERE YOUR SEED COMES FROM”</p>
+          <p class="note" style="margin-top:0">// A wallet is exactly as safe as the randomness it was made from, so this screen does not rely on any single source of it. It mixes four together — including your own hand moving the mouse, which is the one source no software anywhere can watch. Only one of the four has to be unpredictable for the result to be safe, and if the machine cannot offer a source it trusts, it refuses to generate at all rather than asking you to decide.</p>
+          <p class="alabel">▸ WHAT THE SCREEN REPORTS</p>
+          <div class="psbtsrc">this computer's own randomness <span style="color:var(--green)">ready</span>   ·   the processor's built-in generator <span style="color:var(--green)">available</span></div>
+          <div class="pad">Move the mouse around in here<br>(or tap, or just type - anything counts)</div>
+          <div class="meter"><i style="width:56%"></i></div>
+          <p class="note" style="margin-top:0">143 of 256 movements collected.</p>
+          <div class="wizfoot"><span class="fkey">Back</span><span class="sp"></span><span class="fkey prim">Generate my seed</span></div>
+        </div>
+
+        <div class="apage">
+          <p class="alabel">▸ “WRITE THESE 12 WORDS DOWN, IN ORDER”</p>
+          <div class="seed-grid">
+            <div class="wcell"><b>01</b>abandon</div><div class="wcell"><b>02</b>abandon</div><div class="wcell"><b>03</b>abandon</div><div class="wcell"><b>04</b>abandon</div>
+            <div class="wcell"><b>05</b>abandon</div><div class="wcell"><b>06</b>abandon</div><div class="wcell"><b>07</b>abandon</div><div class="wcell"><b>08</b>abandon</div>
+            <div class="wcell"><b>09</b>abandon</div><div class="wcell"><b>10</b>abandon</div><div class="wcell"><b>11</b>abandon</div><div class="wcell"><b>12</b>about</div>
+          </div>
+          <p class="note">// On paper, not on a phone and not in a photograph. This is the only copy that will ever exist — the machine keeps none, and neither does anybody else.</p>
+          <div class="wizfoot"><span class="fkey">Discard and start over</span><span class="sp"></span><span class="fkey prim">I have written them down</span></div>
+        </div>
+
+        <div class="apage">
+          <p class="alabel">▸ “NOW TYPE EVERY WORD BACK”</p>
+          <div class="seed-grid">
+            <div class="wcell hid"><b>01</b>···</div><div class="wcell hid"><b>02</b>···</div><div class="wcell hid"><b>03</b>···</div><div class="wcell hid"><b>04</b>···</div>
+            <div class="wcell hid"><b>05</b>···</div><div class="wcell hid"><b>06</b>···</div><div class="wcell hid"><b>07</b>···</div><div class="wcell act"><b>08</b>aban_</div>
+            <div class="wcell"><b>09</b></div><div class="wcell"><b>10</b></div><div class="wcell"><b>11</b></div><div class="wcell"><b>12</b></div>
+          </div>
+          <p class="note">word 8 of 12:   aban_<br>7 of 12 words entered and correct so far.</p>
+          <p class="note">// The words are hidden here on purpose: you are meant to be copying from your paper, and a readable screen would let you copy from that instead while believing you had checked the paper. A word that stops matching turns red straight away, while it is still in front of you, and you fix it where it stands — going back to word 3 costs you word 3 and nothing else. If your handwriting is genuinely ambiguous, <b>Show the words again</b> is always there and does not throw away what you have typed.</p>
+          <div class="wizfoot"><span class="fkey">Show the words again</span><span class="fkey">Clear</span><span class="fkey">On-screen keys (F2)</span><span class="sp"></span><span class="fkey prim">Continue</span></div>
+        </div>
+
+        <div class="apage">
+          <p class="alabel">▸ “ADD A PASSPHRASE? (OPTIONAL)”</p>
+          <p class="note" style="margin-top:0">// A passphrase is a 25th word of your own choosing. The same recovery words with a different passphrase are a completely different wallet, with different addresses and a different balance. It protects you against someone who finds your written words — and destroys the wallet if you forget it, with no way to recover or reset it. Leave it empty if you are not certain you want one; most wallets have none.</p>
+          <p class="alabel">▸ PASSPHRASE — SHOWN ON SCREEN, TYPED TWICE</p>
+          <div class="mne" style="color:var(--warnc)">correct horse battery staple<br><span style="color:var(--mut);font-size:11px">(28 characters)</span></div>
+          <div class="mne" style="margin-top:8px;color:var(--warnc)">correct horse battery staple<br><span style="color:var(--green);font-size:11px">both entries match</span></div>
+          <p class="note">// It is shown rather than hidden behind dots because the machine treats every keyboard as a US one. On a Turkish-Q or a German layout the punctuation keys land somewhere else, so what gets typed is not what is printed on your keys — and nothing, anywhere, will ever tell you afterwards. Seeing the characters catches that; typing it a second time catches an ordinary slip, which no amount of looking will.</p>
+          <div class="wizfoot"><span class="fkey">Back</span><span class="fkey">On-screen keys (F2)</span><span class="sp"></span><span class="fkey prim">Continue</span></div>
+        </div>
+
+        <div class="apage">
+          <p class="alabel">▸ “WHAT WILL BE WRITTEN TO THE USB STICK”</p>
+<div class="filebox" id="exportFile"># SignerOS watch-only export
+#
+# PUBLIC KEYS ONLY. Everything in this file can watch this wallet and
+# build transactions for it. Nothing in it can spend: there is no
+# private key, no seed and no mnemonic here, and this device never
+# wrote one anywhere.
+#
+# master fingerprint <u>73c5da0a</u>
+# network            mainnet
+# account            0
+# BIP39 passphrase   yes - this export belongs to the passphrase you entered.
+#
+# ===========================================================
+# BIP84  -  Native SegWit (P2WPKH)  (addresses start bc1q)
+#   derivation     m/84'/0'/0'
+#   account xpub   <u>xpub6CatWdiZiodmUeTDp8LT5or8nmbKNcuyvz7WyksVFkKB4RHwCD3XyuvPEbvqAQY3rAPshWcMLoP2fMFMKHPJ4ZeZXYVUhLv1VMrjPC7PW6V</u>
+#   first address  <u>bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu</u>
+# ===========================================================
+#   receive and change in one line:
+<b>wpkh([73c5da0a/84h/0h/0h]xpub6CatWdiZiodmUeTDp8LT5or8nmbKNcuyvz7WyksVFkKB4RHwCD3XyuvPEbvqAQY3rAPshWcMLoP2fMFMKHPJ4ZeZXYVUhLv1VMrjPC7PW6V/&lt;0;1&gt;/*)#qf45pmyh</b>
+
+#   the same keys as two lines, for wallets that want the chains
+#   separately (Blockstream Green): receive first, then change.
+<b>wpkh([73c5da0a/84h/0h/0h]xpub6Cat…C7PW6V/0/*)#afwvtk2s</b>
+<b>wpkh([73c5da0a/84h/0h/0h]xpub6Cat…C7PW6V/1/*)#vatdkr6g</b>
+
+# ( the same three lines follow for BIP86 taproot, BIP49 nested
+#   segwit and BIP44 legacy )
+# end of export</div>
+          <p class="note">// This is the whole of what leaves the machine, and there is nothing in it that can spend. It covers all four address styles a wallet might use, and prints the keys in both of the shapes wallets ask for, so you copy the one line your wallet wants — Sparrow takes the first, Blockstream Green wants the pair underneath it. The file also shows you the first address of each style, which is what you check against your wallet after importing.</p>
+          <div class="wizfoot"><span class="fkey">Back</span><span class="sp"></span><span class="fkey prim">Write the watch-only file</span></div>
+        </div>
+
+        <div class="apage">
+          <p class="alabel">▸ NAME THE FILE</p>
+          <div class="mne" style="border-color:var(--amber)"><span style="color:var(--amber);font-size:11px;letter-spacing:.16em">FILE NAME</span><br>signeros-73c5da0a-20260815-164210.descriptors.txt</div>
+          <p class="note">written to the USB stick<br>type to change the name  ·  Enter accepts it</p>
+          <p class="note">// Every file this machine writes, you name. The dated name is only the suggestion, so pressing Enter is still the whole interaction — and if a file of that name is already on the stick you are told, rather than having the old one quietly replaced.</p>
+          <div class="wizfoot"><span class="fkey">Back</span><span class="fkey">On-screen keys (F2)</span><span class="fkey">Clear</span><span class="sp"></span><span class="fkey prim">Save</span></div>
+        </div>
+
+        <div class="apage">
+          <div class="cardok">
+            <h5>WRITTEN</h5>
+            <p>The file is on your USB stick. The recovery words have been erased from the machine's memory — your paper is now the only copy in existence.</p>
+          </div>
+          <p class="note">// Use <b>Secure shutdown</b> and wait for the machine to switch itself off before pulling the stick out. That is what makes sure the file is really written, and what wipes the leftovers of your key out of the memory.</p>
+          <div class="wizfoot"><span class="fkey">Back to the start</span><span class="sp"></span><span class="fkey prim">Secure shutdown</span></div>
+        </div>
+      </div>
+
+      <!-- ── 02 EXPORT WATCH-ONLY KEYS — four pages ── -->
+      <div class="apanel" id="m2">
+        <div class="apage on">
+          <p class="alabel">▸ “TYPE YOUR RECOVERY WORDS” — HOW MANY WORDS</p>
+          <div class="btnstrip"><span class="fkey on">12</span><span class="fkey">15</span><span class="fkey">18</span><span class="fkey">21</span><span class="fkey">24</span></div>
+          <p class="alabel">▸ THE SAME GRID, SHOWN IN CLEAR</p>
+          <div class="seed-grid">
+            <div class="wcell"><b>01</b>abandon</div><div class="wcell"><b>02</b>abandon</div><div class="wcell"><b>03</b>abandon</div><div class="wcell"><b>04</b>abandon</div>
+            <div class="wcell"><b>05</b>abandon</div><div class="wcell"><b>06</b>abandon</div><div class="wcell bad"><b>07</b>abandan</div><div class="wcell"><b>08</b>abandon</div>
+            <div class="wcell"><b>09</b>abandon</div><div class="wcell"><b>10</b>abandon</div><div class="wcell"><b>11</b>abandon</div><div class="wcell act"><b>12</b>abou_</div>
+          </div>
+          <p class="note">// Here your paper is the source, so the words stay readable — <b>Hide</b> covers them if you are not alone in the room. Recovery words come from a fixed list of 2048, and anything you type that is not on that list is outlined in red the moment you type it, so a slip is caught on the spot instead of at the end.</p>
+          <p class="alabel">▸ PASSPHRASE — A CLICK OR F3 MOVES THE TYPING HERE</p>
+          <div class="mne" style="color:var(--mut)">empty — the wallet is the words alone</div>
+          <div class="wizfoot"><span class="fkey">Back</span><span class="fkey">Hide</span><span class="fkey">Clear</span><span class="fkey">On-screen keys (F2)</span><span class="sp"></span><span class="fkey prim">Derive the keys</span></div>
+        </div>
+
+        <div class="apage">
+          <p class="alabel">▸ REVIEW — BEFORE ANY FILE EXISTS</p>
+          <div class="vrow"><span>MASTER FINGERPRINT</span><b class="big">73c5da0a</b></div>
+          <div class="vrow"><span>ACCOUNT</span><b>0</b></div>
+          <div class="btnstrip" style="margin:14px 0"><span class="fkey on">0</span><span class="fkey">1</span><span class="fkey">2</span><span class="fkey">3</span><span class="fkey">4</span><span class="fkey">5</span><span class="fkey">6</span><span class="fkey">7</span><span class="fkey">8</span><span class="fkey">9</span></div>
+          <p class="alabel">▸ THE FIRST ADDRESS OF EACH ADDRESS STYLE</p>
+          <div class="vrow"><span>Native SegWit — the usual one</span><b>bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu</b></div>
+          <div class="vrow"><span>Taproot</span><b>bc1p5cyxnuxmeuwuvkwfem96lqzszd02n6xdcjrs20cac6yqjjwudpxqkedrcr</b></div>
+          <div class="vrow"><span>Nested SegWit</span><b>37VucYSaXLCAsxYyAPfbSi9eh4iEcbShgf</b></div>
+          <div class="vrow"><span>Legacy</span><b>1LqBGSKuX5yYUonjxT5qGfpUsXKYYWeabA</b></div>
+          <p class="note">// This page is the whole point of this flow, and it appears <b>before</b> any file is written. A mistyped <b>word</b> gets caught by the machine itself, twice over. A mistyped <b>passphrase</b> never does — any passphrase is a valid one, so the wrong one quietly gives you a different, perfectly normal, empty wallet. So compare what is on this screen against the wallet you already have. If the fingerprint and the first address match, you typed everything correctly. If they do not, nothing has been written and you can simply go back.</p>
+          <p class="note">// The numbered buttons are there for the same reason. Most people want the first one; if your existing wallet is a later one, step through until the address matches.</p>
+          <div class="wizfoot"><span class="fkey">Back</span><span class="sp"></span><span class="fkey prim">Write the watch-only file</span></div>
+        </div>
+
+        <div class="apage">
+          <p class="alabel">▸ NAME THE FILE</p>
+          <div class="mne" style="border-color:var(--amber)"><span style="color:var(--amber);font-size:11px;letter-spacing:.16em">FILE NAME</span><br>signeros-73c5da0a-20260815-171304.descriptors.txt</div>
+          <p class="note">written to the USB stick  ·  type to change the name  ·  Enter accepts it</p>
+          <div class="wizfoot"><span class="fkey">Back</span><span class="sp"></span><span class="fkey prim">Save</span></div>
+        </div>
+
+        <div class="apage">
+          <div class="cardok">
+            <h5>WRITTEN</h5>
+            <p>Exactly the same file creating a wallet would have produced — where the words came from makes no difference to it. Your words, and the key worked out from them, were erased from the machine on the way out of this screen.</p>
+          </div>
+          <div class="wizfoot"><span class="fkey">Back to the start</span><span class="sp"></span><span class="fkey prim">Secure shutdown</span></div>
+        </div>
+      </div>
+
+      <!-- ── 03 SIGN A TRANSACTION — scan, inspect, key, confirm, name, done ── -->
+      <div class="apanel" id="m3">
+        <div class="apage on">
+          <p class="alabel">▸ “CHOOSE A TRANSACTION TO REVIEW”</p>
+          <div class="flist">
+            <div class="sel"><span>unsigned.psbt</span><span>429 B</span></div>
+            <div><span>payment-to-alice.psbt</span><span>1.2 kB</span></div>
+          </div>
+          <p class="note">// These are the transaction files you copied onto the stick, and they are all the machine looks at — it does not open anything else on it, and nothing on the stick can be run as a program no matter what it claims to be. You can plug the stick in after starting up; it appears here within a second or two.</p>
+          <div class="wizfoot"><span class="fkey">Back</span><span class="fkey">Refresh</span><span class="sp"></span><span class="fkey prim">Review transaction</span></div>
+        </div>
+
+        <div class="apage">
+          <p class="alabel">▸ “REVIEW BEFORE SIGNING” — SUMMARY</p>
+          <div class="vrow"><span>file</span><b>unsigned.psbt</b></div>
+          <div class="vrow"><span>network</span><b style="color:var(--amber)">mainnet</b></div>
+          <div class="vrow"><span>txid (unsigned)</span><b style="font-size:10.5px">bf9595421accc7d958e4f5b2ff99e67386a965d301645f5d2533c1b34e64172e</b></div>
+          <div class="vrow"><span>spending</span><b>0.00240000 BTC   (240 000 sat)</b></div>
+          <div class="vrow"><span>to outputs</span><b>0.00238000 BTC   (238 000 sat)</b></div>
+          <div class="vrow"><span>leaving you</span><b style="color:var(--dim);font-weight:400">not yet known - change is identified once you enter your key</b></div>
+          <div class="vrow warn"><span>miner fee</span><b>0.00002000 BTC   (2 000 sat)</b></div>
+          <div class="vrow warn"><span>fee rate</span><b>9.6 sat/vB  (approx. 209 vbytes signed)</b></div>
+          <p class="note">// Every recipient is listed underneath with its full address and amount. Read them the way you would read a receipt: this machine can tell you exactly what the transaction does, but it cannot know which address you <em>meant</em> — check that against something you trust.</p>
+          <p class="note">// Notice what is not claimed yet. Until you enter your key, the machine has no way to know which of these addresses is your own change, so it says so rather than guessing. Money that looks like it is going to a stranger and money coming back to you are worth being sure about.</p>
+          <p class="note">// If the file does not contain enough information to work out the fee, SignerOS refuses to sign it and tells you what to ask your wallet for. It will not estimate, and there is no way to override it — a transaction whose fee you cannot see is one that can quietly pay your balance to a miner.</p>
+          <div class="wizfoot"><span class="fkey">Back</span><span class="fkey">Page up</span><span class="fkey">Page down</span><span class="sp"></span><span class="fkey prim">Sign this transaction</span></div>
+        </div>
+
+        <div class="apage">
+          <p class="alabel">▸ “ENTER YOUR KEY TO SIGN”</p>
+          <div class="btnstrip"><span class="fkey on">BIP39 mnemonic</span><span class="fkey">Extended private key</span></div>
+          <p class="alabel">▸ BOTH FIELDS ON SCREEN — A CLICK OR F3 MOVES THE TYPING</p>
+          <div class="mne" style="border-color:var(--amber)"><span style="color:var(--amber);font-size:11px;letter-spacing:.16em">RECOVERY WORDS ◂ typing here</span><br>··· ··· ··· ··· ··· ··· ··· ··· ··· ··· ··· abou_</div>
+          <div class="mne" style="margin-top:8px"><span style="color:var(--mut);font-size:11px;letter-spacing:.16em">BIP39 PASSPHRASE</span><br><span style="color:var(--mut)">empty</span></div>
+          <p class="note">// Your words go straight into a protected area of memory that is erased the moment it is finished with, and they are never held anywhere else — not in a file, not in a log, not in a temporary copy. Both fields are visible at once on purpose: a passphrase hidden behind a button is a passphrase people forget they had.</p>
+          <div class="wizfoot"><span class="fkey">Back</span><span class="fkey">On-screen keys (F2)</span><span class="fkey">Check key</span><span class="sp"></span><span class="fkey prim">Review and sign</span></div>
+        </div>
+
+        <div class="apage">
+          <p class="alabel">▸ “CONFIRM WHAT YOU ARE ABOUT TO SIGN” — THE LAST SCREEN</p>
+          <div class="vrow"><span>master fingerprint</span><b>73c5da0a</b></div>
+          <div class="vrow"><span>signs</span><b>2 of 2 inputs</b></div>
+          <p class="alabel">▸ WHERE THE MONEY GOES</p>
+          <div class="vrow"><span>bc1q64e0lhyc7sg7tvx8ctarm72xr5txvhvtmgaycz</span><b style="color:var(--amber)">0.00200000 BTC</b></div>
+          <div class="vrow"><span>bc1q8c6fshw2dlwun7ekn9qwf37cu2rn755upcp6el<br><span style="color:var(--green);font-size:10.5px">checked — this one comes back to you</span></span><b style="color:var(--green)">0.00038000 BTC</b></div>
+          <div class="vrow warn"><span>miner fee</span><b>0.00002000 BTC   (2 000 sat)</b></div>
+          <div class="vrow"><span>leaving you</span><b style="color:var(--amber)">0.00202000 BTC</b></div>
+          <p class="note">// The transaction file gets to <em>claim</em> which address is your own change. Believing that claim would mean whoever handed you the file also decides which address this screen paints green as "coming back to you" — and you would then approve the loss yourself, having read the screen correctly. So the machine works the address out from your key instead and only calls it change when the two agree exactly. If a file claims your change on an address your key does not produce, <b>signing is blocked</b>. Not warned about — blocked.</p>
+          <div class="wizfoot"><span class="fkey">Back</span><span class="sp"></span><span class="fkey prim">Sign now</span></div>
+        </div>
+
+        <div class="apage">
+          <p class="alabel">▸ IT SIGNS, ERASES YOUR KEY, THEN ASKS WHAT TO CALL THE FILE</p>
+          <div class="mne" style="border-color:var(--amber)"><span style="color:var(--amber);font-size:11px;letter-spacing:.16em">FILE NAME</span><br>signed_20260815-171820.psbt</div>
+          <p class="note">written to the USB stick</p>
+          <p class="note">// Your key is already gone by the time this page appears, so nothing secret is sitting around while you pick a name — and if the write fails, you can just try again from here. The file you brought in is never altered; the signature is written alongside it as a new file.</p>
+          <div class="wizfoot"><span class="fkey">Back</span><span class="sp"></span><span class="fkey prim">Save</span></div>
+        </div>
+
+        <div class="apage">
+          <div class="cardok">
+            <h5>SIGNED</h5>
+            <p>The signed file is on the stick, next to the one you brought in. Carry it back to your everyday machine and broadcast it from there. It is the same transaction you just approved — signing changed nothing about it except adding your signature.</p>
+          </div>
+          <p class="note">// Shut down and wait for the machine to switch off before pulling the stick out.</p>
+          <div class="wizfoot"><span class="fkey">Sign another</span><span class="sp"></span><span class="fkey prim">Secure shutdown</span></div>
+        </div>
+      </div>
+
+      <div class="pagenav">
+        <button class="pgbtn" data-nav="-1">◂ Back</button>
+        <span class="pgind">1 / 8</span>
+        <button class="pgbtn" data-nav="1">Next screen ▸</button>
+      </div>
+    </div>
+    <p class="simnote rv"><i>◆</i> These are redrawings of the real screens, not photographs and not a working app — nothing on this web page can generate a key or sign anything. The wallet is a well-known public test seed that holds no money, and the transaction is the one shipped with the project for testing, so every address and amount above is a genuine value rather than a made-up one.</p>
+  </div>
+</section>
+
+<!-- ══════════ 03 RITUAL ══════════ -->
+<section class="sec" id="ritual">
+  <div class="wrap">
+    <div class="shead rv"><span class="snum">03</span><span class="srule"></span><span class="stag">The signing ritual</span></div>
+    <h2 class="h2 lm rv"><span>One file crosses the gap — nothing else does.</span></h2>
+    <p class="intro rv" style="--d:.1s">Your everyday machine prepares the transaction; the offline machine approves it. The only thing that travels between them is a file on a USB stick — the SignerOS stick itself does fine. There is no camera and no QR scanning here, and nothing that crosses ever contains a secret.</p>
+    <div class="ritual rv" style="--d:.15s">
+      <div class="step"><div class="sn">01</div><h4>Compose</h4><p>In your everyday wallet, build the payment as usual and save it as an unsigned transaction file instead of sending it.</p><span class="where hot">ONLINE PC</span></div>
+      <div class="step"><div class="sn">02</div><h4>Carry</h4><p>Copy that file onto the stick. Any name will do as long as it ends in <code>.psbt</code>. Nothing on this stick is secret at any point.</p><span class="where">USB COURIER</span></div>
+      <div class="step"><div class="sn">03</div><h4>Start up</h4><p>Start the offline computer from the stick. The app lists the transaction files it finds and you pick the one to look at.</p><span class="where cold">SIGNEROS</span></div>
+      <div class="step"><div class="sn">04</div><h4>Review</h4><p>Who gets paid, how much, and what the fee is — all worked out from the file itself rather than taken on trust. Read it like a receipt.</p><span class="where cold">SIGNEROS</span></div>
+      <div class="step"><div class="sn">05</div><h4>Sign</h4><p>Type your recovery words. The machine shows you one last summary in plain terms — what is really leaving your wallet, what is coming back — you confirm, and it signs. Your key is erased immediately afterwards.</p><span class="where cold">SIGNEROS</span></div>
+      <div class="step"><div class="sn">06</div><h4>Shut down</h4><p>The signed file is saved next to the original, which is left untouched. Use <b>Secure shutdown</b> and wait for the machine to switch off before pulling the stick out.</p><span class="where cold">SIGNEROS</span></div>
+      <div class="step"><div class="sn">07</div><h4>Broadcast</h4><p>Take the stick back to your everyday machine and send the signed transaction from there. Done — nothing secret ever left the offline machine.</p><span class="where hot">ONLINE PC</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ 04 SINGLESIG / MULTISIG ══════════ -->
+<section class="sec" id="topology">
+  <div class="wrap">
+    <div class="shead rv"><span class="snum">04</span><span class="srule"></span><span class="stag">Two ways to use it</span></div>
+    <h2 class="h2 lm rv"><span>Your only key, or one of several.</span></h2>
+    <p class="intro rv" style="--d:.1s">SignerOS can hold the single key to a wallet — or be one signature of several, alongside a hardware wallet you already own. The same stick does both: it hands your everyday wallet the public keys it needs, and signs whatever that wallet passes back. The third tab is the multisig case done concretely rather than described: two SignerOS seeds into one 2-of-2 in Sparrow, a payment signed twice, and broadcast.</p>
+
+    <div class="ttoggle rv" style="--d:.15s">
+      <button class="tbtn on" data-t="t1">SINGLESIG</button>
+      <button class="tbtn" data-t="t2">2-OF-3 MULTISIG</button>
+      <button class="tbtn" data-t="t3">2-OF-2, STEP BY STEP</button>
+    </div>
+
+    <div class="frame rv" style="--d:.2s">
+      <div class="topo on" id="t1">
+        <div class="tflow">
+          <div class="node"><h5><span class="pulse"></span>ONLINE PC</h5><p>Your everyday wallet, set up from the public keys SignerOS exported. It can watch your balance and prepare payments — but it cannot send one.</p></div>
+          <div class="tarrow"><span>unsigned</span><span class="ln">──▶</span><span>◀──</span><span>signed</span><span class="where" style="font-size:9px">USB STICK</span></div>
+          <div class="node"><h5><span class="pulse off"></span>SIGNEROS PC</h5><p>Your personal computer, booted from the SignerOS USB. Reviews and signs. Never online — it has no way to be.</p></div>
+        </div>
+        <p class="tcap"><b>One key, kept offline.</b> Only the offline machine can approve a payment, and only while it is switched on. Everything else stays an ordinary, everyday computer.</p>
+      </div>
+
+      <div class="topo" id="t2">
+        <div class="node" style="max-width:420px;margin:0 auto"><h5><span class="pulse"></span>YOUR EVERYDAY WALLET · ONLINE PC</h5><p>Software like Sparrow puts the three devices' public keys together into one wallet, prepares the payment, and collects signatures until it has enough.</p></div>
+        <svg class="conn-svg" viewBox="0 0 600 64" preserveAspectRatio="none" aria-hidden="true">
+          <path d="M300 4 L110 60"/><path d="M300 4 L300 60"/><path d="M300 4 L490 60"/>
+        </svg>
+        <div class="msgrid">
+          <div class="node"><h5><span class="pulse off"></span>SIGNEROS · PC A</h5><p>Key #1. A personal computer booted from the SignerOS stick.</p></div>
+          <div class="node"><h5><span class="pulse off"></span>SIGNEROS · PC B</h5><p>Key #2. A second, separate personal computer — ideally kept in another place.</p></div>
+          <div class="node"><h5><span class="pulse off"></span>HARDWARE WALLET</h5><p>Key #3. Any hardware wallet that can sign transaction files completes the trio.</p></div>
+        </div>
+        <p class="tcap"><b>Any two of the three.</b> Two signatures approve a payment, so one lost key is survivable and one stolen key is useless on its own. <b>One thing to know:</b> with a setup like this, your recovery words alone are not enough to get your money back — you also need the file that describes the wallet, including the other two devices' public keys. Back that file up somewhere alongside your words. It cannot spend anything, so keeping copies of it is safe.</p>
+      </div>
+
+      <div class="topo" id="t3">
+        <p class="intro" style="margin-bottom:6px">The smallest multisig there is, done once from end to end: two SignerOS wallets joined into one 2-of-2 in <b>Sparrow</b>, a payment signed on one machine and then on the other, and broadcast from the everyday one. Every step below is either a menu in Sparrow or a screen on the stick — nothing else is involved, and nothing secret moves between them.</p>
+        <p class="wwarn" style="margin:14px 0 4px">▲ 2-of-2 needs <em>both</em> keys for every payment, so it survives neither a lost key nor a forgotten passphrase. It is the clearest one to learn the mechanics on, and it is a fine arrangement for a joint account where both parties must agree. For savings you keep alone, build the 2-of-3 in the previous tab instead — same steps, one more key, and one of them may be lost.</p>
+
+        <div class="wt">
+          <div class="wstep">
+            <div class="wn">01</div>
+            <div>
+              <span class="where cold">SIGNEROS · TWICE</span>
+              <h4>Create the wallet twice</h4>
+              <p>Run <b>Create a new wallet</b> once on each of the two machines — or twice on the same one, in two separate sessions, if you are only trying this out. Each run gives you a set of recovery words to write on paper and one watch-only file on the stick. That is two sets of words and two files, and from here on everything depends on knowing which is which.</p>
+              <p>Name them apart as you save them — <code>signer-a.descriptors.txt</code> and <code>signer-b.descriptors.txt</code> will do. Each file's header carries a <b>master fingerprint</b>, eight characters that identify that seed and nothing else; Sparrow will show you the same eight later, which is how you check you pasted what you meant to.</p>
+            </div>
+          </div>
+
+          <div class="wstep">
+            <div class="wn">02</div>
+            <div>
+              <span class="where hot">ONLINE PC · A TEXT EDITOR</span>
+              <h4>Find the one line that matters</h4>
+              <p>Almost all of the export describes single-signature wallets, and none of that is what a multisig wants. Scroll past it, to the block at the very end headed <b>MULTISIG COSIGNER KEYS (BIP48)</b>, and inside that to <b>BIP48/2h — Native SegWit multisig (P2WSH)</b>. The line you want is the one that is not commented out: fingerprint, derivation path and public key in a single string.</p>
+<div class="filebox" style="max-width:46em"># ===========================================================
+# MULTISIG COSIGNER KEYS (BIP48)
+#  …
+# ===========================================================
+# <u>BIP48/2h  -  Native SegWit multisig (P2WSH)</u>
+#   derivation     m/48'/0'/0'/2'
+#   account xpub   xpub6E…
+# ===========================================================
+#   the same key with its origin, which is what a coordinator
+#   asks for - fingerprint, path and key in one line:
+<b>[73c5da0a/48h/0h/0h/2h]xpub6E8dqk4M8LZ5X…J9tqRw</b></div>
+              <p style="margin-top:12px">Take the <b>2h</b> block and not the <b>1h</b> one underneath it: 2h is native SegWit, which is what you are about to build, and 1h is the older nested form — take that one only if some wallet explicitly asks for it. Copy the same line out of the second file. Two lines, one per seed, is the whole of what Sparrow needs; the rest of both files can be ignored for this.</p>
+              <p>Nothing here can spend. These are public keys, and they are meant to be handed to the wallet that coordinates the multisig — which is exactly what the next step does.</p>
+            </div>
+          </div>
+
+          <div class="wstep">
+            <div class="wn">03</div>
+            <div>
+              <span class="where hot">ONLINE PC · SPARROW</span>
+              <h4>Start an empty 2-of-2</h4>
+              <div class="wpath"><i>▸</i> File → New Wallet → name it, e.g. <b>joint-2of2</b></div>
+              <p>In the wallet's settings, set <b>Policy Type</b> to <b>Multi Signature</b> and <b>Script Type</b> to <b>Native Segwit (P2WSH)</b> — that is the same script type as the 2h block you just copied, and the two have to agree. Then set the threshold to <b>2 of 2</b>.</p>
+              <p>Sparrow now shows one <b>Keystore</b> tab per cosigner: two of them, both empty.</p>
+            </div>
+          </div>
+
+          <div class="wstep">
+            <div class="wn">04</div>
+            <div>
+              <span class="where hot">ONLINE PC · SPARROW</span>
+              <h4>One line into each keystore</h4>
+              <div class="wpath"><i>▸</i> Keystore 1 → xPub / Watch Only → paste the line from file A</div>
+              <div class="wpath"><i>▸</i> Keystore 2 → xPub / Watch Only → paste the line from file B</div>
+              <p>Paste the <em>whole</em> line, brackets included. Sparrow reads the bracketed part and fills in the master fingerprint and the derivation path by itself. If your version leaves those two boxes empty, fill them from the same line by hand: the eight characters before the first slash are the fingerprint, and what follows is the path — <code>m/48'/0'/0'/2'</code>.</p>
+              <p><b>Check the fingerprint against the file it came from</b>, both times. It is printed in the export's header and it is the one thing that tells you the key in front of you belongs to the seed you think it does. Give the keystores names you will recognise later — the machine, the room, whatever distinguishes them — because at signing time you need to know which words go with which.</p>
+              <p>Then <b>Apply</b>. Which key you put in which tab makes no difference: Sparrow's multisig wallets sort the keys before building addresses, so both orders produce the same wallet.</p>
+            </div>
+          </div>
+
+          <div class="wstep">
+            <div class="wn">05</div>
+            <div>
+              <span class="where hot">ONLINE PC · SPARROW</span>
+              <h4>Back the wallet file up before it holds anything</h4>
+              <div class="wpath"><i>▸</i> File → Export Wallet  (keep the output with your two sets of words)</div>
+              <p>This is the step people skip and regret. In a multisig your recovery words are <em>not</em> enough to get the money back: you also need to know the other key, the threshold and the script type — which is precisely what this exported file records. It contains no private key and cannot spend, so keeping several copies of it is safe and losing all of them is not.</p>
+              <p>Do it now, while the wallet is empty and losing it would cost you nothing but the setup.</p>
+            </div>
+          </div>
+
+          <div class="wstep">
+            <div class="wn">06</div>
+            <div>
+              <span class="where hot">ONLINE PC · SPARROW</span>
+              <h4>Receive, then build a payment and save it unsigned</h4>
+              <p>Send a small amount to an address from the wallet's <b>Receive</b> tab and let it confirm. (Sparrow needs its connection to a node or an Electrum server for this, and again to broadcast at the end — the online half of this arrangement is entirely ordinary.)</p>
+              <div class="wpath"><i>▸</i> Send → address, amount, fee → Create Transaction → Finalize Transaction for Signing</div>
+              <div class="wpath"><i>▸</i> File → Save Transaction… → <b>payment.psbt</b>, onto the USB stick</div>
+              <p>Sparrow will report <b>0 of 2</b> signatures. That unsigned file is what crosses the gap, and there is nothing secret in it.</p>
+            </div>
+          </div>
+
+          <div class="wstep">
+            <div class="wn">07</div>
+            <div>
+              <span class="where cold">SIGNEROS · MACHINE A</span>
+              <h4>The first signature</h4>
+              <p>Boot machine A from its stick, pick <code>payment.psbt</code> from the list, and read the review: who is being paid, how much, and the fee. Change is recognised here as it is in a single-signature wallet, because Sparrow puts the multisig script into the file and the machine re-derives the address from it rather than believing the label.</p>
+              <p>Type the <b>first</b> set of recovery words — and the passphrase, if that seed has one — confirm the summary, and sign. Name the result something that says what it is: <code>payment-a.psbt</code>. Then <b>Secure shutdown</b>, and take the stick out once the machine is off.</p>
+              <p>One signature of the two now exists. The original file is untouched next to the new one.</p>
+            </div>
+          </div>
+
+          <div class="wstep">
+            <div class="wn">08</div>
+            <div>
+              <span class="where cold">SIGNEROS · MACHINE B</span>
+              <h4>The second signature goes on the first one's output</h4>
+              <p class="wwarn">▲ Carry <b>payment-a.psbt</b> to the second machine — the file the first signing produced, not the original. Signing the original again would give you two separate files with one signature each, and neither of them can be broadcast.</p>
+              <p>Boot machine B, open <code>payment-a.psbt</code>, review it exactly as before, and type the <b>second</b> set of words. The first signature is carried through untouched and the second is added beside it. Save as <code>payment-ab.psbt</code>.</p>
+              <p>With the pair complete, SignerOS also writes a <code>.tx</code> file next to it — the finished transaction, ready to broadcast by any means at all. You do not need it if you are going back through Sparrow, and it is there for the case where you would rather not.</p>
+            </div>
+          </div>
+
+          <div class="wstep">
+            <div class="wn">09</div>
+            <div>
+              <span class="where hot">ONLINE PC · SPARROW</span>
+              <h4>Broadcast</h4>
+              <div class="wpath"><i>▸</i> File → Open Transaction… → <b>payment-ab.psbt</b></div>
+              <p>Sparrow reports <b>2 of 2</b> and offers <b>Broadcast Transaction</b>. Press it and the payment goes out. Both seeds approved it, neither one ever left the machine it was typed on, and every file that crossed the gap between them was public.</p>
+            </div>
+          </div>
+        </div>
+
+        <p class="tcap"><b>What you now have.</b> Two sets of words, on paper, in two places — and one wallet file that describes how they fit together. All three are needed to recover, and none of them alone can spend a thing. Do the whole of the above on <b>testnet</b> or with an amount you would shrug at first: the point of a rehearsal is to find out which of the nine steps you misread, while it costs nothing.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ 05 DOWNLOAD & BUILD ══════════ -->
+<section class="sec" id="download">
+  <div class="wrap">
+    <div class="shead rv"><span class="snum">05</span><span class="srule"></span><span class="stag">Get the image</span></div>
+    <h2 class="h2 lm rv"><span>Download it to start. Rebuild it to trust it.</span></h2>
+    <p class="intro rv" style="--d:.1s">There is a ready-made image, and it is the sensible way to try SignerOS this afternoon. But a file somebody else prepared is a signer you are trusting them with — and the checksum next to it was published by the same people as the file, so on its own it only proves the download did not get corrupted. Building it yourself is what settles the question: the build is designed so that everyone who compiles the same version gets a byte-for-byte identical result, which means you can check it against what we published. Download it today; build it before the wallet matters.</p>
+    <div class="dlgrid">
+      <div class="dlcard rv">
+        <p class="dllabel">LATEST RELEASE</p>
+        <p class="dlname">&lt;SIGNER_IMAGE_FILENAME&gt;</p>
+        <div class="dlmeta">
+          <span class="hl">&lt;VERSION&gt;</span>
+          <span>&lt;2026-09-17&gt;</span>
+          <span>385 MiB WRITTEN</span>
+          <span>ANY MODERN PC</span>
+          <span>MIT</span>
+        </div>
+        <a class="btn btn-solid" href="<IMAGE_DOWNLOAD_URL>">▼ Download the image</a>
+        <p class="dlsub">Also: <a href="<GITHUB_RELEASES_URL>" target="_blank" rel="noopener">every version and its release notes</a> · <a href="https://github.com/signeros/signeros" target="_blank" rel="noopener">the source code</a>, which anybody is free to read.<br><br>What you get is a ready-made image of a complete USB stick — the startup files and the area your transaction files will live in are already in it. You do not format anything and you do not choose any settings; you write the image and the stick is done.</p>
+        <p class="vwarn" style="margin-top:20px">▲ The image we publish is <b>not</b> signed for Secure Boot, because that signature would have to be made with a key held by someone other than you. It boots with Secure Boot switched off. If you would rather leave Secure Boot switched on, build the image yourself with a key of your own — <a class="extlink" href="#secureboot">section 07</a> walks through it.</p>
+      </div>
+      <div class="verify rv" style="--d:.12s">
+        <h3>Check what you downloaded</h3>
+        <p class="vsub">The quick check: that the file arrived intact and is the one that was published. Run one command and compare the result with this, character by character.</p>
+        <div class="hashbox"><div class="hash" id="imgHash">&lt;cfd4411705b84c83a84233790d3dee48eb58f8dd850316dc77fa115ef420efe6&gt;</div><button class="copy" data-copy="imgHash">COPY</button></div>
+        <p class="dllabel">LINUX / MACOS</p>
+        <div class="cmd"><b>$</b> sha256sum &lt;SIGNER_IMAGE_FILENAME&gt;</div>
+        <p class="dllabel">WINDOWS (POWERSHELL)</p>
+        <div class="cmd"><b>&gt;</b> Get-FileHash &lt;SIGNER_IMAGE_FILENAME&gt; -Algorithm SHA256</div>
+        <p class="vwarn">✕ Not the same? Delete the file and download it again. Never start a computer from an image you could not confirm.</p>
+        <p class="vsub" style="margin-top:22px">Then be clear about what that proves: the file matches the number on this page. It does not prove the number itself is honest, because we published both. Only building it yourself settles that — which is the next step, and it is the one that makes this signer genuinely yours.</p>
+      </div>
+    </div>
+
+    <div class="verify rv" style="--d:.18s;margin-top:26px">
+      <h3>Rebuild it, and compare the payload</h3>
+      <p class="vsub">You need a Linux computer and some patience: everything is compiled from scratch, so the first run takes 30-90 minutes and later ones take minutes. You do not need the file you downloaded — this is the same source the released image was made from.</p>
+      <div class="cmd"><b>$</b> git clone &lt;GITHUB_REPO_URL&gt; signeros &amp;&amp; cd signeros</div>
+      <div class="cmd"><b>$</b> git checkout &lt;VERSION&gt;</div>
+      <div class="cmd"><b>$</b> ./scripts/build.sh</div>
+      <p class="dllabel" style="margin-top:20px">THE NUMBER THAT MATTERS</p>
+      <p class="vsub">Check the file called <code>bzImage</code> rather than the disk image. That single file is the whole of what the machine actually runs, so agreeing on it is agreeing on everything. The disk image is deliberately <em>not</em> comparable: it carries a signature that differs for every person who builds it, so two honest builds of it never match anyway.</p>
+      <div class="cmd"><b>$</b> sha256sum output/images/bzImage</div>
+      <p class="vsub" style="margin-top:14px">That number is published with every release, and two people on two different computers should get the same one. If yours comes out different, say so publicly — that is the check doing its job.</p>
+      <p class="dllabel" style="margin-top:20px">AND WATCH IT PROVE ITSELF</p>
+      <p class="vsub">The first starts the real image in a simulated computer and puts it through the whole job: read a transaction, show it, sign it, save it — and refuse a transaction that lies about which address belongs to you. The second is the quick one, and it re-checks every signature with a second, completely separate implementation written from scratch for the purpose. Asking a program to confirm its own work proves nothing; two independent programs agreeing is evidence.</p>
+      <div class="cmd"><b>$</b> ./scripts/test_in_qemu.sh</div>
+      <div class="cmd"><b>$</b> ./scripts/host_selftest.sh --build-wally</div>
+      <p class="vwarn">✕ This kind of check lets you <em>find out</em> that something was tampered with, by comparing with other people. It cannot prevent it. That is exactly why the comparison is worth actually doing rather than assuming.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ 06 WRITE THE USB ══════════ -->
+<section class="sec" id="flash">
+  <div class="wrap">
+    <div class="shead rv"><span class="snum">06</span><span class="srule"></span><span class="stag">Write the USB</span></div>
+    <h2 class="h2 lm rv"><span>Write it to a stick — five minutes, either OS.</span></h2>
+    <p class="intro rv" style="--d:.1s">The image is a picture of a finished stick, not a file you copy onto one. Everything is already inside it, so you do not format anything and you do not pick any settings — you write the image over the whole stick and it is ready. Unpack the download first if it arrived compressed.</p>
+    <div class="reqs rv">
+      <span class="req"><i>◆</i>ANY USB STICK OF 1 GB OR MORE</span>
+      <span class="req"><i>◆</i>WRITTEN WHOLE, NOT COPIED AS A FILE</span>
+      <span class="req"><i>◆</i>TAKES ABOUT FIVE MINUTES</span>
+      <span class="req"><i>◆</i>THE STICK IS COMPLETELY ERASED</span>
+    </div>
+
+    <div class="otabs rv">
+      <button class="otab on" data-t="w1">LINUX</button>
+      <button class="otab" data-t="w2">WINDOWS</button>
+    </div>
+
+    <div class="opanel on" id="w1">
+      <h3>Linux → the project's own script</h3>
+      <p class="osub">If you have the source — because you built the image, or just downloaded the source — the script that writes the stick comes with it. It reads the make and size of the drive back to you and asks you to confirm before touching it, then writes the image and reads it back to check the stick is correct.</p>
+      <div class="cmd"><b>$</b> sudo ./scripts/flash_usb.sh /dev/sdX --expand-data</div>
+      <p class="osub" style="margin-top:14px">It writes <code>output/images/signeros.img</code> by default. For an image you downloaded instead, point it at the file:</p>
+      <div class="cmd"><b>$</b> sudo IMAGE=~/Downloads/&lt;SIGNER_IMAGE_FILENAME&gt; ./scripts/flash_usb.sh /dev/sdX --expand-data</div>
+      <p class="osub" style="margin-top:14px"><code>--expand-data</code> gives the rest of the stick over to your transaction files afterwards, which is what you want on anything bigger than the image itself.</p>
+      <div class="easy">
+        <h4>◆ NO SOURCE CODE, OR PREFER TO CLICK?</h4>
+        <p><a class="extlink" href="https://etcher.balena.io" target="_blank" rel="noopener">balenaEtcher</a> needs nothing but the image file: choose it, choose the USB device, press <b>Flash</b>. It handles this kind of image correctly and refuses to write over your computer's own disk — you just do not get the read-back check, or the leftover space handed to your files.</p>
+      </div>
+      <button class="dd-toggle" id="ddToggle">▸ SHOW THE PLAIN DD WALKTHROUGH</button>
+      <div class="ddzone" id="ddZone" hidden>
+        <h5>▲ DD ERASES WHOLE DISKS. TRIPLE-CHECK THE DEVICE NAME.</h5>
+        <p>1 · Plug the stick in and find its device (e.g. <code>/dev/sdb</code>) — compare sizes to be sure:</p>
+        <div class="cmd"><b>$</b> lsblk -d -o NAME,SIZE,RM,MODEL</div>
+        <p>2 · Unmount every partition on it:</p>
+        <div class="cmd"><b>$</b> sudo umount /dev/sdX*</div>
+        <p>3 · Write the image to the <b>whole drive</b> — the plain device name, with no number on the end (<code>/dev/sdX</code>, not <code>/dev/sdX1</code>):</p>
+        <div class="cmd"><b>$</b> sudo dd if=signeros.img of=/dev/sdX bs=4M status=progress conv=fsync</div>
+        <p>4 · Flush and remove:</p>
+        <div class="cmd"><b>$</b> sync</div>
+        <p>The stick now has two areas on it: the part that starts the computer, which nothing should ever touch, and a plain one named <code>PSBT_DATA</code> where your files go. Plain <code>dd</code> leaves the rest of the stick unused — the script above can hand that space to your files instead.</p>
+      </div>
+    </div>
+
+    <div class="opanel" id="w2">
+      <h3>Windows → Rufus or Etcher</h3>
+      <p class="osub">Download the image, or build it on Linux (or in WSL) and copy <code>output/images/signeros.img</code> across. Back up anything on the stick first; it will be wiped.</p>
+      <ol class="olist">
+        <li>Download Rufus from <a class="extlink" href="https://rufus.ie" target="_blank" rel="noopener">rufus.ie</a> — a single free file, nothing to install.</li>
+        <li>Insert your USB stick and start Rufus. Under <b>Device</b>, pick that stick — and read the model and size twice.</li>
+        <li>Click <b>SELECT</b> and choose <code>signeros.img</code>.</li>
+        <li>Rufus recognises this kind of image and switches to <b>DD Image mode</b> by itself. Leave it there, and ignore the partition-scheme and file-system boxes — they do not apply, because the image already contains everything.</li>
+        <li>Press <b>START</b>, accept the “all data will be destroyed” warning, and wait for the green <b>READY</b>.</li>
+        <li>Click <b>CLOSE</b>, then eject the stick safely. It is now a SignerOS drive.</li>
+      </ol>
+      <div class="easy">
+        <h4>◆ ALLERGY TO TECHNICAL DETAILS?</h4>
+        <p>Use <a class="extlink" href="https://etcher.balena.io" target="_blank" rel="noopener">balenaEtcher</a> instead: pick the image → pick the USB → press <b>Flash</b>. Three clicks, works on Windows and Linux, no settings to think about.</p>
+      </div>
+      <p class="note" style="margin-top:22px">// Afterwards the stick shows up with a drive named <code>PSBT_DATA</code> on Windows, macOS and Linux alike. That is where your transaction files go — loose on it, not inside a folder. Whatever you do, do not reformat the stick “to fix it”: the part you would be erasing is the part that starts the computer.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ 07 SECURE BOOT ══════════ -->
+<section class="sec" id="secureboot">
+  <div class="wrap">
+    <div class="shead rv"><span class="snum">07</span><span class="srule"></span><span class="stag">Secure Boot</span></div>
+    <h2 class="h2 lm rv"><span>Sign the payload with your own key — or open the latch.</span></h2>
+    <p class="intro rv" style="--d:.1s">Secure Boot is a setting in your computer's start-up menu that lets it run only software carrying a signature it has been told to trust. Out of the factory it trusts Microsoft and nobody else, and SignerOS is not signed by Microsoft — so you have two honest choices, and the first is better than it sounds.</p>
+
+    <div class="sbgrid">
+      <div class="sbcol rv">
+        <h3><span class="sbadge en">RECOMMENDED</span> Sign it, enrol it, leave Secure Boot on</h3>
+        <ol class="olist">
+          <li>Make yourself a signing key — one command, once ever — then build the image. It comes out signed by you, and the build checks the signature before it finishes.</li>
+          <li>Copy the small certificate file that came with your key onto the stick, so your computer's start-up menu can find it.</li>
+          <li>Go into that menu and look for <b>Secure Boot Key Management</b>, usually under <b>Security</b> or <b>Advanced</b>. Switch it from <b>Factory Default</b> to <b>Custom</b>.</li>
+          <li>Choose <b>db</b> — the list of things the machine is willing to run — then <b>Enroll key from file</b>, and pick your certificate. The screen shows you a long number; check it matches the one the key-making command printed.</li>
+          <li><b>Save &amp; Exit</b>, then start the stick with Secure Boot still switched on.</li>
+        </ol>
+        <p class="note">// Now the machine runs your signer because <em>you</em> vouched for it, and it still refuses everything else. If you are a Linux user reaching for <code>mokutil</code> — that tool manages a different list and will not work here. It has to be done from the start-up menu.</p>
+      </div>
+      <div class="sbcol rv" style="--d:.12s">
+        <h3><span class="sbadge dis">OR</span> Build unsigned, turn Secure Boot off</h3>
+        <ol class="olist">
+          <li>Use the image as it comes. It works perfectly — a machine with Secure Boot switched on simply refuses to start it, usually saying the device has been blocked by the current security policy.</li>
+          <li>Restart and <b>press the setup key repeatedly</b> as the screen lights up (table below).</li>
+          <li>Set <b>Secure Boot → Disabled</b>, <b>Save &amp; Exit</b>, and start the stick.</li>
+          <li>When you are finished, go back in and switch it on again — for your everyday system's sake, not for SignerOS.</li>
+        </ol>
+        <p class="dllabel" style="margin-top:18px">THE SETUP KEY, BY MAKE</p>
+        <table class="vtable">
+          <tr><td>Dell</td><td>F2 / F12</td></tr>
+          <tr><td>Lenovo</td><td>F1 / F2 (or Fn+F2)</td></tr>
+          <tr><td>HP</td><td>F10 / Esc</td></tr>
+          <tr><td>ASUS</td><td>F2 / Del</td></tr>
+          <tr><td>Acer</td><td>F2</td></tr>
+          <tr><td>MSI</td><td>Del</td></tr>
+        </table>
+        <p class="note">// On HP machines, permission to start from a USB stick is a <em>separate</em> setting from Secure Boot, and both have to allow it. And SignerOS needs a computer made in roughly the last decade — very old machines start up in a way it does not support.</p>
+      </div>
+    </div>
+
+    <div class="warnbig rv">
+      <div class="wic">⚠</div>
+      <div>
+        <h4>Add your key. Never clear the existing ones.</h4>
+        <p>That same menu usually offers <b>Clear All Secure Boot Keys</b> right next to <b>Enroll</b>, and it does exactly what it says: it throws away the trust your own Windows or Linux installation depends on, and the machine stops starting up normally. Add yours to the list; do not replace the list. If you do press the wrong thing, <b>Restore Factory Keys</b> is in the same menu and undoes it — nothing here can permanently break a computer.</p>
+      </div>
+    </div>
+    <p class="sbnote rv">Some machines will not let you do this at all — a few hide the key menu until you set a password on the start-up settings, and a few only accept certificates in a form this project does not produce. On those, switching Secure Boot off is the answer. And it is worth knowing what the signature is actually for: it is what stops somebody who gets hold of your stick from quietly replacing what it starts up. Without it, that swap would go unnoticed — so either way, keep the stick somewhere you control.</p>
+  </div>
+</section>
+
+<!-- ══════════ 08 FAQ ══════════ -->
+<section class="sec" id="faq">
+  <div class="wrap">
+    <div class="shead rv"><span class="snum">08</span><span class="srule"></span><span class="stag">Questions</span></div>
+    <h2 class="h2 lm rv"><span>Asked, answered.</span></h2>
+    <div class="faq rv">
+      <details>
+        <summary>Does SignerOS ever touch the internet?</summary>
+        <div class="a">It cannot, and that is stronger than "it does not". The ability to use a network is not switched off in this system — it was left out of it. There is no Wi-Fi, no Ethernet, no Bluetooth, and no program on the stick that could use them if they existed. Plugging in a cable does nothing. This is also not a promise anyone has to take on trust: the project refuses to produce an image at all if that ever stops being true, and it is tested again on the finished system before release.</div>
+      </details>
+      <details>
+        <summary>Can anything persist after I power off?</summary>
+        <div class="a">Nothing except the file you asked it to save. Everything runs in the computer's memory, and the machine's own hard drives are invisible to it, so it could not write to them even if something on it tried. The only place it can save anything is your stick, and the only things it saves there are files that are safe to share: a signed transaction, or the public keys your everyday wallet needs. Your recovery words are never written anywhere at all — not to the stick, not to a log, not to a temporary file. That last one is checked automatically before every release rather than being a promise on a web page.</div>
+      </details>
+      <details>
+        <summary>Which wallets work with it?</summary>
+        <div class="a">Any wallet that can watch a balance from public keys and can save a payment to a file instead of sending it. Sparrow and Bitcoin Core are the usual choices; Blockstream Green works too, and the exported file is deliberately written so that all three can use it directly — you copy the one line your wallet asks for. Everything travels as files on the stick: there is no camera and no QR scanning here.</div>
+      </details>
+      <details>
+        <summary>Where do I type my recovery words?</summary>
+        <div class="a">Only on the SignerOS screen, on a machine that has no way to reach anywhere. As you type, the words go into a protected area of memory that is erased as soon as it is finished with, and nowhere else. If what you hold is a private key from a wallet rather than a set of words, that works here too.</div>
+      </details>
+      <details>
+        <summary>Can I use a passphrase — the “25th word”?</summary>
+        <div class="a">Yes, everywhere you can type recovery words — and it is shown on screen and asked for twice. That is on purpose. Any passphrase is a valid passphrase, so a wrong one does not produce an error: it quietly gives you a different, empty wallet, and nothing anywhere will tell you why your money is missing. The machine also treats every keyboard as a US one, so on a Turkish or German layout the punctuation is not where your keys say it is — seeing the characters is what catches that. Leaving it empty is perfectly normal; most wallets have none.</div>
+      </details>
+      <details>
+        <summary>What will it refuse to sign?</summary>
+        <div class="a">Two things above all. First, a transaction file that does not contain enough information for the machine to work out the fee: leave a piece out and a transaction can look like it pays a trivial fee while actually handing most of your balance to a miner. SignerOS says exactly what is missing and what to ask your wallet for, and there is no way to override it. Second, a file that claims one of the payments is your own change when your key says otherwise. Working that out from your key rather than believing the file is the difference between showing you a real receipt and showing you one written by whoever sent you the file. A deliberately forged example of that attack is part of the project's own tests, and a version that signed it could not be released.</div>
+      </details>
+      <details>
+        <summary>What hardware do I need?</summary>
+        <div class="a">An ordinary PC or laptop that can start from a USB stick — an old one is ideal, and it does not need to be fast or in good shape, since nothing is installed on it. Roughly anything made in the last decade will do; very old machines start up in a way this does not support. Plus a USB stick of 1 GB or more, which you do not need to format. A keyboard is expected, and a mouse, trackpad or touchscreen all work.</div>
+      </details>
+      <details>
+        <summary>Should I download the release or build it myself?</summary>
+        <div class="a">Download it to try it — that is what it is published for, and an afternoon spent watching the thing work is not wasted. Build it before you trust a wallet to it. The two are not rivals: everyone who builds the same version gets an identical result, so building it and finding the same number we published is what turns "their file" into "the file I checked myself". It also gets you the one thing a published image cannot have — a signature made with a key you hold instead of one somebody else does. And if your number ever comes out different from ours, say so publicly. That is the whole point of doing it this way.</div>
+      </details>
+      <details>
+        <summary>Is it free?</summary>
+        <div class="a">Yes, and it always will be. SignerOS is open source under the MIT license: anyone may read it, build it, change it or check it, and there is nothing to buy, register or subscribe to. Donations keep the kettle on, nothing more.</div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ 09 DONATE ══════════ -->
+<section class="sec donate" id="donate">
+  <div class="wrap">
+    <div class="shead rv"><span class="snum">09</span><span class="srule"></span><span class="stag">Support</span></div>
+    <h2 class="h2 lm rv" style="text-align:center"><span>Make your first test transaction our tip jar.</span></h2>
+    <p class="intro rv" style="margin:0 auto;max-width:44em;text-align:center;--d:.1s">The nicest way to try SignerOS end-to-end: make your very first signed transaction a small one to the donation address below. A few thousand sats is plenty — and it proves the whole loop works on your machine before anything that matters depends on it.</p>
+    <div class="dongrid rv" style="--d:.15s">
+      <div class="qrbox">
+        <img src="donation_qr.png" alt="Bitcoin donation QR code" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'">
+        <div class="qr-fallback">QR IMAGE MISSING<br>— point this tag to a<br>PNG in your repo:<br>donation_qr.png</div>
+        <div class="scanline"></div>
+      </div>
+      <div>
+        <p class="dlabel">DONATION ADDRESS · BITCOIN ON-CHAIN</p>
+        <div class="addrbox">
+          <div class="addr" id="donAddr">bc1qhxds906mu0gqdnxtrfu0uadtc5ul6fgx0sp238ly87dnpn9xk86stu90m3</div>
+          <button class="copy doncopy" data-copy="donAddr">COPY</button>
+        </div>
+        <p class="dnote">// Bitcoin on-chain only. Every sat is a thank-you — there are no tiers, no perks, just the project moving forward.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="fgrid">
+      <div class="fcol"><b>SIGNEROS</b><br>Air-gapped Bitcoin signing OS<br>MIT © <span id="yr"></span> <a href="https://github.com/signeros/signeros" target="_blank" rel="noopener">&lt;MFA&gt;</a></div>
+      <div class="fcol"><b>PROJECT</b><br><a href="https://github.com/signeros/signeros" target="_blank" rel="noopener">Source code</a><br><a href="#download">Download &amp; build</a><br><a href="#secureboot">Secure Boot</a></div>
+      <div class="fcol"><b>SUPPORT</b><br><a href="#donate">Donate (BTC)</a><br><a href="#faq">FAQ</a><br><a href="#flash">USB guide</a></div>
+      <div class="fcol"><b>PRIVACY</b><br>No trackers · no analytics<br>No cookies · single HTML file<br>No webfonts, no CDN:<br>this page makes no requests.</div>
+    </div>
+    <p class="disc">DISCLAIMER — SignerOS is provided as-is, without warranty of any kind. Bitcoin is unforgiving: check whatever you downloaded against the number published with it, build it yourself before the wallet matters, test with small amounts first, and never type recovery words that hold real money into anything except a machine you started from SignerOS yourself. What has actually been tested, and what has not, is written down plainly with the source code — including the parts nobody has been able to try on hardware other than the machines the author owns. If something here is unclear, do not guess — open an issue.</p>
+  </div>
+</footer>
+
+<script>
+(function(){
+"use strict";
+var RM = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+function $(s,c){return (c||document).querySelector(s)}
+function $$(s,c){return Array.prototype.slice.call((c||document).querySelectorAll(s))}
+
+/* ---------- scramble decode ---------- */
+function scramble(el, final, dur, done){
+  if(RM){ el.textContent = final; done&&done(); return; }
+  var chars="█▓▒░<>/#$01", frame=0, total=Math.max(12,Math.round((dur||900)/40));
+  var iv=setInterval(function(){
+    frame++;
+    var reveal=Math.floor(final.length*(frame/total)), out="";
+    for(var i=0;i<final.length;i++){
+      out += i<reveal ? final[i] : chars[(Math.random()*chars.length)|0];
+    }
+    el.textContent=out;
+    if(frame>=total){clearInterval(iv);el.textContent=final;done&&done();}
+  },40);
+}
+
+/* ---------- boot log ---------- */
+var bootLines=[
+  {t:"signeros — starting from the usb stick",c:"pr"},
+  {t:"<span class='ok'>[ OK ]</span> no way to reach a network on this machine"},
+  {t:"<span class='ok'>[ OK ]</span> running entirely in memory"},
+  {t:"<span class='ok'>[ OK ]</span> this computer's hard drives are invisible"},
+  {t:"<span class='ok'>[ OK ]</span> usb stick ready for your files"},
+  {t:"<span class='ok'>[ OK ]</span> signer ready — waiting for you <span class='crt'></span>"}
+];
+function fmtLine(l){return "<div class='lg "+(l.c||"")+"'>"+l.t+"</div>"}
+function runBoot(){
+  var box=$("#bootLog"); if(!box) return;
+  if(RM){ box.innerHTML=bootLines.map(fmtLine).join(""); return; }
+  var li=0;
+  (function next(){
+    if(li>=bootLines.length) return;
+    var row=document.createElement("div"); row.className="lg "+(bootLines[li].c||""); box.appendChild(row);
+    var tmp=document.createElement("div"); tmp.innerHTML=bootLines[li].t;
+    var text=tmp.textContent, html=bootLines[li].t, ci=0;
+    var iv=setInterval(function(){
+      ci++; row.textContent=text.slice(0,ci);
+      if(ci>=text.length){ clearInterval(iv); row.innerHTML=html; li++; setTimeout(next, 130); }
+    }, 9);
+  })();
+}
+scramble($("#titleTxt"),"SIGNEROS",1000,runBoot);
+
+/* ---------- reveals ---------- */
+var io=new IntersectionObserver(function(es){
+  es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add("in"); io.unobserve(e.target);
+    if(e.target.id==="titleScramble") scramble(e.target,e.target.dataset.text,800);
+  }});
+},{threshold:.15});
+$$(".rv,.lm").forEach(function(el){io.observe(el)});
+
+/* ---------- tabs ---------- */
+$$(".atab,.otab,.tbtn").forEach(function(b){
+  b.addEventListener("click",function(){
+    var sibs=b.parentElement.children;
+    for(var i=0;i<sibs.length;i++) sibs[i].classList.remove("on");
+    b.classList.add("on");
+    var holder=b.parentElement.nextElementSibling;
+    if(holder && holder.classList.contains("frame")){
+      $$(".topo",holder).forEach(function(p){p.classList.toggle("on",p.id===b.dataset.t)});
+    } else if(holder){
+      var kids=holder.parentElement.children;
+      for(var j=0;j<kids.length;j++){
+        var k=kids[j];
+        if(k.tagName==="DIV" && k!==b.parentElement && (k.classList.contains("apanel")||k.classList.contains("opanel")))
+          k.classList.toggle("on",k.id===b.dataset.t);
+      }
+      if(holder.id===b.dataset.t) holder.classList.add("on");
+    }
+    var win=b.parentElement.parentElement;
+    if(win && win.flowRender) win.flowRender();
+  });
+});
+
+/* ---------- walkthrough: step through the real screens of each flow ----------
+   Nothing here derives, generates or signs anything: the pages are static
+   reproductions and this only decides which one is visible.                  */
+$$(".appwin").forEach(function(win){
+  var ind=$(".pgind",win), prev=$("[data-nav='-1']",win), next=$("[data-nav='1']",win);
+  if(!ind||!prev||!next) return;
+  function pages(){ var p=$(".apanel.on",win); return p? $$(".apage",p) : [] }
+  function idx(){ var p=pages(); for(var i=0;i<p.length;i++) if(p[i].classList.contains("on")) return i; return 0 }
+  function render(){
+    var p=pages(), i=idx();
+    ind.textContent=(i+1)+" / "+p.length;
+    prev.disabled=(i===0); next.disabled=(i>=p.length-1);
+  }
+  function go(d){
+    var p=pages(), i=idx(), n=i+d;
+    if(n<0||n>=p.length) return;
+    p[i].classList.remove("on"); p[n].classList.add("on"); render();
+  }
+  prev.addEventListener("click",function(){go(-1)});
+  next.addEventListener("click",function(){go(1)});
+  win.flowRender=render;
+  render();
+});
+
+/* ---------- copy ---------- */
+$$(".copy").forEach(function(b){
+  b.addEventListener("click",function(){
+    var src=$("#"+b.dataset.copy); if(!src) return;
+    var txt=src.textContent.trim();
+    function ok(){ var o=b.textContent; b.textContent="COPIED ✓"; b.classList.add("did");
+      setTimeout(function(){b.textContent=o;b.classList.remove("did")},1400); }
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(txt).then(ok).catch(function(){fallback()});
+    } else fallback();
+    function fallback(){
+      var ta=document.createElement("textarea"); ta.value=txt; document.body.appendChild(ta);
+      ta.select(); try{document.execCommand("copy");ok()}catch(e){} document.body.removeChild(ta);
+    }
+  });
+});
+
+/* ---------- dd walkthrough ---------- */
+$("#ddToggle").addEventListener("click",function(){
+  var z=$("#ddZone"), hidden=z.hidden;
+  z.hidden=!hidden;
+  this.textContent=hidden?"▾ HIDE THE DD WALKTHROUGH":"▸ SHOW THE DD WALKTHROUGH";
+});
+
+/* ---------- misc ---------- */
+$("#yr").textContent=new Date().getFullYear();
+})();
+</script>
+</body>
+</html>

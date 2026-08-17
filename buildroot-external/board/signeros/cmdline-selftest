@@ -1,0 +1,60 @@
+# SignerOS self-test kernel command line (signeros-test.img only)
+#
+# Baked into a SECOND kernel build as CONFIG_CMDLINE by the signeros-test-image
+# target in external.mk. Identical kernel source, identical kernel
+# configuration and the identical rootfs.cpio as the production image - the
+# only difference between the two bzImages is this string.
+#
+# It has to be a second kernel build rather than a second boot entry because
+# CONFIG_CMDLINE_OVERRIDE=y means the command line cannot be varied at boot by
+# anything, including the test harness. See section 2b of
+# board/signeros/linux_hardening_defconfig.
+#
+# Differences from the production command line, all three of them deliberate
+# and none of them ever present in signeros.img:
+#
+#   console=ttyS0,115200   so scripts/test_in_qemu.sh can read the boot log and
+#                          the self-test's output headlessly. console= order
+#                          matters: the LAST one becomes /dev/console, i.e.
+#                          where init and the self-test's stdout land, so serial
+#                          must come after tty1.
+#   loglevel=6, no quiet   the harness matches on kernel messages.
+#   signeros.selftest=1    makes /etc/init.d/S99signer run the signer's headless
+#                          self-test (parse, inspect, sign, write, verify) and
+#                          power the machine off instead of starting the GUI.
+#                          Together with signeros.network=testnet and
+#                          signeros.mnemonic_file it drives the whole run.
+#
+# mitigations=auto without nosmt: the harness gives QEMU two CPUs and the
+# self-test is not measuring side-channel posture.
+#
+# Everything else - the IOMMU flags, the memory-init flags, lockdown - is
+# identical to production, because those are what the test is meant to exercise.
+#
+# Format: comment lines and blank lines are stripped; what remains is joined
+# into one line. Keep it one option per line for reviewable diffs.
+
+ro
+console=tty1
+console=ttyS0,115200
+loglevel=6
+consoleblank=0
+rdinit=/sbin/init
+intel_iommu=on
+amd_iommu=on
+iommu=force
+iommu.strict=1
+iommu.passthrough=0
+efi=disable_early_pci_dma
+init_on_alloc=1
+init_on_free=1
+slab_nomerge
+page_alloc.shuffle=1
+randomize_kstack_offset=on
+vsyscall=none
+lockdown=confidentiality
+mitigations=auto
+signeros.data_label=PSBT_DATA
+signeros.selftest=1
+signeros.network=testnet
+signeros.mnemonic_file=/mnt/data/test_mnemonic.txt

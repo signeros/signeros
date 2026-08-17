@@ -1,0 +1,31 @@
+# SignerOS: Qt eglfs QPA instead of linuxfb (optional)
+#
+#   ./scripts/build.sh --fragment eglfs
+#
+# The default kiosk uses the linuxfb QPA plugin on /dev/fb0, which the kernel's
+# DRM fbdev emulation exposes for whichever KMS driver bound (simpledrm at
+# minimum). That is the smallest possible path to pixels: no GL stack, no
+# userspace driver, roughly 40 MB less RAM held forever.
+#
+# Use eglfs when you want GPU-accelerated compositing - for instance if you add
+# animation to the kiosk, or drive a 4K panel where software blitting feels
+# sluggish. eglfs talks KMS/GBM directly; there is still no X11 and no Wayland.
+#
+# radeonsi and llvmpipe are intentionally absent: both drag in LLVM, which
+# roughly doubles the initramfs. Add them yourself if you must, and re-check
+# the size report from post-image.sh.
+
+BR2_PACKAGE_MESA3D=y
+BR2_PACKAGE_MESA3D_GBM=y
+BR2_PACKAGE_MESA3D_OPENGL_EGL=y
+BR2_PACKAGE_MESA3D_OPENGL_ES=y
+BR2_PACKAGE_MESA3D_GALLIUM_DRIVER_IRIS=y
+BR2_PACKAGE_MESA3D_GALLIUM_DRIVER_CROCUS=y
+BR2_PACKAGE_MESA3D_GALLIUM_DRIVER_NOUVEAU=y
+# BR2_PACKAGE_MESA3D_OPENGL_GLX is not set
+
+BR2_PACKAGE_QT5BASE_OPENGL=y
+BR2_PACKAGE_QT5BASE_OPENGL_ES2=y
+BR2_PACKAGE_QT5BASE_OPENGL_LIB=y
+BR2_PACKAGE_QT5BASE_EGLFS=y
+BR2_PACKAGE_QT5BASE_DEFAULT_QPA="eglfs"

@@ -1,0 +1,11 @@
+# SignerOS static device nodes.
+#
+# Booting from an initramfs means CONFIG_DEVTMPFS_MOUNT does nothing: /dev is
+# whatever the cpio contains until /etc/inittab mounts devtmpfs over it.
+# BusyBox init needs /dev/console to open its stdio, so these two nodes must
+# exist inside the archive itself.
+#
+# <name>	<type>	<mode>	<uid>	<gid>	<major>	<minor>	<start>	<inc>	<count>
+/dev		d	755	0	0	-	-	-	-	-
+/dev/console	c	622	0	0	5	1	-	-	-
+/dev/null	c	666	0	0	1	3	-	-	-

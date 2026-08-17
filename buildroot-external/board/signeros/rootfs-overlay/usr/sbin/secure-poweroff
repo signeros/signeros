@@ -1,0 +1,48 @@
+#!/bin/sh
+#
+# secure-poweroff - the shutdown hook.
+#
+# Called by the kiosk's "Secure Shutdown & Power Off" button (indirectly: the
+# unprivileged GUI exits 42 and signer-session runs this), by the power
+# button/Ctrl-Alt-Del handler in /etc/inittab, and at the end of the QEMU
+# self-test.
+#
+# The sequencing matters, so it is worth being explicit about who wipes what:
+#
+#   1. The kiosk has already zeroed its own key material. Mnemonic, BIP39 seed
+#      and derived private keys live in fixed, mlock'd buffers that are wiped
+#      with wally_bzero() the moment they go out of scope - not here, and not
+#      "eventually".
+#   2. rcK stops S99signer: the GUI gets SIGTERM and runs those destructors.
+#   3. rcK stops S01mount-data: /mnt/data is synced and unmounted, so the
+#      signed PSBT is definitely on the medium.
+#   4. rcK stops S00early last: free memory is scrubbed
+#      (signeros-ramwipe) and the page cache is dropped.
+#
+# This script only starts that chain, by asking init to shut down. Doing the
+# wipe here instead would race with the GUI still holding a seed.
+
+# shellcheck source=../lib/signeros/functions.sh
+. /usr/lib/signeros/functions.sh
+
+log "secure shutdown requested"
+
+panel_clear
+panel_msg \
+	"" \
+	"" \
+	"      SignerOS" \
+	"      ---------------------------------------------" \
+	"" \
+	"      Shutting down." \
+	"" \
+	"      Flushing the data partition, wiping key material" \
+	"      and scrubbing free memory. This takes a few" \
+	"      seconds - wait for the machine to switch off" \
+	"      before removing the USB stick." \
+	""
+
+# SIGUSR2 to init: run the ::shutdown: actions from /etc/inittab (rcK, sync,
+# umount -a -r) and then power the machine off. `poweroff -f` would skip all of
+# that, which is exactly the wrong thing here.
+exec /sbin/poweroff

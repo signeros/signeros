@@ -1,0 +1,63 @@
+config BR2_PACKAGE_BTC_SIGNER_GUI
+	bool "btc-signer-gui"
+	depends on BR2_INSTALL_LIBSTDCPP
+	depends on BR2_TOOLCHAIN_HAS_THREADS
+	depends on BR2_USE_MMU
+	depends on !BR2_STATIC_LIBS # Qt
+	select BR2_PACKAGE_LIBWALLY_CORE
+	select BR2_PACKAGE_QT5 if !BR2_PACKAGE_BTC_SIGNER_GUI_QT6
+	select BR2_PACKAGE_QT5BASE if !BR2_PACKAGE_BTC_SIGNER_GUI_QT6
+	select BR2_PACKAGE_QT5BASE_GUI if !BR2_PACKAGE_BTC_SIGNER_GUI_QT6
+	select BR2_PACKAGE_QT5BASE_WIDGETS if !BR2_PACKAGE_BTC_SIGNER_GUI_QT6
+	select BR2_PACKAGE_QT6 if BR2_PACKAGE_BTC_SIGNER_GUI_QT6
+	select BR2_PACKAGE_QT6BASE if BR2_PACKAGE_BTC_SIGNER_GUI_QT6
+	select BR2_PACKAGE_QT6BASE_GUI if BR2_PACKAGE_BTC_SIGNER_GUI_QT6
+	select BR2_PACKAGE_QT6BASE_WIDGETS if BR2_PACKAGE_BTC_SIGNER_GUI_QT6
+	select BR2_PACKAGE_DEJAVU
+	help
+	  SignerOS PSBT signing kiosk.
+
+	  A borderless full-screen Qt Widgets application that runs
+	  directly on the kernel KMS/DRM framebuffer (linuxfb or
+	  eglfs QPA plugin, no X11 and no Wayland). It scans a
+	  removable data partition for *.psbt files, renders the
+	  transaction for human verification, signs it with a
+	  BIP39/BIP32 key entered on an on-screen keyboard and writes
+	  the result back next to the input file.
+
+	  Also installs signeros-ramwipe, the free-memory scrub used
+	  by the secure shutdown hook.
+
+if BR2_PACKAGE_BTC_SIGNER_GUI
+
+config BR2_PACKAGE_BTC_SIGNER_GUI_QT6
+	bool "build against Qt6 instead of Qt5"
+	help
+	  Build the kiosk against qt6base. The default (Qt5) produces
+	  a noticeably smaller initramfs, which matters because the
+	  whole root filesystem is resident in RAM.
+
+config BR2_PACKAGE_BTC_SIGNER_GUI_NETWORK
+	string "Bitcoin network"
+	default "mainnet"
+	help
+	  Compiled-in default network: mainnet, testnet, signet or
+	  regtest. Selects address encoding, BIP32 version bytes and
+	  the BIP44/49/84/86 coin type. It can be overridden at
+	  runtime by NETWORK= in /etc/signeros.conf.
+
+config BR2_PACKAGE_BTC_SIGNER_GUI_WORD_SUGGESTIONS
+	bool "show BIP39 word suggestions while typing"
+	default y
+	help
+	  Show matching BIP39 words as you type each mnemonic word.
+	  Convenient and it prevents typos, but the suggested words
+	  transit Qt-managed (heap) QString memory, unlike the
+	  mnemonic itself which is only ever held in a wiped fixed
+	  buffer. Disable for the strictest memory-handling posture.
+
+endif
+
+comment "btc-signer-gui needs a toolchain w/ C++, threads, dynamic library"
+	depends on BR2_USE_MMU
+	depends on !BR2_INSTALL_LIBSTDCPP || !BR2_TOOLCHAIN_HAS_THREADS || BR2_STATIC_LIBS

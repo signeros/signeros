@@ -1,0 +1,121 @@
+#!/bin/sh
+#
+# S99signer - start the signer.
+#
+# Normal boot: hand over to /usr/bin/signer-session, which drops privileges and
+# runs
+#
+#     /usr/bin/btc_signer_gui -platform eglfs
+#
+# (with the platform resolved for the machine, see signer-session).
+#
+# signeros.selftest=1 on the kernel command line instead runs the kiosk's
+# headless self-test - parse, inspect, sign, write, verify - prints machine
+# readable SELFTEST: lines to the console and powers the machine off. That is
+# what scripts/test_in_qemu.sh consumes, and it exercises the same binary and
+# the same signing path as the GUI.
+
+# shellcheck source=../../usr/lib/signeros/functions.sh
+. /usr/lib/signeros/functions.sh
+
+SIGNER_BIN=/usr/bin/btc_signer_gui
+SESSION=/usr/bin/signer-session
+PIDFILE=/run/signer-session.pid
+
+run_selftest() {
+	log "self-test mode (signeros.selftest=1)"
+
+	_args="--self-test --data-dir $MOUNT_POINT --network $NETWORK"
+	[ -n "$MNEMONIC_FILE" ] && _args="$_args --mnemonic-file $MNEMONIC_FILE"
+
+	# The negative fixture, when the harness put one on the medium: a PSBT
+	# whose change output carries our fingerprint and path over an address we
+	# do not control. The run fails unless the engine refuses it. Its name
+	# does not end in .psbt, so it is never a candidate to be signed.
+	_forged="$MOUNT_POINT/forged_change.psbt.bad"
+	[ -f "$_forged" ] && _args="$_args --expect-blocked $_forged"
+
+	# Runs as the same unprivileged account as the GUI, so the test proves
+	# the real permission set works - not just that root can sign.
+	# Output goes to /dev/console, which the self-test image points at the
+	# serial line.
+	ulimit -l unlimited 2>/dev/null
+	ulimit -c 0 2>/dev/null
+	# shellcheck disable=SC2086 # word splitting of $_args is intended
+	setuidgid signer "$SIGNER_BIN" $_args > /dev/console 2>&1
+	_rc=$?
+
+	if [ "$_rc" -eq 0 ]; then
+		log "SELFTEST RESULT: PASS"
+	else
+		log "SELFTEST RESULT: FAIL (exit $_rc)"
+	fi
+
+	# Down through the normal shutdown path so the test also exercises
+	# unmount + memory scrub.
+	log "self-test finished; powering off"
+	/usr/sbin/secure-poweroff
+	return "$_rc"
+}
+
+start() {
+	signeros_load_config
+
+	if [ ! -x "$SIGNER_BIN" ]; then
+		panel_error "signer binary missing" \
+			"$SIGNER_BIN is not present on this image." \
+			"This build is broken; do not use it to sign anything."
+		return 1
+	fi
+
+	if [ "${SELFTEST:-0}" = "1" ]; then
+		run_selftest
+		return $?
+	fi
+
+	# Keep the framebuffer console quiet and cursor-free before Qt takes
+	# over the screen.
+	panel_clear
+
+	start-stop-daemon --start --quiet --background \
+		--make-pidfile --pidfile "$PIDFILE" \
+		--exec "$SESSION" \
+		|| { log "failed to start signer session"; return 1; }
+
+	log "signer session started"
+	return 0
+}
+
+stop() {
+	signeros_load_config
+
+	# SIGTERM first, and give it time: the kiosk wipes its key buffers and
+	# closes any file on the data partition in its shutdown path. Killing it
+	# outright would skip that.
+	start-stop-daemon --stop --quiet --oknodo \
+		--pidfile "$PIDFILE" --retry 'TERM/8/KILL/2' 2>/dev/null
+	rm -f "$PIDFILE"
+
+	# The supervisor is what start-stop-daemon tracks; make sure the kiosk
+	# itself is gone before the data partition is unmounted underneath it.
+	if pidof btc_signer_gui > /dev/null 2>&1; then
+		kill -TERM "$(pidof btc_signer_gui)" 2>/dev/null
+		_n=0
+		while pidof btc_signer_gui > /dev/null 2>&1 && [ "$_n" -lt 8 ]; do
+			sleep 1
+			_n=$((_n + 1))
+		done
+		pidof btc_signer_gui > /dev/null 2>&1 \
+			&& kill -KILL "$(pidof btc_signer_gui)" 2>/dev/null
+	fi
+
+	log "signer stopped"
+	return 0
+}
+
+case "$1" in
+	start)   start ;;
+	stop)    stop ;;
+	restart) stop; start ;;
+	*) echo "Usage: $0 {start|stop|restart}"; exit 1 ;;
+esac

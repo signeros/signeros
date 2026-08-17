@@ -1,0 +1,33 @@
+# /etc/inittab - SignerOS
+#
+# BusyBox init. No getty on any tty and no login binary in the image: the
+# signer GUI is the only interactive surface the device has.
+#
+# Booting from an initramfs means CONFIG_DEVTMPFS_MOUNT is a no-op, so /dev is
+# mounted here explicitly. Everything writable is tmpfs; /etc/init.d/S00early
+# then remounts the root filesystem read-only, after which the only writable
+# non-volatile storage reachable by the system is /mnt/data.
+#
+# <id>:<runlevels>:<action>:<process>
+
+::sysinit:/bin/mount -t proc     -o nosuid,nodev,noexec,hidepid=2 proc /proc
+::sysinit:/bin/mount -t devtmpfs -o nosuid,mode=0755 devtmpfs /dev
+::sysinit:/bin/mount -t sysfs    -o nosuid,nodev,noexec sysfs /sys
+::sysinit:/bin/mkdir -p /dev/pts /dev/shm
+::sysinit:/bin/mount -t devpts -o nosuid,noexec,gid=5,mode=0620 devpts /dev/pts
+::sysinit:/bin/mount -t tmpfs  -o nosuid,nodev,noexec,size=16m,mode=1777 tmpfs /dev/shm
+::sysinit:/bin/mount -t tmpfs  -o nosuid,nodev,size=32m,mode=1777 tmpfs /tmp
+::sysinit:/bin/mount -t tmpfs  -o nosuid,nodev,size=8m,mode=0755 tmpfs /run
+
+::sysinit:/etc/init.d/rcS
+
+# Power button / Ctrl-Alt-Del: go through the same secure shutdown path as the
+# GUI's "Secure Shutdown & Power Off" button.
+::ctrlaltdel:/usr/sbin/secure-poweroff
+
+# rcK stops the S-scripts in reverse order: the GUI first, then the data
+# partition is flushed and unmounted, and S00early's stop action performs the
+# free-memory scrub last.
+::shutdown:/etc/init.d/rcK
+::shutdown:/bin/sync
+::shutdown:/bin/umount -a -r

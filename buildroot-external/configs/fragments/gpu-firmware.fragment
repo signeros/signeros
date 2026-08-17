@@ -1,0 +1,20 @@
+# SignerOS: native GPU firmware (optional)
+#
+#   ./scripts/build.sh --fragment gpu-firmware
+#
+# The default image ships no GPU firmware. On a machine whose GPU needs it,
+# amdgpu/i915 simply fail to bind and simpledrm keeps driving the UEFI GOP
+# framebuffer, so the kiosk still works - just without native modesetting.
+#
+# Enable this when you need native KMS on specific hardware (correct panel
+# resolution on a modern AMD APU, for example). The cost is real and permanent:
+# the firmware blobs land in the initramfs and therefore in RAM for the whole
+# session. Expect the ESP payload to grow by tens of megabytes; post-image.sh
+# will tell you if it no longer fits.
+#
+# Note that this also puts vendor binary blobs into the trusted boot payload of
+# an air-gapped signer. That is a deliberate trade-off, not an oversight.
+
+BR2_PACKAGE_LINUX_FIRMWARE=y
+BR2_PACKAGE_LINUX_FIRMWARE_AMDGPU=y
+BR2_PACKAGE_LINUX_FIRMWARE_I915=y

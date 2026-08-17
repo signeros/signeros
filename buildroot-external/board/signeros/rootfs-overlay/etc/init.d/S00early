@@ -1,0 +1,120 @@
+#!/bin/sh
+#
+# S00early - runtime hardening, device node permissions, read-only root.
+#
+# The `stop` action is the last thing to run during shutdown (rcK walks the
+# S-scripts in reverse), which makes it the right place for the free-memory
+# scrub described in README "Secure shutdown".
+
+# shellcheck source=../../usr/lib/signeros/functions.sh
+. /usr/lib/signeros/functions.sh
+
+set_sysctl() {
+	[ -w "/proc/sys/$1" ] && echo "$2" > "/proc/sys/$1" 2>/dev/null
+	return 0
+}
+
+start() {
+	signeros_load_config
+
+	# -------------------------------------------------------------------
+	# Runtime kernel hardening. The compile-time half lives in
+	# board/signeros/linux_hardening_defconfig; these are the knobs that
+	# only exist at runtime.
+	# -------------------------------------------------------------------
+	set_sysctl kernel/dmesg_restrict 1
+	set_sysctl kernel/kptr_restrict 2
+	set_sysctl kernel/sysrq 0
+	set_sysctl kernel/panic 10
+	set_sysctl kernel/panic_on_oops 1
+	set_sysctl kernel/perf_event_paranoid 3
+	set_sysctl fs/suid_dumpable 0
+	set_sysctl fs/protected_symlinks 1
+	set_sysctl fs/protected_hardlinks 1
+	set_sysctl fs/protected_fifos 2
+	set_sysctl fs/protected_regular 2
+	set_sysctl vm/mmap_min_addr 65536
+	set_sysctl vm/unprivileged_userfaultfd 0
+	# ptrace_scope=3 disables ptrace outright, for everyone, until reboot.
+	# Nothing on this image debugs anything, and it means a bug in the kiosk
+	# cannot be turned into "read the seed out of the signer's memory".
+	set_sysctl kernel/yama/ptrace_scope 3
+
+	# -------------------------------------------------------------------
+	# Device nodes. devtmpfs already created them; `mdev -s` applies the
+	# ownership in /etc/mdev.conf, which is how the unprivileged kiosk gets
+	# at the framebuffer, DRM and input devices without being in any
+	# privileged group.
+	# -------------------------------------------------------------------
+	log "applying device permissions"
+	/sbin/mdev -s 2>/dev/null
+
+	# Writable runtime dir for the kiosk (rootfs is about to become
+	# read-only, and Qt wants somewhere for XDG_RUNTIME_DIR).
+	mkdir -p /run/signer
+	chown signer:signer /run/signer 2>/dev/null
+	chmod 0700 /run/signer
+
+	# Keep the panel clean for the GUI. In self-test mode leave kernel
+	# messages flowing so the harness sees warnings and oopses.
+	if [ "${SELFTEST:-0}" != "1" ]; then
+		/bin/dmesg -n 1 2>/dev/null
+	fi
+
+	# -------------------------------------------------------------------
+	# Root filesystem read-only.
+	#
+	# The root filesystem is the RAM-resident initramfs. Making it
+	# read-only means no process - including a compromised kiosk - can
+	# persist anything into the image, and it turns any accidental write
+	# into an immediate, visible EROFS instead of silent state.
+	# /tmp, /run, /dev/shm stay writable (tmpfs), /mnt/data is the only
+	# writable storage.
+	# -------------------------------------------------------------------
+	if mount -o remount,ro / 2>/dev/null; then
+		log "root filesystem is read-only (RAM-resident initramfs)"
+	else
+		log "WARNING: could not remount / read-only"
+	fi
+
+	log "early init complete"
+}
+
+stop() {
+	# --------------------------------------------------------------------
+	# Secure shutdown, final stage.
+	#
+	# By the time this runs the kiosk has exited (wiping its own key
+	# buffers in its destructors) and /mnt/data has been flushed and
+	# unmounted. What is left is page cache and freed anonymous pages that
+	# may still hold fragments of a seed or a mnemonic.
+	#
+	# init_on_free=1 means the kernel already zeroes pages as they are
+	# freed. The scrub below is defence in depth for anything that was
+	# never freed properly, and it also evicts the page cache copy of any
+	# file read off the data partition.
+	#
+	# What this does NOT defend against is a cold-boot attack on the DRAM
+	# itself; see README "Threat model and what is NOT covered".
+	# --------------------------------------------------------------------
+	log "secure shutdown: scrubbing free memory"
+
+	sync
+	[ -w /proc/sys/vm/drop_caches ] && echo 3 > /proc/sys/vm/drop_caches
+
+	if [ -x /usr/bin/signeros-ramwipe ]; then
+		/usr/bin/signeros-ramwipe --reserve-mib 96 2>/dev/null
+	fi
+
+	[ -w /proc/sys/vm/drop_caches ] && echo 3 > /proc/sys/vm/drop_caches
+	sync
+
+	log "secure shutdown: memory scrub complete"
+}
+
+case "$1" in
+	start) start ;;
+	stop)  stop ;;
+	restart|reload) start ;;
+	*) echo "Usage: $0 {start|stop|restart}"; exit 1 ;;
+esac
