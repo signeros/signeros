@@ -905,26 +905,26 @@ footer{border-top:1px solid var(--line);padding:54px 0 44px;background:var(--bg2
     <div class="dlgrid">
       <div class="dlcard rv">
         <p class="dllabel">LATEST RELEASE</p>
-        <p class="dlname">&lt;SIGNER_IMAGE_FILENAME&gt;</p>
+        <p class="dlname">signeros-1.0.1-x86_64.img</p>
         <div class="dlmeta">
-          <span class="hl">&lt;VERSION&gt;</span>
+          <span class="hl">1.0.1</span>
           <span>&lt;2026-09-17&gt;</span>
           <span>385 MiB WRITTEN</span>
           <span>ANY MODERN PC</span>
           <span>MIT</span>
         </div>
-        <a class="btn btn-solid" href="<IMAGE_DOWNLOAD_URL>">▼ Download the image</a>
-        <p class="dlsub">Also: <a href="<GITHUB_RELEASES_URL>" target="_blank" rel="noopener">every version and its release notes</a> · <a href="https://github.com/signeros/signeros" target="_blank" rel="noopener">the source code</a>, which anybody is free to read.<br><br>What you get is a ready-made image of a complete USB stick — the startup files and the area your transaction files will live in are already in it. You do not format anything and you do not choose any settings; you write the image and the stick is done.</p>
+        <a class="btn btn-solid" href="https://github.com/signeros/signeros/releases/download/v1.0.1/signeros-1.0.1-x86_64.img">▼ Download the image</a>
+        <p class="dlsub">Also: <a href="https://github.com/signeros/signeros/releases" target="_blank" rel="noopener">every version and its release notes</a> · <a href="https://github.com/signeros/signeros" target="_blank" rel="noopener">the source code</a>, which anybody is free to read.<br><br>What you get is a ready-made image of a complete USB stick — the startup files and the area your transaction files will live in are already in it. You do not format anything and you do not choose any settings; you write the image and the stick is done.</p>
         <p class="vwarn" style="margin-top:20px">▲ The image we publish is <b>not</b> signed for Secure Boot, because that signature would have to be made with a key held by someone other than you. It boots with Secure Boot switched off. If you would rather leave Secure Boot switched on, build the image yourself with a key of your own — <a class="extlink" href="#secureboot">section 07</a> walks through it.</p>
       </div>
       <div class="verify rv" style="--d:.12s">
         <h3>Check what you downloaded</h3>
         <p class="vsub">The quick check: that the file arrived intact and is the one that was published. Run one command and compare the result with this, character by character.</p>
-        <div class="hashbox"><div class="hash" id="imgHash">&lt;cfd4411705b84c83a84233790d3dee48eb58f8dd850316dc77fa115ef420efe6&gt;</div><button class="copy" data-copy="imgHash">COPY</button></div>
+        <div class="hashbox"><div class="hash" id="imgHash">6456296ba0ea0a4e9a70ca4b560a6be9c73ae1c5856df5f92e1781edef72ba34</div><button class="copy" data-copy="imgHash">COPY</button></div>
         <p class="dllabel">LINUX / MACOS</p>
-        <div class="cmd"><b>$</b> sha256sum &lt;SIGNER_IMAGE_FILENAME&gt;</div>
+        <div class="cmd"><b>$</b> sha256sum signeros-1.0.1-x86_64.img</div>
         <p class="dllabel">WINDOWS (POWERSHELL)</p>
-        <div class="cmd"><b>&gt;</b> Get-FileHash &lt;SIGNER_IMAGE_FILENAME&gt; -Algorithm SHA256</div>
+        <div class="cmd"><b>&gt;</b> Get-FileHash signeros-1.0.1-x86_64.img -Algorithm SHA256</div>
         <p class="vwarn">✕ Not the same? Delete the file and download it again. Never start a computer from an image you could not confirm.</p>
         <p class="vsub" style="margin-top:22px">Then be clear about what that proves: the file matches the number on this page. It does not prove the number itself is honest, because we published both. Only building it yourself settles that — which is the next step, and it is the one that makes this signer genuinely yours.</p>
       </div>
@@ -934,7 +934,7 @@ footer{border-top:1px solid var(--line);padding:54px 0 44px;background:var(--bg2
       <h3>Rebuild it, and compare the payload</h3>
       <p class="vsub">You need a Linux computer and some patience: everything is compiled from scratch, so the first run takes 30-90 minutes and later ones take minutes. You do not need the file you downloaded — this is the same source the released image was made from.</p>
       <div class="cmd"><b>$</b> git clone https://github.com/signeros/signeros signeros &amp;&amp; cd signeros</div>
-      <div class="cmd"><b>$</b> git checkout &lt;VERSION&gt;</div>
+      <div class="cmd"><b>$</b> git checkout 1.0.1</div>
       <div class="cmd"><b>$</b> ./scripts/build.sh</div>
       <p class="dllabel" style="margin-top:20px">THE NUMBER THAT MATTERS</p>
       <p class="vsub">Check the file called <code>bzImage</code> rather than the disk image. That single file is the whole of what the machine actually runs, so agreeing on it is agreeing on everything. The disk image is deliberately <em>not</em> comparable: it carries a signature that differs for every person who builds it, so two honest builds of it never match anyway.</p>
@@ -972,7 +972,7 @@ footer{border-top:1px solid var(--line);padding:54px 0 44px;background:var(--bg2
       <p class="osub">If you have the source — because you built the image, or just downloaded the source — the script that writes the stick comes with it. It reads the make and size of the drive back to you and asks you to confirm before touching it, then writes the image and reads it back to check the stick is correct.</p>
       <div class="cmd"><b>$</b> sudo ./scripts/flash_usb.sh /dev/sdX --expand-data</div>
       <p class="osub" style="margin-top:14px">It writes <code>output/images/signeros.img</code> by default. For an image you downloaded instead, point it at the file:</p>
-      <div class="cmd"><b>$</b> sudo IMAGE=~/Downloads/&lt;SIGNER_IMAGE_FILENAME&gt; ./scripts/flash_usb.sh /dev/sdX --expand-data</div>
+      <div class="cmd"><b>$</b> sudo IMAGE=~/Downloads/signeros-1.0.1-x86_64.img ./scripts/flash_usb.sh /dev/sdX --expand-data</div>
       <p class="osub" style="margin-top:14px"><code>--expand-data</code> gives the rest of the stick over to your transaction files afterwards, which is what you want on anything bigger than the image itself.</p>
       <div class="easy">
         <h4>◆ NO SOURCE CODE, OR PREFER TO CLICK?</h4>
