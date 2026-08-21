@@ -907,42 +907,57 @@ Executed in this environment, on this tree:
 - the change-forgery gate, end to end: `forged_change.psbt.bad` (this wallet's
   fingerprint and change path over an address it does not control) is reported
   as a mismatch and refused, in both the host run and the booted image
-- wallet creation end to end in the booted production image: seed generated,
-  words shown, all of them typed back, passphrase entered, descriptor file
-  written to the data partition — and the file's fingerprint, four account
-  xpubs and four first addresses re-derived from the same words by
-  `make_test_data.py` and found identical. **This predates the grid entry
-  rewrite**: the run that proved it typed into the old sequential cursor, and
-  the derivation it proved is untouched, but nobody has driven the current
-  entry model by hand (see below)
 - `make_test_data.py self-check` passes every published vector it asserts,
   including BIP32 vector 1, the BIP84/BIP86 reference wallets, the BIP49
   testnet address and BIP341's taproot tweak
 - every shell script parses (`make check-scripts`)
+
+Executed on real hardware, from a USB stick, on several different laptops and
+desktops with **Secure Boot disabled**:
+
+- the image boots to the kiosk and the input enumeration in `main.cpp` picks the
+  machine's devices up without configuration
+- **the touchpad path.** `ui/touchpad.cpp` has been driven on several laptops'
+  own pads — the one thing QEMU structurally cannot show, since `usb-tablet`
+  takes the absolute-pointer path instead
+- **the mnemonic grids as an interaction**, by hand: arrow-key movement between
+  cells, Tab, click-to-cell, the import screen's word-count selector (**F4**) and
+  the live red marking of a cell whose word is not in the wordlist all behave as
+  built. That covers the whole Qt half of the entry model, which no automated
+  test in this tree can reach
+- **wallet creation end to end**, through the current grid entry: seed
+  generated, words shown, all of them typed back, passphrase entered, descriptor
+  file written to the data partition
+- **2-of-2 multisig signing**, end to end in the booted production image
+
+The independent re-derivation of a created wallet's export — its fingerprint,
+four account xpubs and four first addresses recomputed from the same words by
+`make_test_data.py` and found identical — was done in an earlier booted run,
+before the grid rewrite. That evidence still stands for the derivation, which
+the rewrite did not touch; what the rewrite changed was how the words reach it,
+and that is what the hardware runs above cover.
 
 The xpub diff earned its keep on its first run: it caught the signer handing
 `wally_bip32_key_to_address()` a network identifier where the function wants a
 raw base58 prefix byte, which produced well-formed, checksummed BIP44 and BIP49
 addresses with the wrong prefix. Nothing else in the build noticed.
 
-Still unproven anywhere: behaviour on real hardware other than the machine this
-was flashed on, Secure Boot enrolment on firmware other than EDK2, and the
-touchpad path — `ui/touchpad.cpp` cannot be exercised by QEMU's `usb-tablet`,
-which is a pointer rather than a pad.
+Still unproven:
 
-Half-proven: **the mnemonic grids.** The layer underneath them is covered —
-`runGridChecks()` in `core/selftest.cpp` exercises the slot arithmetic, the
-empty-cell semantics, the wipe when the grid shrinks, that a complete grid is
-byte-for-byte the form `bip39Validate()` wants, and that `bip39UnknownSlots()`
-names exactly the bad cells and does not judge the one being typed. That runs on
-every `host_selftest.sh` and again inside the booted image.
+- **Secure Boot, in its entirety.** No image has been signed with
+  `SIGNEROS_SB_KEY`/`SIGNEROS_SB_CERT` and no certificate has been enrolled into
+  `db` — not on real firmware and not on EDK2. Every machine the image has run on
+  had Secure Boot switched off. [Secure Boot and the unified kernel image](#secure-boot-and-the-unified-kernel-image)
+  describes what the build does and what enrolment requires; none of it has been
+  executed.
+- **a real touchscreen panel.** Touchscreens take Qt's `evdevtouch` handler
+  rather than `touchpad.cpp`, and QEMU's `usb-tablet` is an absolute pointer, so
+  neither the hardware runs above nor `make gui` is evidence about them.
 
-What is *not* covered is the Qt half. The framebuffer test is a pixel check on
-the splash, not a driver of the entry, so nothing in this tree presses a key,
-moves a cursor or clicks a cell. Arrow movement, click-to-cell, the word-count
-selector and the live red marking have been reasoned about and built; they have
-not been operated. `make gui` is the way to operate them, and doing so on a real
-touchscreen would additionally cover the one path `usb-tablet` cannot.
+What is no longer on that list is the entry UI. It was proven by hand, because
+nothing here can prove it otherwise — `test-gui` is a pixel check on the splash,
+so no test in this tree presses a key, moves a cursor or clicks a cell. A new
+screen that takes typing inherits that: `make gui` first, then a stick.
 
 ---
 
@@ -1118,7 +1133,9 @@ motionless — Qt does not move the platform cursor for touch-synthesised events
 and lands every tap at the finger's position *on the pad*. It reads as broken
 hardware. QEMU cannot reproduce it either, because `test_in_qemu.sh` attaches a
 `usb-tablet`, which has neither `BTN_TOUCH` nor MT slots and so takes the
-absolute-pointer path instead. `make gui` is not evidence about touchpads.
+absolute-pointer path instead. `make gui` is not evidence about touchpads; this
+path has been proven the only way it can be, by driving several laptops' own pads
+from a booted stick.
 
 A USB mouse always works. On a PS/2 pad, `psmouse.proto=imps` on the kernel
 command line is still available as a fallback: it demotes the pad to a plain

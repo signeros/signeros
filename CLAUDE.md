@@ -178,7 +178,8 @@ What that means when you add or change a screen:
   behind a tab, and do not let one be the only one visible.
 - `make gui` gives you a QEMU window with a pointer and a keyboard, so it exercises both
   of those. It proves nothing about touchpads (`ui/touchpad.cpp`): `usb-tablet` is an
-  absolute pointer, not a pad.
+  absolute pointer, not a pad. That path has been proven on real laptop pads instead,
+  which is the only way it can be — so a change to it needs a stick, not QEMU.
 
 ### The guardrails are mechanically enforced
 
@@ -202,7 +203,7 @@ If a guardrail check fails, the check is almost certainly right. Fix the cause.
 | `src/btc_signer_gui/src/ui/screen_import.{h,cpp}` | Existing recovery words → the same watch-only export. Almost no new machinery: `buildWalletExport()` does not care where the mnemonic came from. What it adds is the **review page** — fingerprint and first addresses before the file exists — because a mistyped word is caught by the BIP39 checksum and a mistyped passphrase never is. The account (0-9) is selectable here and fixed at 0 when creating. Entry is the same numbered grid `screen_create` verifies into, with the word count chosen here (the seed was made elsewhere, so the device cannot know it) and the words shown in clear — creation masks its grid so the operator copies from paper rather than from the screen, and here the paper *is* the source. `bip39UnknownSlots()` marks a cell that is not a wordlist entry as it is typed, which is the question `bip39Validate()` cannot answer: it can only say the whole mnemonic is wrong. |
 | `src/btc_signer_gui/src/ui/secret_buffers.h` | The only four SecureStrings in the process: mnemonic, passphrase, passphrase-again, verification. Shared by the signing, creation **and import** screens on purpose — a second pair in another translation unit would be two more page ranges that can hold a seed, wiped by a different code path. The grids do not change that: they add slot structure *inside* the same buffer rather than a parallel array of words, which would have been exactly the second copy this file exists to prevent. |
 | `src/btc_signer_gui/src/main.cpp` | The kiosk *and* `--self-test` in one binary; also enumerates `/dev/input/event*` itself, because there is no udev. Classification is by evdev capability bits plus `INPUT_PROP_DIRECT`/`INPUT_PROP_POINTER` — a touchscreen and a touchpad are otherwise indistinguishable and need opposite treatment. What the result is used for: [Who it runs on](#who-it-runs-on-and-what-drives-it). |
-| `src/btc_signer_gui/src/ui/touchpad.cpp` | Touchpad → pointer deltas, fed to `QWindowSystemInterface`. Qt's evdev stack has no touchpad handler; libinput does, but it needs udev, which needs netlink. QEMU's `usb-tablet` does not exercise this path, so `make gui` proves nothing about touchpads. |
+| `src/btc_signer_gui/src/ui/touchpad.cpp` | Touchpad → pointer deltas, fed to `QWindowSystemInterface`. Qt's evdev stack has no touchpad handler; libinput does, but it needs udev, which needs netlink. QEMU's `usb-tablet` does not exercise this path, so `make gui` proves nothing about touchpads — this has been exercised on real laptop pads, and a change here has to be re-proven the same way. |
 | `buildroot-external/board/signeros/rootfs-overlay/` | BusyBox init: `S00early` (read-only root), `S01mount-data` (zero-trust mount), `S99signer` → `signer-session`. |
 | `scripts/make_test_data.py` | Pure-stdlib reimplementation of RIPEMD-160, secp256k1, BIP32/39, bech32, PSBT, BIP143 sighash. Deliberate duplication: libwally must not be the thing that confirms libwally. Prove it with `self-check` before trusting a result from it. |
 
@@ -333,22 +334,28 @@ If a guardrail check fails, the check is almost certainly right. Fix the cause.
 ### Verification status
 
 The full Buildroot build, `./scripts/test_in_qemu.sh` (both runs) and
-`./scripts/host_selftest.sh` have all been executed on this tree and pass, and
-the wallet-creation flow has been driven end to end in the booted production
-image with its exported keys re-derived independently. See the README section of
-the same name for exactly what that covers.
+`./scripts/host_selftest.sh` have all been executed on this tree and pass. On
+real hardware — several different laptops and desktops, booted from a stick,
+**Secure Boot disabled** — the image comes up, `ui/touchpad.cpp` has been driven
+on the laptops' own pads, the mnemonic grid has been operated by hand (arrow
+keys, Tab, click-to-cell, the import screen's F4 word-count selector, the live
+red marking of an unknown word), and both wallet creation and **2-of-2 multisig
+signing** have been taken end to end. See the README section of the same name for
+exactly what that covers, including which piece of evidence predates the grid
+rewrite.
 
-What is still unproven: real hardware other than the machine this was flashed
-on, Secure Boot enrolment on firmware other than EDK2, and `ui/touchpad.cpp` -
-QEMU's `usb-tablet` is a pointer, not a pad, so `make gui` proves nothing about
-touchpads.
+What is still unproven:
 
-Also unproven, and newer: **the mnemonic grids as an interaction.** The layer
-underneath them *is* covered — `runGridChecks()` in `core/selftest.cpp` exercises
-the slot arithmetic, the empty-cell semantics, the wipe on shrink and
-`bip39UnknownSlots()`, so it runs on every `make host-test` and inside the booted
-image. What no test touches is the Qt half: `test-gui` is a pixel check on the
-splash, so nothing in this tree presses a key, moves a cursor or clicks a cell.
-Arrow movement, click-to-cell, the import screen's word-count selector and the
-live red marking are compiled and reasoned about but have not been operated.
-Drive them with `make gui` before trusting this on a stick.
+- **Secure Boot, all of it.** Nothing has been signed with `SIGNEROS_SB_KEY` and
+  no certificate has been enrolled into `db`, on any firmware, EDK2 included.
+  Every machine it has run on had Secure Boot off.
+- **a real touchscreen panel** — that is Qt's `evdevtouch`, not `touchpad.cpp`,
+  and QEMU's `usb-tablet` is an absolute pointer, so neither the hardware runs
+  nor `make gui` says anything about it.
+
+The mnemonic grids are no longer on that list, but nothing in this tree presses a
+key or clicks a cell either: `test-gui` is a pixel check on the splash, and the
+core layer's `runGridChecks()` in `core/selftest.cpp` covers the slot arithmetic,
+the empty-cell semantics, the wipe on shrink and `bip39UnknownSlots()` — not one
+pixel of what the operator sees. Every Qt claim above was proven by hand, so keep
+proving new screens the same way: `make gui` first, a stick after.
