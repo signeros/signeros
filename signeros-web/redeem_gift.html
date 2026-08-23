@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0d1117">
+<meta name="description" content="Somebody gave you bitcoin on a paper card. Here is how to move it into a wallet of your own, or turn it into your local currency - the quick way on a phone, and the fully offline way with SignerOS.">
+<title>Redeem a Bitcoin Gift Card — SignerOS</title>
+<style>
+/* No webfonts, no CDN, no analytics, no input boxes: this page makes zero
+   network requests and never asks anybody for their recovery words.
+   The palette and the type are index.html's - src/btc_signer_gui/src/ui/theme.h. */
+:root{
+  --bg:#0d1117; --bg2:#10151c; --panel:#161b22; --panel2:#11161d;
+  --line:#30363d; --line2:#222932;
+  --ink:#e6edf3; --dim:#9aa4b2; --mut:#6b7683;
+  --amber:#f7931a; --amber2:#ffb54d; --green:#3fb950; --red:#f85149; --warnc:#d29922;
+  --disp:ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+  --sans:ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+  --mono:ui-monospace,'SFMono-Regular','Cascadia Mono','DejaVu Sans Mono',Menlo,Consolas,monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.65;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+::selection{background:var(--amber);color:#0a0a0a}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:1160px;margin:0 auto;padding:0 24px}
+section{scroll-margin-top:84px}
+
+/* nav */
+nav.top{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(7,9,13,.93);border-bottom:1px solid var(--line2)}
+.topin{display:flex;align-items:center;justify-content:space-between;height:58px}
+.brand{font-family:var(--mono);font-size:14px;letter-spacing:.06em}
+.brand b{color:var(--amber);font-weight:600}
+.navlinks{display:flex;gap:26px}
+.navlinks a{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);transition:color .2s}
+.navlinks a:hover,.navlinks a.on{color:var(--amber)}
+.ghpill{font-family:var(--mono);font-size:11px;letter-spacing:.1em;border:1px solid var(--line);padding:7px 13px;color:var(--dim);transition:.2s}
+.ghpill:hover{border-color:var(--amber);color:var(--amber);transform:translateY(-1px)}
+@media(max-width:860px){.navlinks{display:none}}
+
+/* hero */
+.hero{padding:132px 0 74px;background:
+  radial-gradient(1000px 500px at 85% -10%,rgba(247,147,26,.08),transparent 60%),
+  radial-gradient(700px 400px at 0% 110%,rgba(63,185,80,.05),transparent 60%),var(--bg)}
+.hero-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:52px;align-items:start}
+@media(max-width:940px){.hero-grid{grid-template-columns:1fr;gap:34px}}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.24em;color:var(--amber);text-transform:uppercase}
+.display{font-family:var(--disp);font-weight:700;font-size:clamp(2.2rem,5.4vw,3.9rem);line-height:1.02;letter-spacing:.01em;margin:20px 0 18px;text-transform:uppercase}
+.display .blk{color:var(--amber)}
+.lede{font-size:clamp(1.02rem,1.5vw,1.16rem);color:var(--dim);max-width:36em}
+.lede em{color:var(--ink);font-style:normal;border-bottom:1px solid var(--amber)}
+.chips{display:flex;flex-wrap:wrap;gap:9px;margin:24px 0 28px}
+.chip{font-family:var(--mono);font-size:10.5px;letter-spacing:.13em;border:1px solid var(--line);color:var(--dim);padding:6px 11px}
+.chip.hot{border-color:rgba(247,147,26,.5);color:var(--amber)}
+.chip.ok{border-color:rgba(63,185,80,.4);color:var(--green)}
+.btnrow{display:flex;flex-wrap:wrap;gap:14px}
+.btn{display:inline-block;font-family:var(--mono);font-size:12.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;padding:14px 22px;border:1px solid var(--line);border-radius:2px;transition:transform .18s ease,box-shadow .18s ease,border-color .18s,color .18s}
+.btn-solid{background:var(--amber);border-color:var(--amber);color:#0a0a0a;box-shadow:4px 4px 0 rgba(247,147,26,.22)}
+.btn-solid:hover{transform:translate(-2px,-2px);box-shadow:7px 7px 0 rgba(247,147,26,.3)}
+.btn-ghost:hover{border-color:var(--amber);color:var(--amber);transform:translate(-2px,-2px);box-shadow:5px 5px 0 rgba(247,147,26,.12)}
+
+/* the card, drawn */
+.cardmock{border:1px solid var(--line);background:var(--panel);border-radius:6px;overflow:hidden;box-shadow:0 26px 70px rgba(0,0,0,.5)}
+.cm-head{display:flex;align-items:center;gap:8px;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--bg2)}
+.cm-head span{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--mut)}
+.cm-body{padding:18px}
+.cm-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.cm-cell{font-family:var(--mono);font-size:11.5px;border:1px solid var(--line);background:var(--panel2);padding:8px 10px;color:var(--mut);display:flex;gap:8px}
+.cm-cell b{color:var(--mut);font-weight:400;font-size:9.5px;padding-top:2px}
+.cm-cell i{font-style:normal;color:var(--dim);letter-spacing:.08em}
+.cm-rows{margin-top:16px;border-top:1px dashed var(--line2)}
+.cm-row{display:flex;justify-content:space-between;gap:14px;font-family:var(--mono);font-size:11.5px;padding:9px 2px;border-bottom:1px dashed var(--line2);color:var(--mut)}
+.cm-row b{color:var(--dim);font-weight:500}
+.cm-foot{padding:12px 18px;border-top:1px solid var(--line);font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:var(--green);background:var(--bg2)}
+
+/* sections */
+.sec{padding:96px 0;border-top:1px solid var(--line2)}
+.shead{display:flex;align-items:center;gap:18px;margin-bottom:14px}
+.snum{font-family:var(--mono);font-size:12px;letter-spacing:.2em;color:var(--amber);white-space:nowrap}
+.srule{flex:1;height:1px;background:var(--line2)}
+.stag{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;color:var(--mut);text-transform:uppercase;white-space:nowrap}
+.h2{font-family:var(--disp);font-weight:700;font-size:clamp(1.6rem,3.4vw,2.4rem);text-transform:uppercase;line-height:1.14;margin-bottom:16px}
+.intro{color:var(--dim);max-width:52em;margin-bottom:10px}
+.intro b{color:var(--ink);font-weight:600}
+.intro+.intro{margin-top:14px}
+
+/* numbered walkthrough */
+.wt{margin-top:30px}
+.wstep{border-top:1px solid var(--line);padding:24px 4px;display:grid;grid-template-columns:62px 1fr;gap:18px;transition:background .25s}
+.wstep:last-child{border-bottom:1px solid var(--line)}
+.wstep:hover{background:rgba(247,147,26,.03)}
+.wn{font-family:var(--mono);font-size:13px;color:var(--mut);padding-top:5px;transition:color .25s}
+.wstep:hover .wn{color:var(--amber)}
+.wstep h4{font-family:var(--disp);font-weight:700;font-size:1.2rem;letter-spacing:.05em;text-transform:uppercase;margin-bottom:9px}
+.wstep p{color:var(--dim);font-size:.93rem;max-width:46em;margin-bottom:11px}
+.wstep p:last-child{margin-bottom:0}
+.wstep b{color:var(--ink);font-weight:600}
+.where{display:inline-block;margin-bottom:11px;font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;padding:4px 8px;border:1px solid var(--line2);color:var(--mut)}
+.where.hot{color:var(--amber);border-color:rgba(247,147,26,.4)}
+.where.cold{color:var(--green);border-color:rgba(63,185,80,.35)}
+.where.cash{color:var(--amber2);border-color:rgba(255,181,77,.35)}
+.wpath{font-family:var(--mono);font-size:11.5px;background:var(--panel2);border-left:2px solid var(--amber);padding:10px 13px;margin:0 0 11px;color:var(--ink);max-width:46em;overflow-x:auto;white-space:nowrap}
+.wpath i{color:var(--mut);font-style:normal;user-select:none}
+
+/* boxes */
+.cardwarn,.cardok,.cardbad{border:1px solid rgba(210,153,34,.45);background:rgba(210,153,34,.06);padding:17px 19px;max-width:62em;margin-top:22px}
+.cardok{border-color:rgba(63,185,80,.4);background:rgba(63,185,80,.05)}
+.cardbad{border-color:rgba(248,81,73,.45);background:rgba(248,81,73,.05)}
+.cardwarn h5,.cardok h5,.cardbad h5{font-family:var(--mono);font-size:11px;letter-spacing:.18em;color:var(--warnc);margin-bottom:9px}
+.cardok h5{color:var(--green)}
+.cardbad h5{color:var(--red)}
+.cardwarn p,.cardok p,.cardbad p{font-size:.92rem;color:var(--dim);margin-bottom:9px}
+.cardwarn p:last-child,.cardok p:last-child,.cardbad p:last-child{margin-bottom:0}
+.note{font-family:var(--mono);font-size:10.5px;color:var(--mut);margin-top:16px;letter-spacing:.05em;max-width:60em;line-height:1.8}
+
+/* two-up */
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:34px}
+@media(max-width:940px){.duo{grid-template-columns:1fr}}
+.route{border:1px solid var(--line);background:var(--panel);padding:28px;position:relative;overflow:hidden;display:flex;flex-direction:column}
+.route::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:var(--amber)}
+.route.cold::before{background:var(--green)}
+.route h3{font-family:var(--disp);font-weight:700;font-size:1.32rem;letter-spacing:.05em;text-transform:uppercase;margin-bottom:6px}
+.route .rsub{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;color:var(--mut);margin-bottom:16px;text-transform:uppercase}
+.route p{color:var(--dim);font-size:.93rem;margin-bottom:14px}
+.route ul{list-style:none;margin:0 0 18px}
+.route li{color:var(--dim);font-size:.9rem;padding:7px 0 7px 20px;position:relative;border-bottom:1px dashed var(--line2)}
+.route li::before{content:"›";position:absolute;left:2px;color:var(--amber);font-family:var(--mono)}
+.route.cold li::before{color:var(--green)}
+.route .rgo{margin-top:auto}
+
+/* lists */
+.olist{list-style:none;counter-reset:st;max-width:56em;margin-top:22px}
+.olist li{counter-increment:st;position:relative;padding:13px 0 13px 52px;border-bottom:1px dashed var(--line2);color:var(--dim);font-size:.93rem}
+.olist li::before{content:counter(st,decimal-leading-zero);position:absolute;left:0;top:14px;font-family:var(--mono);font-size:12px;color:var(--amber)}
+.olist b{color:var(--ink);font-weight:600}
+.nevers{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:30px}
+@media(max-width:860px){.nevers{grid-template-columns:1fr}}
+.never{border:1px solid var(--line);border-left:2px solid var(--red);background:var(--panel2);padding:16px 18px}
+.never h5{font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--red);margin-bottom:7px}
+.never p{font-size:.9rem;color:var(--dim)}
+
+/* trouble table */
+.tbl{width:100%;border-collapse:collapse;margin-top:26px;font-size:.92rem}
+.tbl th,.tbl td{text-align:left;padding:14px 16px;border-bottom:1px solid var(--line2);vertical-align:top}
+.tbl th{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;color:var(--mut);text-transform:uppercase;border-bottom:1px solid var(--line)}
+.tbl td:first-child{color:var(--ink);width:34%}
+.tbl td{color:var(--dim)}
+.tblwrap{overflow-x:auto}
+
+/* footer */
+footer{border-top:1px solid var(--line2);padding:54px 0 70px;background:var(--bg2)}
+.fgrid{display:flex;flex-wrap:wrap;gap:34px;justify-content:space-between;align-items:flex-start}
+.fbrand{font-family:var(--mono);font-size:13px;letter-spacing:.06em;color:var(--dim)}
+.fbrand b{color:var(--amber)}
+.flinks{display:flex;flex-wrap:wrap;gap:22px}
+.flinks a{font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--mut);transition:.2s}
+.flinks a:hover{color:var(--amber)}
+.fnote{font-family:var(--mono);font-size:10.5px;color:var(--mut);margin-top:26px;letter-spacing:.05em;line-height:1.9}
+</style>
+</head>
+<body id="top">
+
+<nav class="top">
+  <div class="wrap topin">
+    <a class="brand" href="index.html">SIGNER<b>://</b>OS</a>
+    <div class="navlinks">
+      <a href="#first">Start here</a>
+      <a href="#fast">Fast route</a>
+      <a href="#cash">To local money</a>
+      <a href="#safe">Offline route</a>
+      <a href="#trouble">Trouble</a>
+      <a href="#giving">Giving one</a>
+    </div>
+    <a class="ghpill" href="index.html">← SIGNEROS</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <div class="eyebrow">Bitcoin gift card · redeem</div>
+      <h1 class="display">Somebody gave<br>you <span class="blk">bitcoin</span></h1>
+      <p class="lede">
+        On the card is a list of words, written by hand. Those words <em>are</em> a Bitcoin
+        wallet: whoever can read them can spend what is in it. That is why the card was
+        handed to you closed, and why the first thing to do is move the money into a
+        wallet that only you can open.
+      </p>
+      <div class="chips">
+        <span class="chip hot">Nothing to install to read this</span>
+        <span class="chip ok">This page has no input box</span>
+        <span class="chip">Two routes: 10 minutes, or fully offline</span>
+      </div>
+      <div class="btnrow">
+        <a class="btn btn-solid" href="#fast">The fast route</a>
+        <a class="btn btn-ghost" href="#safe">The offline route</a>
+      </div>
+    </div>
+
+    <div class="cardmock">
+      <div class="cm-head"><span>INSIDE THE CARD</span></div>
+      <div class="cm-body">
+        <div class="cm-grid">
+          <div class="cm-cell"><b>1</b><i>· · · · ·</i></div>
+          <div class="cm-cell"><b>2</b><i>· · · · ·</i></div>
+          <div class="cm-cell"><b>3</b><i>· · · · ·</i></div>
+          <div class="cm-cell"><b>4</b><i>· · · · ·</i></div>
+          <div class="cm-cell"><b>5</b><i>· · · · ·</i></div>
+          <div class="cm-cell"><b>6</b><i>· · · · ·</i></div>
+          <div class="cm-cell"><b>7</b><i>· · · · ·</i></div>
+          <div class="cm-cell"><b>8</b><i>· · · · ·</i></div>
+          <div class="cm-cell"><b>9</b><i>· · · · ·</i></div>
+          <div class="cm-cell"><b>10</b><i>· · · · ·</i></div>
+          <div class="cm-cell"><b>11</b><i>· · · · ·</i></div>
+          <div class="cm-cell"><b>12</b><i>· · · · ·</i></div>
+        </div>
+        <div class="cm-rows">
+          <div class="cm-row"><span>How many words</span><b>12 or 24</b></div>
+          <div class="cm-row"><span>Fingerprint</span><b>8 characters, e.g. 73c5da0a</b></div>
+          <div class="cm-row"><span>Passphrase</span><b>usually none</b></div>
+          <div class="cm-row"><span>Amount &amp; date</span><b>what was put in, and when</b></div>
+        </div>
+      </div>
+      <div class="cm-foot">THE WORDS ARE THE MONEY — THIS PAGE NEVER ASKS FOR THEM</div>
+    </div>
+  </div>
+</header>
+
+<section class="sec" id="first">
+  <div class="wrap">
+    <div class="shead"><span class="snum">01</span><span class="srule"></span><span class="stag">Start here</span></div>
+    <h2 class="h2">Read this before you touch anything</h2>
+    <p class="intro">
+      A gift card is a wallet that was created by somebody else. They wrote the words on the
+      card by hand, which means the words passed in front of their eyes — and possibly in
+      front of a printer, a table, a room, a camera nobody thought about. <b>The card is
+      yours, but the secret behind it was never only yours.</b>
+    </p>
+    <p class="intro">
+      So a gift card is a way to <i>receive</i> bitcoin, not a way to hold it. Both routes on
+      this page end the same way: the coins land in a wallet whose words you wrote down
+      yourself, or in your bank account. After that the card is a souvenir and can be shown
+      to anybody.
+    </p>
+
+    <div class="cardok">
+      <h5>THE FOUR RULES</h5>
+      <p><b>1. Treat the card like cash.</b> Anyone holding it can take the money. Keep it closed and out of sight until you redeem it.</p>
+      <p><b>2. Type the words only into a wallet app you installed yourself</b> — from the official app store listing or the wallet's own site — or into an offline signer. Never into a page that a link, an email or a message brought you to.</p>
+      <p><b>3. Nobody legitimate will ever ask for the words.</b> Not support, not an exchange, not the person who gave you the card, not this page. There is no input box anywhere on this site, and there never will be.</p>
+      <p><b>4. Do not photograph or upload the card.</b> A photo in a phone gallery is a copy in somebody else's cloud.</p>
+    </div>
+
+    <p class="note">
+      // If the amount on the card is small, it is still worth doing this properly — but see
+      <a href="#trouble" style="color:var(--amber)">what to do about fees</a> first: moving a
+      very small amount can cost more than it holds.
+    </p>
+  </div>
+</section>
+
+<section class="sec" id="routes">
+  <div class="wrap">
+    <div class="shead"><span class="snum">02</span><span class="srule"></span><span class="stag">Pick one</span></div>
+    <h2 class="h2">Two ways to bring it home</h2>
+    <p class="intro">
+      They differ in one thing only: whether the words are typed into a device that can go
+      online. The fast route is what almost everybody does, and for a gift-sized amount it is
+      a reasonable trade. The offline route is what you would want if the card holds real
+      money, or if you plan to keep the bitcoin rather than spend it.
+    </p>
+
+    <div class="duo">
+      <div class="route">
+        <h3>The fast route</h3>
+        <div class="rsub">≈ 10 minutes · a phone · a little trust</div>
+        <p>You type the card's words into a well-known wallet app, see the balance, and send
+           everything to a fresh wallet you made yourself.</p>
+        <ul>
+          <li>Nothing to buy, nothing to build</li>
+          <li>Works with any modern wallet app</li>
+          <li>The words touch one online device: your phone</li>
+          <li>Fine for a gift-sized amount, moved promptly</li>
+        </ul>
+        <div class="rgo"><a class="btn btn-solid" href="#fast">Do it this way</a></div>
+      </div>
+
+      <div class="route cold">
+        <h3>The offline route</h3>
+        <div class="rsub">≈ an evening · a spare computer · no trust needed</div>
+        <p>You put the words into a computer that <i>cannot</i> go online, and only a
+           finished, signed transaction ever crosses over on a USB stick.</p>
+        <ul>
+          <li>The words never touch anything connected</li>
+          <li>Also gives you a proper wallet of your own</li>
+          <li>Needs a spare PC and a USB stick</li>
+          <li>Worth it if the amount matters, or you want to keep it</li>
+        </ul>
+        <div class="rgo"><a class="btn btn-ghost" href="#safe">Do it this way</a></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="fast">
+  <div class="wrap">
+    <div class="shead"><span class="snum">03</span><span class="srule"></span><span class="stag">Fast route</span></div>
+    <h2 class="h2">Into a wallet of your own, on a phone</h2>
+    <p class="intro">
+      The example below uses <b>BlueWallet</b>, because it is free, well known and asks for
+      nothing but the words. <b>Sparrow</b> on a desktop, <b>Nunchuk</b>, <b>Blockstream
+      Green</b> or <b>Electrum</b> do the same job; the steps have the same shape in all of
+      them. Get the app from the official app store listing or from the project's own site,
+      and check the name letter by letter — fake wallets exist and they exist for exactly
+      this moment.
+    </p>
+
+    <div class="wt">
+      <div class="wstep">
+        <div class="wn">01</div>
+        <div>
+          <span class="where hot">ON YOUR PHONE</span>
+          <h4>Install the wallet, then turn off sharing</h4>
+          <p>Install it, open it once, and decline anything optional: no cloud backup, no
+             screenshots, no “save to photos”. You are about to type a secret into this app
+             and you do not want a copy of it leaving the phone.</p>
+        </div>
+      </div>
+
+      <div class="wstep">
+        <div class="wn">02</div>
+        <div>
+          <span class="where hot">ON YOUR PHONE</span>
+          <h4>Import the card</h4>
+          <div class="wpath"><i>BlueWallet →</i> Add wallet <i>→</i> Import wallet <i>→</i> type the words <i>→</i> Import</div>
+          <p>Type the words in the order they are numbered on the card, all lower case,
+             separated by single spaces. If the card names a <b>passphrase</b>, enter it in the
+             field the app offers for it — without it the same words open a different, empty
+             wallet.</p>
+          <p>The app checks the words against the standard 2048-word list and refuses a
+             mis-spelling, which is exactly what you want: a wallet that opens is a wallet you
+             read correctly.</p>
+        </div>
+      </div>
+
+      <div class="wstep">
+        <div class="wn">03</div>
+        <div>
+          <span class="where hot">ON YOUR PHONE</span>
+          <h4>Check the balance, and the fingerprint if the card has one</h4>
+          <p>The amount on the card should appear within a few seconds. If it says zero, do
+             not panic and do not re-type anything yet — go to
+             <a href="#trouble" style="color:var(--amber)">Trouble</a>: nine times out of ten
+             it is an address-type setting, not a lost coin.</p>
+        </div>
+      </div>
+
+      <div class="wstep">
+        <div class="wn">04</div>
+        <div>
+          <span class="where hot">ON YOUR PHONE</span>
+          <h4>Make a wallet that is yours</h4>
+          <p>In the same app, create a <b>new</b> wallet. Write its words on paper, in order,
+             and keep that paper the way you would keep the equivalent in cash. Nobody has
+             ever seen those words — that is the whole difference between it and the card.</p>
+          <p>If you would rather not keep money on a phone at all, this is the moment to use a
+             hardware wallet, or the <a href="#safe" style="color:var(--amber)">offline
+             route</a>, and send the gift straight there.</p>
+        </div>
+      </div>
+
+      <div class="wstep">
+        <div class="wn">05</div>
+        <div>
+          <span class="where hot">ON YOUR PHONE</span>
+          <h4>Send everything across</h4>
+          <div class="wpath">Gift wallet <i>→</i> Send <i>→</i> paste your new wallet's receive address <i>→</i> use full balance <i>→</i> confirm</div>
+          <p>Copy a receive address from your new wallet, paste it into a send from the gift
+             wallet, and choose <b>send max</b> / <b>use full balance</b> so nothing is left
+             behind. A normal fee is fine; there is no hurry.</p>
+          <p>Wait for one confirmation — usually minutes, occasionally an hour. When it
+             confirms, the money is behind words that only you know, and the card is empty.</p>
+        </div>
+      </div>
+
+      <div class="wstep">
+        <div class="wn">06</div>
+        <div>
+          <span class="where cold">AFTERWARDS</span>
+          <h4>Retire the card</h4>
+          <p>Delete the imported gift wallet from the app if you like — it holds nothing now.
+             Keep the card as a keepsake, or destroy it. Either is safe once the transaction
+             has confirmed.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="cardwarn">
+      <h5>WHAT YOU ARE TRUSTING ON THIS ROUTE</h5>
+      <p>That the app is the real one, and that the phone is not compromised. Both are usually
+         true, and for a birthday-sized gift moved the same day the risk is small — but it is
+         not zero, and it is the reason the offline route exists.</p>
+      <p>Until the sweep confirms, the giver could in principle spend the coins first. Not a
+         reason for fear; a reason not to leave the card in a drawer for a year.</p>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="cash">
+  <div class="wrap">
+    <div class="shead"><span class="snum">04</span><span class="srule"></span><span class="stag">To local money</span></div>
+    <h2 class="h2">Turning it into your own currency</h2>
+    <p class="intro">
+      Bitcoin becomes ordinary money at an exchange: you send coins in, sell them for your
+      local currency, and withdraw to your bank. Every country has different exchanges and
+      different rules, so this page names none — pick one that operates legally where you
+      live, that people around you have actually used, and that supports your bank.
+    </p>
+    <p class="intro">
+      <b>If you intend to cash out straight away</b>, you can send from the gift wallet
+      directly to the exchange and skip a transaction fee. <b>If you want to keep some
+      bitcoin</b>, do the sweep in section 03 first and send from your own wallet.
+    </p>
+
+    <ol class="olist">
+      <li><b>Open the account and pass the identity checks.</b> Exchanges are required to know who you are; expect an ID document and a selfie. Do this before you send anything, not after.</li>
+      <li><b>Find the deposit address.</b> Deposit → Bitcoin → <b>on-chain / Bitcoin network</b>. If a screen offers you Lightning, BEP-20, wrapped BTC or anything other than the Bitcoin network, that is a different rail: an on-chain send to it can be lost for good.</li>
+      <li><b>Check the minimum deposit.</b> Many exchanges silently ignore deposits below a threshold. If the gift is smaller than that minimum, do not send it there — keep it in your own wallet instead.</li>
+      <li><b>Send, and copy the address by paste or QR only.</b> Never type a bitcoin address by hand. Compare the first and last four characters after pasting.</li>
+      <li><b>Wait for confirmations.</b> The exchange decides how many; one to three blocks is typical, so minutes to an hour.</li>
+      <li><b>Sell, then withdraw.</b> Sell the bitcoin for your currency, then withdraw to your bank account. Expect a trading fee, possibly a withdrawal fee, and a bank transfer that may take a day.</li>
+      <li><b>Keep the numbers.</b> What you received, what you sold it for, and when. Many countries tax the gain between the two, and the exchange's statement is what you will be asked for.</li>
+    </ol>
+
+    <div class="cardwarn">
+      <h5>THREE THINGS THAT SURPRISE PEOPLE</h5>
+      <p><b>Fees are per transaction, not per amount.</b> Moving 20 units of currency worth of
+         bitcoin can cost a noticeable slice of it when the network is busy. Check the fee the
+         app proposes before confirming, and if it is absurd, wait a day — fees fall.</p>
+      <p><b>The price moves.</b> What the card says was put in is what it was worth then. It may
+         be worth more or less today; neither is a mistake.</p>
+      <p><b>An exchange is not a wallet.</b> Money left sitting on one is held by the exchange,
+         not by you. Sell and withdraw, or keep it in your own wallet — pick one.</p>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="safe">
+  <div class="wrap">
+    <div class="shead"><span class="snum">05</span><span class="srule"></span><span class="stag">Offline route</span></div>
+    <h2 class="h2">The route where the words never go online</h2>
+    <p class="intro">
+      SignerOS is a free system on a USB stick that turns a computer you already own into an
+      offline signing device. It has no network stack at all, it never touches the machine's
+      hard drives, and it forgets everything when you switch it off. Transactions cross
+      between it and your everyday computer as files on a second USB stick — never as a
+      connection. <a href="index.html" style="color:var(--amber)">What it is and how to get
+      it →</a>
+    </p>
+    <p class="intro">
+      On this route you do two things at once: you <b>create a wallet of your own</b>, whose
+      words are written on paper and have never been anywhere near a network, and you
+      <b>empty the gift card into it</b> without the card's words ever reaching an online
+      machine.
+    </p>
+
+    <div class="wt">
+      <div class="wstep">
+        <div class="wn">01</div>
+        <div>
+          <span class="where cold">OFFLINE MACHINE</span>
+          <h4>Boot SignerOS and create your own wallet</h4>
+          <div class="wpath">Home <i>→</i> Create a wallet <i>→</i> write the words on paper <i>→</i> type them all back <i>→</i> name the file</div>
+          <p>Write those words on paper and keep no other copy — that paper is the wallet.
+             There is a printable sheet for it:
+             <a href="paper_wallet.html" style="color:var(--amber)">the recovery sheet</a>.
+             SignerOS then writes one <b>watch-only</b> file of public keys to the stick's
+             <b>PSBT_DATA</b> drive. It cannot spend anything, so it is safe to carry.</p>
+        </div>
+      </div>
+
+      <div class="wstep">
+        <div class="wn">02</div>
+        <div>
+          <span class="where hot">EVERYDAY COMPUTER</span>
+          <h4>Load that file into a coordinator</h4>
+          <p>Open the watch-only file in <b>Sparrow</b> (or any wallet that imports output
+             descriptors). This is now the destination: it can show balances and build
+             transactions, and it holds nothing secret. Copy one of its receive addresses and
+             keep it to hand.</p>
+        </div>
+      </div>
+
+      <div class="wstep">
+        <div class="wn">03</div>
+        <div>
+          <span class="where cold">OFFLINE MACHINE</span>
+          <h4>Describe the gift wallet, offline</h4>
+          <div class="wpath">Home <i>→</i> Export watch-only keys <i>→</i> type the card's words <i>→</i> review <i>→</i> name the file</div>
+          <p>Type the card's words — and its passphrase, if it has one — into the offline
+             machine. It derives the same public keys the giver's wallet has and writes a
+             second watch-only file. The words are wiped from memory when you leave the
+             screen, and nothing derived from them is written anywhere.</p>
+          <p>The review page shows a <b>fingerprint</b> and the first address. If the card
+             carries a fingerprint, this is where the two must match.</p>
+        </div>
+      </div>
+
+      <div class="wstep">
+        <div class="wn">04</div>
+        <div>
+          <span class="where hot">EVERYDAY COMPUTER</span>
+          <h4>Import it as a temporary wallet and build the sweep</h4>
+          <p>Load the second file into Sparrow as well. The gift balance appears. Select all of
+             its coins, send them to the address from step 02 with <b>send max</b>, and
+             <b>save the transaction as a .psbt file</b> onto the PSBT_DATA drive instead of
+             signing it — there is nothing here that could sign it.</p>
+        </div>
+      </div>
+
+      <div class="wstep">
+        <div class="wn">05</div>
+        <div>
+          <span class="where cold">OFFLINE MACHINE</span>
+          <h4>Sign it, with your own eyes on the numbers</h4>
+          <div class="wpath">Home <i>→</i> Sign a transaction <i>→</i> pick the .psbt <i>→</i> read amount and address <i>→</i> type the card's words <i>→</i> sign</div>
+          <p>SignerOS shows what the transaction actually pays and to whom, refuses anything
+             whose fee it cannot determine, and only then asks for the words. Check that the
+             destination is your own address and that the amount is the whole gift. Sign, and
+             the signed file is written back to the stick.</p>
+        </div>
+      </div>
+
+      <div class="wstep">
+        <div class="wn">06</div>
+        <div>
+          <span class="where hot">EVERYDAY COMPUTER</span>
+          <h4>Broadcast, then throw the gift wallet away</h4>
+          <p>Open the signed file in Sparrow and broadcast it. Once it confirms, delete the
+             temporary gift wallet: its words are now worthless, and the money sits behind the
+             words on your own paper.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="cardok">
+      <h5>WHY TYPING THE CARD'S WORDS TWICE IS STILL SAFE HERE</h5>
+      <p>Both times they go into a machine that has no network stack compiled into it, no
+         drivers for your disks, and no storage of its own — it runs from RAM and loses
+         everything at power-off. The only thing that ever leaves it is a file you named, and
+         that file contains public keys or a signed transaction.</p>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="trouble">
+  <div class="wrap">
+    <div class="shead"><span class="snum">06</span><span class="srule"></span><span class="stag">Trouble</span></div>
+    <h2 class="h2">When it does not look right</h2>
+    <div class="tblwrap">
+      <table class="tbl">
+        <tr><th>What you see</th><th>What it usually means</th></tr>
+        <tr>
+          <td>The balance is zero, but the card says there should be something</td>
+          <td>Most often the app is looking at the wrong <b>address type</b>. A SignerOS gift is
+              normally funded on the addresses that begin <b>bc1q</b> (Native SegWit,
+              m/84'/0'/0'). Re-import and choose that type, or let the app scan all of them.
+              Then check the <b>fingerprint</b>: if it does not match the card, a word was read
+              wrong — most often <i>a/o</i>, <i>rn/m</i>, or a missing final letter.</td>
+        </tr>
+        <tr>
+          <td>The app rejects the words</td>
+          <td>One of them is not in the standard list, or the last word does not match the
+              checksum built into the rest. Re-read your handwriting: the list has no proper
+              nouns, no capitals and no words shorter than three letters. Every word is unique
+              in its first four letters, so those four decide it.</td>
+        </tr>
+        <tr>
+          <td>The card mentions a passphrase</td>
+          <td>Then it is part of the secret: enter it exactly, including capitals and spaces.
+              The words without it open a valid, empty wallet — which looks exactly like a
+              wrongly-copied word. If the passphrase is lost, the money is lost; ask the giver
+              while they still remember.</td>
+        </tr>
+        <tr>
+          <td>The fee is a large share of the gift</td>
+          <td>Fees depend on how busy the network is, not on the amount. Wait for a quieter day
+              — weekends are often cheaper — or leave it where it is until you actually need
+              it. If the amount is truly tiny, sweeping it may never be economic; treat the
+              card as the keepsake it is.</td>
+        </tr>
+        <tr>
+          <td>The card is years old</td>
+          <td>Bitcoin does not expire and neither do the words. An old card is fine; the
+              amount is simply worth whatever it is worth today.</td>
+        </tr>
+        <tr>
+          <td>You think somebody else has seen the words</td>
+          <td>Move the money now, by whichever route you can do fastest. Speed beats elegance:
+              a sweep into a phone wallet you make in two minutes is better than a perfect
+              offline setup next weekend.</td>
+        </tr>
+        <tr>
+          <td>The card is lost, or was thrown away with the wrapping</td>
+          <td>Then the wallet cannot be opened by anyone, including you. There is no reset, no
+              support line and no recovery — this is the part of bitcoin that has no
+              customer service. Search the bin.</td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="nevers">
+      <div class="never">
+        <h5>NEVER TYPE THE WORDS INTO A WEB PAGE</h5>
+        <p>No legitimate site has a box for them — including this one. A page that asks is
+           stealing, however official it looks.</p>
+      </div>
+      <div class="never">
+        <h5>NEVER SEND THEM IN A MESSAGE</h5>
+        <p>Not to the giver, not to “support”, not to a friend who offers to help. Help can be
+           given without the words.</p>
+      </div>
+      <div class="never">
+        <h5>NEVER PHOTOGRAPH THE CARD</h5>
+        <p>The photo syncs to a cloud, the cloud has an account, the account has a password.
+           You have just made your bitcoin as strong as that password.</p>
+      </div>
+      <div class="never">
+        <h5>NEVER LET SOMEONE “HELP” BY SCREEN SHARE</h5>
+        <p>The classic theft of gift-card bitcoin is a helpful stranger watching the words
+           being typed in.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="giving">
+  <div class="wrap">
+    <div class="shead"><span class="snum">07</span><span class="srule"></span><span class="stag">Giving one</span></div>
+    <h2 class="h2">If you are the one making the gift</h2>
+    <p class="intro">
+      A gift card is only a real gift if the words end up in exactly one place: on the card.
+      That is easy to get wrong, so here is the whole discipline in seven lines. There is a
+      printable card to fill in: <a href="gift_wallet.html" style="color:var(--amber)">the
+      gift card sheet</a> — pick the occasion, type the name and the note, print it blank and
+      write the words by hand.
+    </p>
+    <ol class="olist">
+      <li><b>Create the wallet on an offline machine.</b> SignerOS's <b>Create a wallet</b> does it in RAM and writes nothing private, ever. Twelve words is plenty for a gift and much less to copy.</li>
+      <li><b>Write the words on the card only.</b> Not in a note app, not in a photo, not in a password manager “just in case”. If you keep a copy, you have given a wallet you can still empty.</li>
+      <li><b>Use no passphrase</b> unless you have a reason. It is one more thing the receiver can lose, and it protects nothing that the sealed card does not already protect.</li>
+      <li><b>Prove the wallet before you fund it.</b> The machine writes a watch-only file of public keys to the stick; open it in a coordinator — <b>Sparrow</b>, <b>Blockstream Green</b> — and check that the <b>master fingerprint</b> and the <b>first address</b> it shows are the ones the machine showed you. That is the whole check, and it is what proves the address you are about to fund belongs to the words on the card. <a href="index.html#app" style="color:var(--amber)">Every screen of it →</a></li>
+      <li><b>Fund the first receive address</b> — the one beginning <b>bc1q</b> — and write the fingerprint, the amount and the date on the card so the receiver can check they opened the right wallet.</li>
+      <li><b>Send a test amount first</b> if the gift is significant, and confirm it arrives before sending the rest.</li>
+      <li><b>Hand it over closed</b>, and say the one sentence that matters: <i>move it into your own wallet soon, and never type these words into a web page.</i></li>
+      <li><b>Point them at this page.</b> The card carries the address and a QR of it, which is the whole reason it exists.</li>
+    </ol>
+    <p class="note">
+      // Doing it the other way round — buying on an exchange and sending to an address the
+      receiver gives you — is also perfectly good, and needs no card at all. The card is for
+      when you want the gift to be a physical thing that works even if you are not around to
+      explain it.
+    </p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="fgrid">
+      <div class="fbrand">SIGNER<b>://</b>OS</div>
+      <div class="flinks">
+        <a href="index.html">The project</a>
+        <a href="gift_wallet.html">Print a gift card</a>
+        <a href="paper_wallet.html">Print a recovery sheet</a>
+        <a href="index.html#download">Download</a>
+        <a href="index.html#faq">FAQ</a>
+        <a href="https://github.com/signeros/signeros" target="_blank" rel="noopener">GitHub</a>
+      </div>
+    </div>
+    <p class="fnote">
+      // This page is a single HTML file with no scripts, no webfonts and no third-party
+      anything: it makes zero network requests, so nothing here learns that you were given
+      bitcoin. It has no input fields, and no part of this project will ever ask you for your
+      recovery words.<br>
+      // Nothing on this page is financial, legal or tax advice. Exchanges, rules and taxes
+      differ by country; the mechanics of moving your own coins do not.
+    </p>
+  </div>
+</footer>
+
+</body>
+</html>

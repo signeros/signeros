@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Bitcoin Gift Card</title>
+    <!-- Print this card BLANK, fill the words in by hand.
+         No webfonts, no CDN, no images, no requests: everything here is markup.
+         Structure and print geometry follow paper_wallet.html; the palette is
+         the kiosk's own - src/btc_signer_gui/src/ui/theme.h. -->
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+        }
+
+        :root {
+            --amber: #f7931a;
+            --ink: #0f172a;
+            --ink2: #1e293b;
+            --dim: #475569;
+            --line: #64748b;
+            --sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
+                    'Helvetica Neue', Arial, sans-serif;
+            --mono: ui-monospace, 'SFMono-Regular', 'DejaVu Sans Mono', Menlo,
+                    Consolas, 'Courier New', monospace;
+            /* Overridden per occasion, further down. */
+            --gift: #f7931a;
+            --giftDeep: #b45309;
+            --giftSoft: #fff7ed;
+            --giftEdge: #fdba74;
+        }
+
+        @page {
+            size: A4 landscape;
+            margin: 5mm;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: var(--sans);
+            color: var(--ink2);
+            background-color: #f8fafc;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        /* ---------- SCREEN-ONLY CONTROLS ---------- */
+        .tools {
+            max-width: 287mm;
+            margin: 18px auto 12px auto;
+            padding: 16px 18px;
+            background: #ffffff;
+            border: 2px solid #d1d9e6;
+            border-left: 6px solid var(--gift);
+            border-radius: 10px;
+            font-size: 10.5pt;
+            line-height: 1.6;
+        }
+        .tools h1 {
+            font-size: 12pt;
+            margin: 0 0 6px 0;
+            color: var(--ink);
+        }
+        .tools p {
+            margin: 0 0 12px 0;
+            color: var(--ink2);
+            max-width: 62em;
+        }
+        .tools b {
+            color: var(--ink);
+        }
+        .tools a {
+            color: var(--giftDeep);
+            font-weight: 600;
+            text-decoration: underline;
+            text-decoration-color: var(--gift);
+            text-underline-offset: 2px;
+        }
+        /* The giver reads this while preparing the card; the receiver never
+           sees it, so the whole procedure belongs here rather than on paper. */
+        .make {
+            margin: 14px 0 4px 0;
+            padding: 14px 16px;
+            border: 1px solid #e2e8f0;
+            border-left: 3px solid var(--gift);
+            border-radius: 8px;
+            background: #fcfdff;
+        }
+        .make h2 {
+            font-family: var(--mono);
+            font-size: 8.5pt;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--dim);
+            margin: 0 0 8px 0;
+        }
+        .make ol {
+            margin: 0;
+            padding-left: 22px;
+        }
+        .make li {
+            font-size: 10pt;
+            line-height: 1.55;
+            margin-bottom: 6px;
+            color: var(--ink2);
+        }
+        .make li:last-child {
+            margin-bottom: 0;
+        }
+        .occasions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+        }
+        .occasions span {
+            font-family: var(--mono);
+            font-size: 8.5pt;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--dim);
+            margin-right: 4px;
+        }
+        .occasions button {
+            font-family: var(--sans);
+            font-size: 10pt;
+            font-weight: 600;
+            padding: 8px 16px;
+            border: 2px solid #cbd5e1;
+            border-radius: 8px;
+            background: #fff;
+            color: var(--ink2);
+            cursor: pointer;
+        }
+        .occasions button[aria-pressed="true"] {
+            border-color: var(--gift);
+            color: var(--giftDeep);
+            background: var(--giftSoft);
+        }
+        .occasions button.print {
+            margin-left: auto;
+            border-color: var(--ink2);
+            color: var(--ink);
+        }
+
+        .page-wrapper {
+            position: relative;
+            width: 287mm;
+            height: 198mm;
+            margin: 0 auto;
+            background-color: #f8fafc;
+        }
+
+        /* ---------- FOLD LINES ---------- */
+        .fold-line-h,
+        .fold-line-v {
+            position: absolute;
+            z-index: 10;
+            pointer-events: none;
+            opacity: 0.55;
+        }
+        .fold-line-h {
+            top: 99mm;
+            left: 0;
+            width: 100%;
+            border-top: 3px dashed var(--gift);
+        }
+        .fold-line-v {
+            top: 0;
+            left: 50%;
+            height: 100%;
+            border-left: 3px dashed var(--gift);
+            transform: translateX(-50%);
+        }
+
+        /* ---------- GRID & PANELS ---------- */
+        .grid-container {
+            width: 100%;
+            height: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+            position: relative;
+        }
+        .panel {
+            width: 50%;
+            height: 99mm;
+            padding: 5px;
+            vertical-align: top;
+            overflow: hidden;
+            position: relative;
+        }
+        .panel.flipped {
+            transform: rotate(180deg);
+        }
+        .panel-inner {
+            height: 100%;
+            border-radius: 16px;
+            background: #ffffff;
+            padding: 14px 18px 13px 18px;
+            position: relative;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.04);
+            border: 2px solid #d1d9e6;
+            display: flex;
+            flex-direction: column;
+        }
+        .flipped .panel-inner {
+            background: #f9fcff;
+            border-color: #b7c4d4;
+        }
+
+        /* ---------- CORNER DECOR ---------- */
+        /* Two nested L brackets, both placed with `inset` so all four corners
+           are the same shape by construction. No border-radius: a rounded
+           corner whose adjoining border is `none` is drawn as a diagonal
+           taper, and the two strokes then taper opposite ways. */
+        .corner-decor {
+            position: absolute;
+            width: 22px;
+            height: 22px;
+            pointer-events: none;
+            z-index: 2;
+        }
+        .corner-decor::before,
+        .corner-decor::after {
+            content: '';
+            position: absolute;
+            border: 2px solid #334155;
+            border-radius: 0;
+        }
+        .corner-decor::before { inset: 0; }
+        .corner-decor::after  { inset: 6px; }
+
+        .top-left { top: 10px; left: 10px; }
+        .top-left::before,
+        .top-left::after { border-right: none; border-bottom: none; }
+
+        .top-right { top: 10px; right: 10px; }
+        .top-right::before,
+        .top-right::after { border-left: none; border-bottom: none; }
+
+        .bottom-left { bottom: 10px; left: 10px; }
+        .bottom-left::before,
+        .bottom-left::after { border-right: none; border-top: none; }
+
+        .bottom-right { bottom: 10px; right: 10px; }
+        .bottom-right::before,
+        .bottom-right::after { border-left: none; border-top: none; }
+
+        .gift-inner .corner-decor::before,
+        .gift-inner .corner-decor::after {
+            border-color: var(--giftDeep);
+        }
+
+        /* ---------- PANEL TITLES ---------- */
+        .panel-title {
+            font-size: 13pt;
+            font-weight: 700;
+            color: var(--ink);
+            text-align: center;
+            margin: 0 0 8px 0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border-bottom: 3px solid var(--gift);
+            padding-bottom: 7px;
+            flex-shrink: 0;
+        }
+
+        /* ---------- THE GIFT FACE ---------- */
+        .gift-inner {
+            background: var(--giftSoft);
+            border: 2px solid var(--giftDeep);
+            text-align: center;
+            align-items: stretch;
+            padding: 16px 20px 12px 20px;
+        }
+        .gift-eyebrow {
+            font-family: var(--mono);
+            font-size: 8pt;
+            letter-spacing: 3.5px;
+            text-transform: uppercase;
+            color: var(--giftDeep);
+            flex-shrink: 0;
+        }
+        .gift-rule {
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--gift), transparent);
+            margin: 5px 0 0 0;
+            flex-shrink: 0;
+        }
+        .gift-greet {
+            font-size: 21pt;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+            color: var(--giftDeep);
+            margin: 6px 0 0 0;
+            line-height: 1.05;
+            flex-shrink: 0;
+        }
+        .gift-sub {
+            font-size: 9pt;
+            color: var(--ink2);
+            letter-spacing: 1px;
+            margin: 3px 0 0 0;
+            flex-shrink: 0;
+        }
+        .gift-motif {
+            height: 74px;
+            margin: 4px auto 2px auto;
+            flex-shrink: 0;
+        }
+        .gift-motif svg {
+            display: block;
+            height: 100%;
+            width: auto;
+            margin: 0 auto;
+        }
+
+        .gift-fields {
+            margin-top: 4px;
+            flex: 1 1 auto;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            gap: 5px;
+        }
+        .gf-row {
+            display: flex;
+            gap: 14px;
+            align-items: baseline;
+            text-align: left;
+        }
+        .gf {
+            display: flex;
+            align-items: baseline;
+            gap: 5px;
+            flex: 1 1 0;
+            min-width: 0;
+        }
+        .gf-label {
+            font-family: var(--mono);
+            font-size: 7.5pt;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--giftDeep);
+            white-space: nowrap;
+        }
+        /* Editable on screen, a ruled line on paper either way: type the note in
+           before printing, or print it blank and write by hand. */
+        .fill {
+            flex: 1 1 auto;
+            min-width: 0;
+            min-height: 17px;
+            border-bottom: 2px solid var(--giftEdge);
+            font-size: 11pt;
+            color: var(--ink);
+            padding: 0 2px 1px 2px;
+            outline: none;
+            text-align: left;
+            word-break: break-word;
+        }
+        .fill:focus {
+            border-bottom-color: var(--gift);
+            background: rgba(255, 255, 255, 0.75);
+        }
+        .fill.note {
+            min-height: 38px;
+            max-height: 57px;
+            overflow: hidden;
+            font-size: 11.5pt;
+            line-height: 1.65;
+            border-bottom: none;
+            background-image: repeating-linear-gradient(
+                to bottom, transparent 0 17px, var(--giftEdge) 17px 19px);
+            background-size: 100% 19px;
+        }
+        .note-wrap {
+            text-align: left;
+        }
+        .note-wrap .gf-label {
+            display: block;
+            margin-bottom: 3px;
+        }
+        .gift-foot {
+            font-size: 7.5pt;
+            color: var(--dim);
+            letter-spacing: 0.3px;
+            margin-top: 6px;
+            padding-top: 5px;
+            border-top: 1px dashed var(--giftEdge);
+            flex-shrink: 0;
+        }
+
+        /* ---------- OCCASIONS ---------- */
+        .only-birthday,
+        .only-wedding,
+        .only-generic {
+            display: none;
+        }
+        body[data-occasion="birthday"] .only-birthday,
+        body[data-occasion="wedding"] .only-wedding,
+        body[data-occasion="generic"] .only-generic {
+            display: block;
+        }
+        .gift-motif.only-birthday,
+        .gift-motif.only-wedding,
+        .gift-motif.only-generic {
+            display: none;
+        }
+        body[data-occasion="birthday"] .gift-motif.only-birthday,
+        body[data-occasion="wedding"] .gift-motif.only-wedding,
+        body[data-occasion="generic"] .gift-motif.only-generic {
+            display: block;
+        }
+        body[data-occasion="birthday"] {
+            --gift: #db2777;
+            --giftDeep: #9d174d;
+            --giftSoft: #fff1f7;
+            --giftEdge: #f9a8d4;
+        }
+        body[data-occasion="wedding"] {
+            --gift: #7c3aed;
+            --giftDeep: #5b21b6;
+            --giftSoft: #f7f5ff;
+            --giftEdge: #c4b5fd;
+        }
+        body[data-occasion="generic"] {
+            --gift: #f7931a;
+            --giftDeep: #b45309;
+            --giftSoft: #fff7ed;
+            --giftEdge: #fdba74;
+        }
+
+        /* ---------- SEED TABLES ---------- */
+        .seed-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 2px 0 0 0;
+            flex: 1 0 auto;
+        }
+        .seed-table td {
+            width: 33.33%;
+            padding: 5px 4px 5px 0;
+            font-size: 11.5pt;
+            font-family: var(--mono);
+            color: var(--ink);
+            vertical-align: middle;
+        }
+        .word-num {
+            font-weight: 700;
+            color: var(--dim);
+            margin-right: 6px;
+            display: inline-block;
+            width: 26px;
+            text-align: right;
+            font-size: 10pt;
+        }
+        .word-line {
+            display: inline-block;
+            width: 67%;
+            border-bottom: 2.5px solid var(--line);
+            height: 20px;
+            margin-left: 2px;
+            vertical-align: middle;
+        }
+
+        .details {
+            margin: 6px 0 0 0;
+            font-size: 8.5pt;
+            line-height: 1.9;
+            flex-shrink: 0;
+        }
+        .details-row {
+            display: flex;
+            gap: 14px;
+            align-items: baseline;
+            justify-content: space-between;
+        }
+        .field-label {
+            font-weight: 700;
+            color: var(--ink);
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            font-size: 7.5pt;
+            white-space: nowrap;
+        }
+        .field-line {
+            display: inline-block;
+            border-bottom: 2px solid var(--line);
+            height: 15px;
+            vertical-align: middle;
+            margin-left: 4px;
+            min-width: 62px;
+            flex: 1 1 auto;
+        }
+        .field-line.wide {
+            min-width: 104px;
+            flex: 0 0 auto;
+        }
+        .choices {
+            font-family: var(--mono);
+            font-size: 9pt;
+            letter-spacing: 1.5px;
+            color: var(--ink);
+            margin-left: 4px;
+        }
+        .field-note {
+            font-size: 7.5pt;
+            color: var(--dim);
+            line-height: 1.4;
+            margin-top: 2px;
+        }
+
+        .warning-box {
+            background: #fef2f2;
+            border: 2px solid #dc2626;
+            border-radius: 10px;
+            padding: 6px 12px;
+            margin: 6px 16px 0 16px;
+            color: #b91c1c;
+            font-weight: 700;
+            font-size: 8pt;
+            text-align: center;
+            line-height: 1.4;
+            flex-shrink: 0;
+        }
+
+        /* ---------- HOW TO USE ---------- */
+        .ways {
+            display: flex;
+            flex-direction: column;
+            flex: 1 1 auto;
+            gap: 5px;
+            margin-top: 2px;
+        }
+        .way-intro {
+            font-size: 8pt;
+            line-height: 1.42;
+            color: var(--ink2);
+        }
+        .way-intro b {
+            color: var(--ink);
+        }
+        .way {
+            border-left: 3px solid var(--gift);
+            padding: 1px 0 1px 9px;
+            font-size: 8pt;
+            line-height: 1.42;
+            color: var(--ink2);
+        }
+        .way h4 {
+            font-size: 8.5pt;
+            margin: 0 0 1px 0;
+            color: var(--ink);
+            letter-spacing: 0.3px;
+        }
+        .way h4 span {
+            font-family: var(--mono);
+            font-size: 7pt;
+            letter-spacing: 1px;
+            color: var(--dim);
+            text-transform: uppercase;
+            margin-left: 5px;
+        }
+        .way .alert {
+            color: #dc2626;
+            font-weight: 700;
+        }
+        .way code {
+            font-family: var(--mono);
+            font-size: 7.5pt;
+        }
+
+        /* Inset like the warning box, so the code clears the corner marks. */
+        .qr-footer {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 6px 16px 0 16px;
+            flex-shrink: 0;
+        }
+        .qr-code {
+            width: 76px;
+            height: 76px;
+            flex-shrink: 0;
+        }
+        .qr-code svg {
+            display: block;
+            width: 100%;
+            height: 100%;
+            shape-rendering: crispEdges;
+        }
+        .qr-label {
+            display: block;
+            font-size: 7.5pt;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--dim);
+        }
+        .qr-note {
+            display: block;
+            font-size: 7.5pt;
+            line-height: 1.35;
+            color: var(--dim);
+            margin-top: 3px;
+        }
+        .qr-url {
+            display: block;
+            font-family: var(--mono);
+            font-size: 8.5pt;
+            color: var(--ink);
+            line-height: 1.35;
+            margin-top: 3px;
+            word-break: break-all;
+        }
+
+        /* ---------- PRINT ---------- */
+        @media print {
+            .tools {
+                display: none;
+            }
+            body,
+            .page-wrapper {
+                background-color: #ffffff;
+            }
+            .panel-inner {
+                box-shadow: none !important;
+                border-color: #94a3b8 !important;
+            }
+            .flipped .panel-inner {
+                background: #fafcff !important;
+            }
+            .gift-inner {
+                border-color: var(--giftDeep) !important;
+            }
+            .fill:focus {
+                background: none !important;
+            }
+        }
+    </style>
+</head>
+<body data-occasion="birthday">
+
+    <!-- Screen only: never printed, and never on the card. -->
+    <div class="tools">
+        <h1>Bitcoin gift card &ndash; print it blank, fill it in by hand</h1>
+        <p>
+            Pick the occasion, then type the name, a short note (a line or two) and
+            the amount straight onto the card below if you like &ndash; those are not secrets. Print A4,
+            landscape, one-sided, at 100% scale, and fold along the two dashed
+            lines. <b>Write the recovery words on the inside panels by hand, with a
+            pen, and keep no copy anywhere</b> &ndash; not typed here, not
+            photographed, not in a password manager. The card then <i>is</i> the
+            wallet, and the person you hand it to owns what is on it.
+        </p>
+        <div class="make">
+            <h2>Making the wallet that goes on this card</h2>
+            <ol>
+                <li><b>Create it on a machine that cannot go online.</b> SignerOS boots from
+                    a USB stick, runs in RAM and writes nothing private, ever &ndash; its
+                    <b>Create a wallet</b> flow is
+                    <a href="index.html#app">walked through screen by screen here</a>, and
+                    <a href="index.html#download">the image and how to check it are here</a>.
+                    Twelve words is plenty for a gift and much less to copy by hand.</li>
+                <li><b>Write the words on this card and nowhere else.</b> Not in a note app,
+                    not in a photo, not in a password manager &ldquo;just in case&rdquo;. A
+                    copy you keep is a wallet you can still empty.</li>
+                <li><b>Prove the wallet before you fund it.</b> The machine writes a
+                    watch-only file of public keys to the stick; open it in a coordinator
+                    &ndash; Sparrow, Blockstream Green &ndash; and check that the
+                    <b>master fingerprint</b> and the <b>first address</b> it shows are the
+                    ones the machine showed you. That is the whole verification: it proves
+                    the addresses you are about to send to belong to the words on the card.</li>
+                <li><b>Fund the first receive address</b> (the one beginning <code>bc1q</code>),
+                    with a small test amount first if the gift is significant, and confirm it
+                    arrives before sending the rest.</li>
+                <li><b>Fill in the fingerprint, the amount and the date</b> on the inside
+                    panel, so the receiver can tell they opened the right wallet.</li>
+                <li><b>Hand it over closed</b> and say the one sentence that matters: move it
+                    into your own wallet soon, and never type these words into a web page.
+                    The back of the card carries a QR to
+                    <a href="redeem_gift.html#giving">the page that explains both ways of
+                    doing that</a>.</li>
+            </ol>
+        </div>
+
+        <div class="occasions">
+            <span>Occasion</span>
+            <button type="button" data-set="birthday" aria-pressed="true">Birthday</button>
+            <button type="button" data-set="wedding" aria-pressed="false">Wedding</button>
+            <button type="button" data-set="generic" aria-pressed="false">Any occasion</button>
+            <button type="button" class="print" onclick="window.print()">Print&hellip;</button>
+        </div>
+    </div>
+
+    <div class="page-wrapper">
+
+        <div class="fold-line-h"></div>
+        <div class="fold-line-v"></div>
+
+        <table class="grid-container">
+            <tr>
+                <!-- INSIDE LEFT: WORDS 13-24 (flipped) -->
+                <td class="panel flipped">
+                    <div class="panel-inner">
+                        <div class="corner-decor top-left"></div>
+                        <div class="corner-decor top-right"></div>
+                        <div class="corner-decor bottom-left"></div>
+                        <div class="corner-decor bottom-right"></div>
+
+                        <div class="panel-title">2. Recovery Words (13&ndash;24)</div>
+
+                        <table class="seed-table">
+                            <tr>
+                                <td><span class="word-num">13.</span><span class="word-line"></span></td>
+                                <td><span class="word-num">17.</span><span class="word-line"></span></td>
+                                <td><span class="word-num">21.</span><span class="word-line"></span></td>
+                            </tr>
+                            <tr>
+                                <td><span class="word-num">14.</span><span class="word-line"></span></td>
+                                <td><span class="word-num">18.</span><span class="word-line"></span></td>
+                                <td><span class="word-num">22.</span><span class="word-line"></span></td>
+                            </tr>
+                            <tr>
+                                <td><span class="word-num">15.</span><span class="word-line"></span></td>
+                                <td><span class="word-num">19.</span><span class="word-line"></span></td>
+                                <td><span class="word-num">23.</span><span class="word-line"></span></td>
+                            </tr>
+                            <tr>
+                                <td><span class="word-num">16.</span><span class="word-line"></span></td>
+                                <td><span class="word-num">20.</span><span class="word-line"></span></td>
+                                <td><span class="word-num">24.</span><span class="word-line"></span></td>
+                            </tr>
+                        </table>
+
+                        <div class="details">
+                            <div class="details-row">
+                                <span class="field-label">Passphrase</span>
+                                <span class="choices">NONE&nbsp;&nbsp;/&nbsp;&nbsp;</span>
+                                <span class="field-line"></span>
+                            </div>
+                            <div class="field-note">
+                                A gift is easier with no passphrase, and that is the safe
+                                default. If you used one it has to be written here too, exactly
+                                as typed &ndash; the words alone would open a different, empty
+                                wallet and nothing would say so.
+                            </div>
+                        </div>
+
+                        <div class="warning-box">
+                            &#9888;&#65039; FOR THE GIVER: write the words only here, keep no copy,
+                            and hand the card over closed. For the receiver: move the coins to
+                            a wallet of your own soon &ndash; see the back of the card.
+                        </div>
+                    </div>
+                </td>
+
+                <!-- INSIDE RIGHT: WORDS 1-12 (flipped) -->
+                <td class="panel flipped">
+                    <div class="panel-inner">
+                        <div class="corner-decor top-left"></div>
+                        <div class="corner-decor top-right"></div>
+                        <div class="corner-decor bottom-left"></div>
+                        <div class="corner-decor bottom-right"></div>
+
+                        <div class="panel-title">1. Recovery Words (1&ndash;12)</div>
+
+                        <table class="seed-table">
+                            <tr>
+                                <td><span class="word-num">1.</span><span class="word-line"></span></td>
+                                <td><span class="word-num">5.</span><span class="word-line"></span></td>
+                                <td><span class="word-num">9.</span><span class="word-line"></span></td>
+                            </tr>
+                            <tr>
+                                <td><span class="word-num">2.</span><span class="word-line"></span></td>
+                                <td><span class="word-num">6.</span><span class="word-line"></span></td>
+                                <td><span class="word-num">10.</span><span class="word-line"></span></td>
+                            </tr>
+                            <tr>
+                                <td><span class="word-num">3.</span><span class="word-line"></span></td>
+                                <td><span class="word-num">7.</span><span class="word-line"></span></td>
+                                <td><span class="word-num">11.</span><span class="word-line"></span></td>
+                            </tr>
+                            <tr>
+                                <td><span class="word-num">4.</span><span class="word-line"></span></td>
+                                <td><span class="word-num">8.</span><span class="word-line"></span></td>
+                                <td><span class="word-num">12.</span><span class="word-line"></span></td>
+                            </tr>
+                        </table>
+
+                        <div class="details">
+                            <div class="details-row">
+                                <span class="field-label">How many words</span>
+                                <span class="choices">12&nbsp; 24</span>
+                                <span class="field-label">Fingerprint</span>
+                                <span class="field-line wide"></span>
+                            </div>
+                            <div class="details-row">
+                                <span class="field-label">Amount</span>
+                                <span class="field-line"></span>
+                                <span class="field-label">Funded on</span>
+                                <span class="field-line"></span>
+                            </div>
+                            <div class="field-note">
+                                Circle the count and leave the rest of the lines empty. Addresses
+                                begin <b>bc1q</b> (Native SegWit, m/84'/0'/0') unless noted;
+                                the fingerprint is the eight characters the wallet showed when
+                                it was made, so the receiver can check they opened the right one.
+                            </div>
+                        </div>
+
+                        <div class="warning-box">
+                            &#9940; THESE WORDS ARE THE MONEY: whoever reads them can spend it.
+                            Type them only into a wallet app you installed yourself, or into an
+                            offline signer &ndash; never into a web page that asks for them.
+                        </div>
+                    </div>
+                </td>
+            </tr>
+
+            <tr>
+                <!-- FRONT: THE GIFT (upright) -->
+                <td class="panel">
+                    <div class="panel-inner gift-inner">
+                        <div class="corner-decor top-left"></div>
+                        <div class="corner-decor top-right"></div>
+                        <div class="corner-decor bottom-left"></div>
+                        <div class="corner-decor bottom-right"></div>
+
+                        <div class="gift-eyebrow">&#9679; A gift of bitcoin &#9679;</div>
+                        <div class="gift-rule"></div>
+
+                        <div class="gift-greet only-birthday">Happy Birthday!</div>
+                        <div class="gift-greet only-wedding">Congratulations!</div>
+                        <div class="gift-greet only-generic">A Gift For You</div>
+
+                        <div class="gift-sub only-birthday">Many happy returns &ndash; and a little something that is yours alone</div>
+                        <div class="gift-sub only-wedding">On your wedding day &ndash; something to keep, together</div>
+                        <div class="gift-sub only-generic">Real bitcoin, held by nobody but you</div>
+
+                        <!-- Balloons, confetti and a coin. -->
+                        <div class="gift-motif only-birthday">
+                            <svg viewBox="0 0 200 90" xmlns="http://www.w3.org/2000/svg">
+                                <g fill="none" stroke="var(--giftDeep)" stroke-width="1.4">
+                                    <path d="M52 52c0 0-6 12-2 26" />
+                                    <path d="M76 46c0 0 5 14 1 32" />
+                                    <path d="M100 50c0 0-4 13-1 28" />
+                                </g>
+                                <ellipse cx="52" cy="36" rx="15" ry="18" fill="var(--gift)" opacity="0.85" />
+                                <ellipse cx="76" cy="28" rx="15" ry="18" fill="var(--giftEdge)" />
+                                <ellipse cx="100" cy="34" rx="15" ry="18" fill="var(--giftDeep)" opacity="0.75" />
+                                <circle cx="152" cy="44" r="24" fill="#f7931a" />
+                                <circle cx="152" cy="44" r="24" fill="none" stroke="#7c2d12" stroke-width="2" />
+                                <text x="152" y="56" text-anchor="middle" font-family="Arial, sans-serif"
+                                      font-size="30" font-weight="bold" fill="#ffffff">&#8383;</text>
+                                <g fill="var(--gift)">
+                                    <rect x="18" y="14" width="6" height="6" transform="rotate(20 21 17)" />
+                                    <rect x="126" y="12" width="6" height="6" transform="rotate(-25 129 15)" />
+                                    <rect x="182" y="20" width="6" height="6" transform="rotate(35 185 23)" />
+                                    <rect x="30" y="72" width="6" height="6" transform="rotate(-15 33 75)" />
+                                    <rect x="118" y="78" width="6" height="6" transform="rotate(40 121 81)" />
+                                    <rect x="176" y="74" width="6" height="6" transform="rotate(-30 179 77)" />
+                                </g>
+                            </svg>
+                        </div>
+
+                        <!-- Two rings and a coin. -->
+                        <div class="gift-motif only-wedding">
+                            <svg viewBox="0 0 200 90" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="66" cy="46" r="26" fill="none" stroke="var(--giftDeep)" stroke-width="4" />
+                                <circle cx="96" cy="46" r="26" fill="none" stroke="var(--gift)" stroke-width="4" />
+                                <path d="M66 14l4 8-4 8-4-8z" fill="var(--giftEdge)" stroke="var(--giftDeep)" stroke-width="1" />
+                                <circle cx="152" cy="46" r="24" fill="#f7931a" />
+                                <circle cx="152" cy="46" r="24" fill="none" stroke="#7c2d12" stroke-width="2" />
+                                <text x="152" y="58" text-anchor="middle" font-family="Arial, sans-serif"
+                                      font-size="30" font-weight="bold" fill="#ffffff">&#8383;</text>
+                                <g fill="var(--gift)" opacity="0.8">
+                                    <path d="M24 30c4-6 12-2 8 4-2 3-8 8-8 8s-6-5-8-8c-4-6 4-10 8-4z" />
+                                    <path d="M186 66c3-4 9-1 6 3-2 2-6 6-6 6s-4-4-6-6c-3-4 3-7 6-3z" />
+                                </g>
+                            </svg>
+                        </div>
+
+                        <!-- A ribboned box and a coin. -->
+                        <div class="gift-motif only-generic">
+                            <svg viewBox="0 0 200 90" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="34" y="34" width="66" height="42" fill="var(--giftEdge)"
+                                      stroke="var(--giftDeep)" stroke-width="2" />
+                                <rect x="34" y="26" width="66" height="12" fill="var(--gift)"
+                                      stroke="var(--giftDeep)" stroke-width="2" />
+                                <rect x="61" y="26" width="12" height="50" fill="var(--giftDeep)" opacity="0.75" />
+                                <path d="M67 26c-10-14-26-6-18 4 4 5 18 5 18 5s14 0 18-5c8-10-8-18-18-4z"
+                                      fill="var(--gift)" stroke="var(--giftDeep)" stroke-width="1.6" />
+                                <circle cx="152" cy="50" r="24" fill="#f7931a" />
+                                <circle cx="152" cy="50" r="24" fill="none" stroke="#7c2d12" stroke-width="2" />
+                                <text x="152" y="62" text-anchor="middle" font-family="Arial, sans-serif"
+                                      font-size="30" font-weight="bold" fill="#ffffff">&#8383;</text>
+                            </svg>
+                        </div>
+
+                        <div class="gift-fields">
+                            <div class="gf-row">
+                                <span class="gf"><span class="gf-label">To</span>
+                                    <span class="fill" contenteditable="true" spellcheck="false"></span></span>
+                                <span class="gf"><span class="gf-label">From</span>
+                                    <span class="fill" contenteditable="true" spellcheck="false"></span></span>
+                            </div>
+                            <div class="note-wrap">
+                                <span class="gf-label">Note</span>
+                                <div class="fill note" contenteditable="true" spellcheck="false"></div>
+                            </div>
+                            <div class="gf-row">
+                                <span class="gf"><span class="gf-label">Amount</span>
+                                    <span class="fill" contenteditable="true" spellcheck="false"></span></span>
+                                <span class="gf"><span class="gf-label">Date</span>
+                                    <span class="fill" contenteditable="true" spellcheck="false"></span></span>
+                            </div>
+                        </div>
+
+                        <div class="gift-foot">
+                            Inside this card, hand-written, are the words that open a Bitcoin
+                            wallet. They are the money itself &ndash; keep the card closed, and
+                            read the back before you do anything else.
+                        </div>
+                    </div>
+                </td>
+
+                <!-- BACK: HOW TO USE (upright) -->
+                <td class="panel">
+                    <div class="panel-inner">
+                        <div class="corner-decor top-left"></div>
+                        <div class="corner-decor top-right"></div>
+                        <div class="corner-decor bottom-left"></div>
+                        <div class="corner-decor bottom-right"></div>
+
+                        <div class="panel-title">How to use your gift</div>
+
+                        <div class="ways">
+                            <div class="way-intro">
+                                The words inside <b>are</b> the wallet. Whoever made this card
+                                wrote them by hand, so treat it like cash and
+                                <span class="alert">move the money into a wallet of your own
+                                soon</span>.
+                            </div>
+
+                            <div class="way">
+                                <h4>Into your own wallet <span>quick, on a phone</span></h4>
+                                Install a well-known wallet from its official app store
+                                (BlueWallet is a common first one), choose <b>import</b> and
+                                type the words in order. The balance appears. Then make a fresh
+                                wallet, write down <em>its</em> words yourself, and send
+                                everything to it.
+                            </div>
+
+                            <div class="way">
+                                <h4>Into money you can spend <span>via an exchange</span></h4>
+                                Open an account at an exchange serving your country and finish
+                                its identity checks. Copy your <b>bitcoin deposit address</b>,
+                                send the coins there, then sell for your local currency and
+                                withdraw to your bank. Fees can eat a small gift, so check them
+                                first.
+                            </div>
+
+                        </div>
+
+                        <div class="qr-footer">
+                            <div class="qr-code"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 37 37"><path fill="#fff" d="M0 0h37v37h-37z"/><path stroke="#0f172a" d="M2 2.5h7m1 0h2m1 0h1m4 0h1m2 0h2m1 0h2m2 0h7m-33 1h1m5 0h1m1 0h1m1 0h1m3 0h1m1 0h2m2 0h1m2 0h2m1 0h1m5 0h1m-33 1h1m1 0h3m1 0h1m2 0h2m2 0h2m1 0h1m2 0h1m4 0h1m1 0h1m1 0h3m1 0h1m-33 1h1m1 0h3m1 0h1m1 0h1m1 0h1m7 0h2m2 0h1m1 0h1m1 0h1m1 0h3m1 0h1m-33 1h1m1 0h3m1 0h1m2 0h1m1 0h1m4 0h2m2 0h1m3 0h1m1 0h1m1 0h3m1 0h1m-33 1h1m5 0h1m4 0h2m1 0h3m1 0h2m1 0h2m1 0h1m1 0h1m5 0h1m-33 1h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7m-25 1h1m3 0h1m2 0h4m5 0h1m-25 1h1m1 0h2m1 0h3m1 0h4m1 0h5m2 0h1m4 0h1m2 0h1m1 0h2m-33 1h1m1 0h1m6 0h2m2 0h1m2 0h6m1 0h1m2 0h2m1 0h2m1 0h1m-31 1h1m1 0h3m2 0h1m1 0h3m2 0h1m1 0h1m1 0h4m1 0h5m1 0h2m-29 1h1m5 0h1m4 0h3m1 0h2m1 0h4m1 0h1m1 0h1m1 0h2m-31 1h1m1 0h3m1 0h1m1 0h3m1 0h3m5 0h4m1 0h3m-30 1h1m3 0h1m2 0h1m1 0h2m1 0h3m2 0h1m1 0h1m1 0h2m1 0h1m2 0h1m2 0h2m-32 1h2m1 0h6m1 0h1m1 0h3m2 0h1m1 0h3m2 0h1m1 0h5m-30 1h2m4 0h6m2 0h1m2 0h1m1 0h4m1 0h2m2 0h2m-30 1h1m1 0h2m1 0h1m1 0h2m1 0h2m1 0h1m1 0h1m2 0h1m1 0h2m2 0h2m1 0h1m1 0h1m-31 1h3m5 0h2m1 0h5m4 0h1m2 0h2m1 0h1m1 0h2m2 0h1m-32 1h1m2 0h3m2 0h8m1 0h1m1 0h3m2 0h1m1 0h2m1 0h2m-31 1h1m1 0h2m5 0h1m2 0h1m1 0h4m1 0h1m3 0h3m1 0h1m2 0h2m-30 1h5m1 0h1m2 0h2m1 0h2m4 0h2m1 0h1m4 0h2m-31 1h3m2 0h1m1 0h2m1 0h1m1 0h1m1 0h4m1 0h3m4 0h1m3 0h1m1 0h1m-31 1h2m2 0h1m1 0h1m1 0h2m2 0h2m2 0h1m1 0h2m1 0h2m1 0h1m1 0h1m1 0h3m-32 1h4m2 0h3m1 0h1m2 0h2m3 0h2m3 0h1m1 0h1m1 0h1m2 0h1m-32 1h1m1 0h2m1 0h6m2 0h1m3 0h1m5 0h6m2 0h1m-24 1h1m1 0h1m1 0h4m3 0h1m1 0h1m1 0h2m3 0h2m-30 1h7m1 0h4m1 0h1m3 0h5m1 0h2m1 0h1m1 0h1m-29 1h1m5 0h1m1 0h1m2 0h2m3 0h6m1 0h2m3 0h3m1 0h1m-33 1h1m1 0h3m1 0h1m4 0h2m2 0h4m2 0h8m1 0h2m-32 1h1m1 0h3m1 0h1m1 0h3m1 0h2m2 0h2m2 0h4m3 0h1m1 0h2m1 0h1m-33 1h1m1 0h3m1 0h1m1 0h3m1 0h2m1 0h2m1 0h1m3 0h1m3 0h2m1 0h1m-30 1h1m5 0h1m10 0h2m1 0h1m2 0h6m3 0h1m-33 1h7m1 0h1m2 0h3m2 0h3m2 0h1m1 0h1m4 0h3"/></svg></div>
+                            <div>
+                                <span class="qr-label">Both routes, step by step</span>
+                                <span class="qr-url">signeros.github.io/signeros/redeem_gift.html</span>
+                                <span class="qr-note">Also the slower, fully offline way, where
+                                    the words never touch a computer that can go online.</span>
+                            </div>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        </table>
+
+    </div>
+
+    <script>
+        // Screen-only: swap the occasion. The choice lives in the DOM, so it is
+        // whatever is on the page when you print.
+        document.querySelectorAll('.occasions button[data-set]').forEach(function (b) {
+            b.addEventListener('click', function () {
+                document.body.dataset.occasion = b.dataset.set;
+                document.querySelectorAll('.occasions button[data-set]').forEach(function (o) {
+                    o.setAttribute('aria-pressed', String(o === b));
+                });
+            });
+        });
+        // Paste as plain text: a pasted <div> or a pasted font would break the
+        // card's layout, and nothing here needs formatting.
+        document.querySelectorAll('.fill').forEach(function (f) {
+            f.addEventListener('paste', function (e) {
+                e.preventDefault();
+                var t = (e.clipboardData || window.clipboardData).getData('text');
+                document.execCommand('insertText', false, t.replace(/\s+/g, ' '));
+            });
+        });
+    </script>
+</body>
+</html>

@@ -329,6 +329,17 @@ details[open] summary::after{transform:rotate(45deg)}
 details .a{padding:0 6px 26px;color:var(--dim);font-size:.93rem;max-width:58em;animation:fup .35s ease}
 details .a code{font-size:.85em}
 
+/* on paper */
+.pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:36px}
+@media(max-width:940px){.pgrid{grid-template-columns:1fr}}
+.pcard{display:flex;flex-direction:column;border:1px solid var(--line);background:var(--panel);padding:28px 26px;position:relative;overflow:hidden;transition:transform .18s ease,border-color .2s}
+.pcard::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:var(--amber)}
+.pcard:hover{transform:translateY(-3px);border-color:rgba(247,147,26,.45)}
+.plabel{font-family:var(--mono);font-size:10px;letter-spacing:.18em;color:var(--mut)}
+.pcard h3{font-family:var(--disp);font-weight:700;font-size:1.35rem;letter-spacing:.05em;text-transform:uppercase;margin:12px 0 10px}
+.pcard p{color:var(--dim);font-size:.92rem;margin-bottom:18px}
+.pgo{margin-top:auto;font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;color:var(--amber)}
+
 /* donate */
 .donate{text-align:center}
 .donate .h2{margin-bottom:10px}
@@ -394,6 +405,7 @@ footer{border-top:1px solid var(--line);padding:54px 0 44px;background:var(--bg2
       <a href="#secureboot">Secure Boot</a>
       <a href="#donate">Donation</a>
       <a href="#faq">FAQ</a>
+      <a href="#paper">On Paper</a>
     </div>
     <a class="ghpill" href="https://github.com/signeros/signeros" target="_blank" rel="noopener">⟨/⟩ GITHUB</a>
   </div>
@@ -513,7 +525,7 @@ footer{border-top:1px solid var(--line);padding:54px 0 44px;background:var(--bg2
             <div class="wcell"><b>05</b>abandon</div><div class="wcell"><b>06</b>abandon</div><div class="wcell"><b>07</b>abandon</div><div class="wcell"><b>08</b>abandon</div>
             <div class="wcell"><b>09</b>abandon</div><div class="wcell"><b>10</b>abandon</div><div class="wcell"><b>11</b>abandon</div><div class="wcell"><b>12</b>about</div>
           </div>
-          <p class="note">// On paper, not on a phone and not in a photograph. This is the only copy that will ever exist — the machine keeps none, and neither does anybody else.</p>
+          <p class="note">// On paper, not on a phone and not in a photograph. This is the only copy that will ever exist — the machine keeps none, and neither does anybody else. There is a sheet for it: <a class="tlink" href="paper_wallet.html">the recovery sheet</a>, printed blank and filled in by hand.</p>
           <div class="wizfoot"><span class="fkey">Discard and start over</span><span class="sp"></span><span class="fkey prim">I have written them down</span></div>
         </div>
 
@@ -1065,9 +1077,38 @@ footer{border-top:1px solid var(--line);padding:54px 0 44px;background:var(--bg2
 </section>
 
 <!-- ══════════ 08 FAQ ══════════ -->
+<section class="sec" id="paper">
+  <div class="wrap">
+    <div class="shead rv"><span class="snum">08</span><span class="srule"></span><span class="stag">On paper</span></div>
+    <h2 class="h2 rv">Where the words go</h2>
+    <p class="intro rv">Every flow in section 02 ends with a set of words that exist nowhere but on paper, and one of them ends with a wallet you can hand to somebody else. These three pages are the paper half of that: single HTML files that fetch nothing, so you can open them on the offline machine, print them blank, and fill them in with a pen.</p>
+    <div class="pgrid">
+      <a class="pcard rv" href="paper_wallet.html">
+        <span class="plabel">A4 · FOLDS TO FOUR PANELS</span>
+        <h3>Recovery sheet</h3>
+        <p>Numbered lines for 12 to 24 words, the master fingerprint the machine showed you, and a passphrase reminder that deliberately keeps the passphrase off the sheet. The back explains in five steps what the machine does with them.</p>
+        <span class="pgo">Print it →</span>
+      </a>
+      <a class="pcard rv" href="gift_wallet.html">
+        <span class="plabel">A4 · BIRTHDAY / WEDDING / ANY</span>
+        <h3>Gift card</h3>
+        <p>A wallet you can give away: pick the occasion, type the name and a short note, print it blank and write the words inside by hand. The face carries no product name at all — it is a gift, not an advert.</p>
+        <span class="pgo">Make one →</span>
+      </a>
+      <a class="pcard rv" href="redeem_gift.html">
+        <span class="plabel">WEB PAGE · FOR THE RECEIVER</span>
+        <h3>Redeem a gift</h3>
+        <p>What to do when somebody hands you one: the ten-minute route on a phone, the exchange route into your own currency, and the offline route where the words never touch a machine that can go online.</p>
+        <span class="pgo">Read it →</span>
+      </a>
+    </div>
+    <p class="note">// Whichever one you print, the words are written by hand. None of these pages has a field to type them into and none of them ever will: a typed seed is a seed in an undo buffer, an autofill store and a print spool at once.</p>
+  </div>
+</section>
+
 <section class="sec" id="faq">
   <div class="wrap">
-    <div class="shead rv"><span class="snum">08</span><span class="srule"></span><span class="stag">Questions</span></div>
+    <div class="shead rv"><span class="snum">09</span><span class="srule"></span><span class="stag">Questions</span></div>
     <h2 class="h2 lm rv"><span>Asked, answered.</span></h2>
     <div class="faq rv">
       <details>
@@ -1113,7 +1154,7 @@ footer{border-top:1px solid var(--line);padding:54px 0 44px;background:var(--bg2
 <!-- ══════════ 09 DONATE ══════════ -->
 <section class="sec donate" id="donate">
   <div class="wrap">
-    <div class="shead rv"><span class="snum">09</span><span class="srule"></span><span class="stag">Support</span></div>
+    <div class="shead rv"><span class="snum">10</span><span class="srule"></span><span class="stag">Support</span></div>
     <h2 class="h2 lm rv" style="text-align:center"><span>Make your first test transaction our tip jar.</span></h2>
     <p class="intro rv" style="margin:0 auto;max-width:44em;text-align:center;--d:.1s">The nicest way to try SignerOS end-to-end: make your very first signed transaction a small one to the donation address below. A few thousand sats is plenty — and it proves the whole loop works on your machine before anything that matters depends on it.</p>
     <div class="dongrid rv" style="--d:.15s">
@@ -1140,6 +1181,7 @@ footer{border-top:1px solid var(--line);padding:54px 0 44px;background:var(--bg2
       <div class="fcol"><b>SIGNEROS</b><br>Air-gapped Bitcoin signing OS<br>MIT © <span id="yr"></span> <a href="https://github.com/signeros/signeros" target="_blank" rel="noopener">&lt;MFA&gt;</a></div>
       <div class="fcol"><b>PROJECT</b><br><a href="https://github.com/signeros/signeros" target="_blank" rel="noopener">Source code</a><br><a href="#download">Download &amp; build</a><br><a href="#secureboot">Secure Boot</a></div>
       <div class="fcol"><b>SUPPORT</b><br><a href="#donate">Donate (BTC)</a><br><a href="#faq">FAQ</a><br><a href="#flash">USB guide</a></div>
+      <div class="fcol"><b>ON PAPER</b><br><a href="redeem_gift.html">Redeem a gift card</a><br><a href="gift_wallet.html">Print a gift card</a><br><a href="paper_wallet.html">Print a recovery sheet</a></div>
       <div class="fcol"><b>PRIVACY</b><br>No trackers · no analytics<br>No cookies · single HTML file<br>No webfonts, no CDN:<br>this page makes no requests.</div>
     </div>
     <p class="disc">DISCLAIMER — SignerOS is provided as-is, without warranty of any kind. Bitcoin is unforgiving: check whatever you downloaded against the number published with it, build it yourself before the wallet matters, test with small amounts first, and never type recovery words that hold real money into anything except a machine you started from SignerOS yourself. What has actually been tested, and what has not, is written down plainly with the source code — including the parts nobody has been able to try on hardware other than the machines the author owns. If something here is unclear, do not guess — open an issue.</p>

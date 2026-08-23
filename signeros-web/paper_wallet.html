@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Recovery Sheet – SignerOS</title>
+    <!-- Print this sheet BLANK and fill it in by hand.
+         No webfonts, no CDN, no images: this page makes zero network requests,
+         because a page that fetches anything while a seed is in the room is a
+         page that told somebody about it. The palette is the kiosk's own -
+         src/btc_signer_gui/src/ui/theme.h. -->
+    <style>
+        /* ---------- RESET & PAGE ---------- */
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+        }
+
+        :root {
+            --amber: #f7931a;
+            --ink: #0f172a;
+            --ink2: #1e293b;
+            --dim: #475569;
+            --line: #64748b;
+            --sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
+                    'Helvetica Neue', Arial, sans-serif;
+            --mono: ui-monospace, 'SFMono-Regular', 'DejaVu Sans Mono', Menlo,
+                    Consolas, 'Courier New', monospace;
+        }
+
+        @page {
+            size: A4 landscape;
+            margin: 5mm;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: var(--sans);
+            color: var(--ink2);
+            background-color: #f8fafc;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        /* ---------- SCREEN-ONLY PRINTING NOTE ---------- */
+        .screen-note {
+            max-width: 287mm;
+            margin: 18px auto 10px auto;
+            padding: 14px 18px;
+            background: #ffffff;
+            border: 2px solid #d1d9e6;
+            border-left: 6px solid var(--amber);
+            border-radius: 10px;
+            font-size: 10.5pt;
+            line-height: 1.6;
+            color: var(--ink2);
+        }
+        .screen-note b {
+            color: var(--ink);
+        }
+        .screen-note code {
+            font-family: var(--mono);
+            font-size: 9.5pt;
+        }
+        .screen-note p {
+            margin: 10px 0 0 0;
+        }
+        .screen-note a {
+            color: #b45309;
+            font-weight: 600;
+            text-decoration: underline;
+            text-decoration-color: var(--amber);
+            text-underline-offset: 2px;
+        }
+
+        .page-wrapper {
+            position: relative;
+            width: 287mm;
+            height: 198mm;
+            margin: 0 auto;
+            background-color: #f8fafc;
+        }
+
+        /* ---------- FOLD LINES ---------- */
+        .fold-line-h {
+            position: absolute;
+            top: 99mm;
+            left: 0;
+            width: 100%;
+            border-top: 3px dashed var(--amber);
+            z-index: 10;
+            pointer-events: none;
+            opacity: 0.6;
+        }
+        .fold-line-v {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            height: 100%;
+            border-left: 3px dashed var(--amber);
+            z-index: 10;
+            pointer-events: none;
+            transform: translateX(-50%);
+            opacity: 0.6;
+        }
+
+        /* ---------- GRID ---------- */
+        .grid-container {
+            width: 100%;
+            height: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+            position: relative;
+        }
+
+        /* ---------- PANELS ---------- */
+        .panel {
+            width: 50%;
+            height: 99mm;
+            padding: 5px;
+            vertical-align: top;
+            overflow: hidden;
+            position: relative;
+        }
+        .panel.flipped {
+            transform: rotate(180deg);
+        }
+
+        .panel-inner {
+            height: 100%;
+            border-radius: 16px;
+            background: #ffffff;
+            padding: 14px 18px 13px 18px;
+            position: relative;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.04);
+            border: 2px solid #d1d9e6;
+            display: flex;
+            flex-direction: column;
+        }
+        .flipped .panel-inner {
+            background: #f9fcff;
+            border-color: #b7c4d4;
+        }
+        .cover-inner {
+            background: linear-gradient(145deg, #ffffff 0%, #f1f6fa 100%);
+            border: 2px solid var(--ink2);
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        /* ---------- CORNER DECOR ---------- */
+        /*
+         * Two nested L brackets per corner. Both are positioned with `inset`
+         * rather than one of them falling back to its static position, and the
+         * inner one takes its size from that inset, so all four corners are the
+         * same shape by construction - there is no per-corner offset to get
+         * wrong. `border-radius` is 0 on purpose: a rounded corner whose
+         * adjoining border is `none` is drawn as a diagonal taper, and at 2px
+         * the two strokes taper opposite ways, which is what read as crooked.
+         */
+        .corner-decor {
+            position: absolute;
+            width: 22px;
+            height: 22px;
+            pointer-events: none;
+            z-index: 2;
+        }
+        .corner-decor::before,
+        .corner-decor::after {
+            content: '';
+            position: absolute;
+            border: 2px solid #334155;
+            border-radius: 0;
+        }
+        .corner-decor::before {
+            inset: 0;
+        }
+        .corner-decor::after {
+            inset: 6px;
+        }
+
+        .top-left { top: 10px; left: 10px; }
+        .top-left::before,
+        .top-left::after { border-right: none; border-bottom: none; }
+
+        .top-right { top: 10px; right: 10px; }
+        .top-right::before,
+        .top-right::after { border-left: none; border-bottom: none; }
+
+        .bottom-left { bottom: 10px; left: 10px; }
+        .bottom-left::before,
+        .bottom-left::after { border-right: none; border-top: none; }
+
+        .bottom-right { bottom: 10px; right: 10px; }
+        .bottom-right::before,
+        .bottom-right::after { border-left: none; border-top: none; }
+
+        /* ---------- PANEL TITLES ---------- */
+        .panel-title {
+            font-size: 13pt;
+            font-weight: 700;
+            color: var(--ink);
+            text-align: center;
+            margin: 0 0 8px 0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border-bottom: 3px solid var(--amber);
+            padding-bottom: 7px;
+            flex-shrink: 0;
+        }
+
+        /* ---------- COVER ---------- */
+        .cover-title {
+            font-size: 22pt;
+            font-weight: 800;
+            color: var(--ink);
+            margin: 0 0 2px 0;
+            letter-spacing: 3px;
+        }
+        .cover-subtitle {
+            font-size: 11pt;
+            color: var(--dim);
+            margin: 2px 0 6px 0;
+            letter-spacing: 4px;
+            font-weight: 500;
+        }
+        .divider-line {
+            color: var(--amber);
+            font-size: 14pt;
+            margin: 0 0 2px 0;
+        }
+        .main-title {
+            font-weight: 700;
+            font-size: 10.5pt;
+            color: var(--dim);
+            letter-spacing: 5px;
+            margin: 0;
+        }
+        .main-sub {
+            font-weight: 800;
+            font-size: 17pt;
+            color: var(--ink);
+            margin: 2px 0 8px 0;
+            letter-spacing: 3px;
+        }
+        .cover-desc {
+            font-size: 9pt;
+            color: var(--dim);
+            line-height: 1.55;
+            max-width: 92%;
+            margin: 0 auto;
+        }
+        /* ---------- BITCOIN LOGO ---------- */
+        .btc-logo-container {
+            width: 100px;
+            height: 100px;
+            margin: 2px auto 6px auto;
+            flex-shrink: 0;
+        }
+        .btc-logo-container svg {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* ---------- SEED TABLES ---------- */
+        .seed-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 2px 0 0 0;
+            flex: 1 0 auto;
+        }
+        .seed-table td {
+            width: 33.33%;
+            padding: 5px 4px 5px 0;
+            font-size: 11.5pt;
+            font-family: var(--mono);
+            font-weight: 500;
+            color: var(--ink);
+            vertical-align: middle;
+        }
+        .word-num {
+            font-weight: 700;
+            color: var(--dim);
+            margin-right: 6px;
+            display: inline-block;
+            width: 26px;
+            text-align: right;
+            font-size: 10pt;
+        }
+        .word-line {
+            display: inline-block;
+            width: 67%;
+            border-bottom: 2.5px solid var(--line);
+            height: 20px;
+            margin-left: 2px;
+            vertical-align: middle;
+        }
+
+        /* ---------- DETAIL FIELDS ---------- */
+        .details {
+            margin: 6px 0 0 0;
+            font-size: 8.5pt;
+            color: var(--ink2);
+            line-height: 1.9;
+            flex-shrink: 0;
+        }
+        .details-row {
+            display: flex;
+            gap: 14px;
+            align-items: baseline;
+            justify-content: space-between;
+        }
+        .field-label {
+            font-weight: 700;
+            color: var(--ink);
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            font-size: 7.5pt;
+            white-space: nowrap;
+        }
+        .field-line {
+            display: inline-block;
+            border-bottom: 2px solid var(--line);
+            height: 15px;
+            vertical-align: middle;
+            margin-left: 4px;
+            min-width: 62px;
+            flex: 1 1 auto;
+        }
+        .field-line.mono-wide {
+            min-width: 108px;
+            flex: 0 0 auto;
+        }
+        .choices {
+            font-family: var(--mono);
+            font-size: 9pt;
+            letter-spacing: 1.5px;
+            color: var(--ink);
+            margin-left: 4px;
+        }
+        .field-note {
+            font-size: 7.5pt;
+            color: var(--dim);
+            line-height: 1.4;
+            margin-top: 2px;
+        }
+
+        /* ---------- WARNING BOXES ---------- */
+        .warning-box {
+            background: #fef2f2;
+            border: 2px solid #dc2626;
+            border-radius: 10px;
+            padding: 6px 12px;
+            margin: 6px 16px 0 16px;
+            color: #b91c1c;
+            font-weight: 700;
+            font-size: 8pt;
+            text-align: center;
+            line-height: 1.4;
+            flex-shrink: 0;
+            box-shadow: 0 2px 6px rgba(220, 38, 38, 0.12);
+        }
+
+        /* ---------- HOW TO USE ---------- */
+        .guide-container {
+            display: flex;
+            flex-direction: column;
+            flex: 1 1 auto;
+            gap: 4px;
+            margin-top: 3px;
+        }
+        .guide-step {
+            display: flex;
+            gap: 8px;
+            font-size: 8pt;
+            line-height: 1.42;
+            color: var(--ink2);
+            align-items: flex-start;
+        }
+        .step-num {
+            font-weight: 800;
+            color: var(--amber);
+            font-size: 11pt;
+            min-width: 20px;
+            text-align: right;
+        }
+        .step-content strong {
+            color: var(--ink);
+        }
+        .step-content .btn-label {
+            font-weight: 700;
+            color: var(--ink);
+            white-space: nowrap;
+        }
+        .step-content .alert {
+            color: #dc2626;
+            font-weight: 700;
+        }
+        .step-content code {
+            font-family: var(--mono);
+            font-size: 8pt;
+        }
+
+        /* Inset like the warning box, so the code clears the corner marks. */
+        .qr-footer {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 6px 16px 0 16px;
+            flex-shrink: 0;
+        }
+        .qr-code {
+            width: 70px;
+            height: 70px;
+            flex-shrink: 0;
+        }
+        .qr-code svg {
+            display: block;
+            width: 100%;
+            height: 100%;
+            shape-rendering: crispEdges;
+        }
+        .qr-label {
+            display: block;
+            font-size: 7.5pt;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--dim);
+        }
+        .qr-url {
+            display: block;
+            font-family: var(--mono);
+            font-size: 9pt;
+            color: var(--ink);
+            line-height: 1.35;
+            margin-top: 3px;
+            word-break: break-all;
+        }
+
+        /* ---------- PRINT ---------- */
+        @media print {
+            .screen-note {
+                display: none;
+            }
+            body,
+            .page-wrapper {
+                background-color: #ffffff;
+            }
+            .panel-inner {
+                box-shadow: none !important;
+                border-color: #94a3b8 !important;
+            }
+            .flipped .panel-inner {
+                background: #fafcff !important;
+            }
+            .cover-inner {
+                background: #ffffff !important;
+            }
+            .fold-line-h,
+            .fold-line-v {
+                border-color: #f7931a !important;
+                opacity: 0.5 !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Screen only: never printed, and never on the sheet itself. -->
+    <div class="screen-note">
+        <b>Print this sheet blank, then fill it in by hand with a pen.</b>
+        A4, landscape, one-sided, at 100% scale — then fold along the two orange
+        dashed lines. Do not type your recovery words into this page, do not
+        save a filled-in copy as a PDF, and do not print it over a network
+        printer that keeps a spool. The page itself loads nothing from the
+        internet, so it is safe to open on the offline machine — but the
+        computer you print from is not the machine that holds your keys, and
+        should never learn the words.
+        <p>
+            First time? The project page walks through
+            <a href="index.html#app">every screen of creating a wallet</a> &mdash;
+            including the page whose <b>fingerprint</b> and <b>first address</b> you
+            compare against your coordinator once the watch-only file is imported,
+            which is how you know the file that reached Sparrow is the wallet you
+            just made. There is also
+            <a href="index.html#download">how to get and check the image</a>, and
+            <a href="index.html#flash">how to write the stick</a>.
+        </p>
+    </div>
+
+    <div class="page-wrapper">
+
+        <!-- FOLD GUIDES -->
+        <div class="fold-line-h"></div>
+        <div class="fold-line-v"></div>
+
+        <table class="grid-container">
+            <tr>
+                <!-- PANEL 2: WORDS 13-24 (flipped) -->
+                <td class="panel flipped">
+                    <div class="panel-inner">
+                        <div class="corner-decor top-left"></div>
+                        <div class="corner-decor top-right"></div>
+                        <div class="corner-decor bottom-left"></div>
+                        <div class="corner-decor bottom-right"></div>
+
+                        <div class="panel-title">2. Recovery Words (13&ndash;24)</div>
+
+                        <table class="seed-table">
+                            <tr>
+                                <td><span class="word-num">13.</span><span class="word-line"></span></td>
+                                <td><span class="word-num">17.</span><span class="word-line"></span></td>
+                                <td><span class="word-num">21.</span><span class="word-line"></span></td>
+                            </tr>
+                            <tr>
+                                <td><span class="word-num">14.</span><span class="word-line"></span></td>
+                                <td><span class="word-num">18.</span><span class="word-line"></span></td>
+                                <td><span class="word-num">22.</span><span class="word-line"></span></td>
+                            </tr>
+                            <tr>
+                                <td><span class="word-num">15.</span><span class="word-line"></span></td>
+                                <td><span class="word-num">19.</span><span class="word-line"></span></td>
+                                <td><span class="word-num">23.</span><span class="word-line"></span></td>
+                            </tr>
+                            <tr>
+                                <td><span class="word-num">16.</span><span class="word-line"></span></td>
+                                <td><span class="word-num">20.</span><span class="word-line"></span></td>
+                                <td><span class="word-num">24.</span><span class="word-line"></span></td>
+                            </tr>
+                        </table>
+
+                        <div class="details">
+                            <div class="details-row">
+                                <span class="field-label">Passphrase used?</span>
+                                <span class="choices">NO&nbsp;&nbsp;/&nbsp;&nbsp;YES</span>
+                                <span class="field-label">Circle one</span>
+                            </div>
+                            <div class="field-note">
+                                If YES, keep it somewhere else &ndash; not on this sheet &ndash;
+                                written exactly as you typed it. With the wrong passphrase
+                                these words open a different, empty wallet, and nothing will
+                                tell you so.
+                            </div>
+                        </div>
+
+                        <div class="warning-box">
+                            &#9888;&#65039; NEVER LOSE THIS PAPER: it is the only copy. The machine
+                            keeps none, the stick holds none, nobody can reissue it. Store it
+                            dry, fire-safe, and away from the computer.
+                        </div>
+                    </div>
+                </td>
+
+                <!-- PANEL 3: WORDS 1-12 (flipped) -->
+                <td class="panel flipped">
+                    <div class="panel-inner">
+                        <div class="corner-decor top-left"></div>
+                        <div class="corner-decor top-right"></div>
+                        <div class="corner-decor bottom-left"></div>
+                        <div class="corner-decor bottom-right"></div>
+
+                        <div class="panel-title">1. Recovery Words (1&ndash;12)</div>
+
+                        <table class="seed-table">
+                            <tr>
+                                <td><span class="word-num">1.</span><span class="word-line"></span></td>
+                                <td><span class="word-num">5.</span><span class="word-line"></span></td>
+                                <td><span class="word-num">9.</span><span class="word-line"></span></td>
+                            </tr>
+                            <tr>
+                                <td><span class="word-num">2.</span><span class="word-line"></span></td>
+                                <td><span class="word-num">6.</span><span class="word-line"></span></td>
+                                <td><span class="word-num">10.</span><span class="word-line"></span></td>
+                            </tr>
+                            <tr>
+                                <td><span class="word-num">3.</span><span class="word-line"></span></td>
+                                <td><span class="word-num">7.</span><span class="word-line"></span></td>
+                                <td><span class="word-num">11.</span><span class="word-line"></span></td>
+                            </tr>
+                            <tr>
+                                <td><span class="word-num">4.</span><span class="word-line"></span></td>
+                                <td><span class="word-num">8.</span><span class="word-line"></span></td>
+                                <td><span class="word-num">12.</span><span class="word-line"></span></td>
+                            </tr>
+                        </table>
+
+                        <div class="details">
+                            <div class="details-row">
+                                <span class="field-label">How many words</span>
+                                <span class="choices">12&nbsp; 15&nbsp; 18&nbsp; 21&nbsp; 24</span>
+                                <span class="field-label">Date</span>
+                                <span class="field-line"></span>
+                            </div>
+                            <div class="details-row">
+                                <span class="field-label">Master fingerprint</span>
+                                <span class="field-line mono-wide"></span>
+                                <span class="field-label">Wallet name</span>
+                                <span class="field-line"></span>
+                            </div>
+                            <div class="field-note">
+                                Circle your word count and leave the unused lines empty. The
+                                fingerprint is the eight characters SignerOS shows when the
+                                wallet is made; it is how you check later that these words are
+                                the wallet you think they are.
+                            </div>
+                        </div>
+
+                        <div class="warning-box">
+                            &#9940; NEVER SHARE THESE WORDS: whoever reads them can spend the
+                            wallet. Type them only into SignerOS, on the offline machine &ndash;
+                            never into a phone, a browser, or any computer that is online.
+                        </div>
+                    </div>
+                </td>
+            </tr>
+
+            <tr>
+                <!-- PANEL 4: HOW TO USE (upright) -->
+                <td class="panel">
+                    <div class="panel-inner">
+                        <div class="corner-decor top-left"></div>
+                        <div class="corner-decor top-right"></div>
+                        <div class="corner-decor bottom-left"></div>
+                        <div class="corner-decor bottom-right"></div>
+
+                        <div class="panel-title">How to use</div>
+
+                        <div class="guide-container">
+                            <div class="guide-step">
+                                <span class="step-num">1.</span>
+                                <div class="step-content">
+                                    <strong>Start the offline machine.</strong>
+                                    Boot a computer from the SignerOS stick: it runs in memory
+                                    only, <span class="alert">cannot go online</span>, and
+                                    forgets everything at shutdown.
+                                </div>
+                            </div>
+                            <div class="guide-step">
+                                <span class="step-num">2.</span>
+                                <div class="step-content">
+                                    <strong>Write the words on this sheet.</strong>
+                                    Choose <span class="btn-label">Create a wallet</span> and
+                                    copy them onto the word panels
+                                    <strong>in order, by hand</strong>. The machine then makes
+                                    you type every word back.
+                                </div>
+                            </div>
+                            <div class="guide-step">
+                                <span class="step-num">3.</span>
+                                <div class="step-content">
+                                    <strong>Take the public file.</strong>
+                                    SignerOS writes a watch-only file to the
+                                    <code>PSBT_DATA</code> drive. Open it in Sparrow or
+                                    Blockstream Green: it can watch and prepare payments, never
+                                    spend. Check its fingerprint and first address against the
+                                    machine's.
+                                </div>
+                            </div>
+                            <div class="guide-step">
+                                <span class="step-num">4.</span>
+                                <div class="step-content">
+                                    <strong>Pay someone.</strong>
+                                    That wallet saves the payment as a <code>.psbt</code> file
+                                    on the stick. Choose
+                                    <span class="btn-label">Sign a transaction</span>,
+                                    <span class="alert">check the amount and the address on
+                                    screen</span>, then sign and carry the file back.
+                                </div>
+                            </div>
+                            <div class="guide-step">
+                                <span class="step-num">5.</span>
+                                <div class="step-content">
+                                    <strong>To recover, later.</strong>
+                                    Choose <span class="btn-label">Export watch-only keys</span>
+                                    and type these words in, with your passphrase if you used
+                                    one. The fingerprint on screen must match this sheet.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!--
+                            The code below is a QR of https://signeros.github.io/signeros/,
+                            generated offline and pasted in as markup, so this page still
+                            fetches nothing at all. Regenerate it with segno
+                            (apt install python3-segno) after the address changes:
+
+                              import io, segno
+                              b = io.BytesIO()
+                              segno.make('https://signeros.github.io/signeros/', error='m') \
+                                   .save(b, kind='svg', xmldecl=False, nl=False, scale=1,
+                                         border=2, omitsize=True, dark='#0f172a',
+                                         light='#ffffff', svgclass=None, lineclass=None)
+                              print(b.getvalue().decode())
+
+                            29x29 modules at 70px is 0.56mm per module, which prints and
+                            scans - but scan the sheet once yourself before printing a stack.
+                        -->
+                        <div class="qr-footer">
+                            <div class="qr-code"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 33 33"><path fill="#fff" d="M0 0h33v33h-33z"/><path stroke="#0f172a" d="M2 2.5h7m1 0h1m3 0h1m2 0h1m2 0h3m1 0h7m-29 1h1m5 0h1m1 0h1m2 0h1m2 0h1m1 0h1m5 0h1m5 0h1m-29 1h1m1 0h3m1 0h1m2 0h1m2 0h2m1 0h1m3 0h2m1 0h1m1 0h3m1 0h1m-29 1h1m1 0h3m1 0h1m1 0h2m1 0h2m4 0h2m1 0h1m1 0h1m1 0h3m1 0h1m-29 1h1m1 0h3m1 0h1m2 0h1m1 0h1m1 0h3m3 0h1m2 0h1m1 0h3m1 0h1m-29 1h1m5 0h1m2 0h2m1 0h1m1 0h1m2 0h3m2 0h1m5 0h1m-29 1h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7m-21 1h1m3 0h4m1 0h1m2 0h1m-21 1h1m1 0h2m1 0h3m1 0h3m1 0h2m2 0h2m3 0h1m2 0h1m1 0h2m-29 1h1m2 0h1m1 0h1m2 0h1m2 0h2m3 0h9m3 0h1m-27 1h1m2 0h3m2 0h3m1 0h1m1 0h2m2 0h2m1 0h2m1 0h2m-28 1h2m1 0h1m1 0h1m1 0h3m1 0h5m2 0h7m3 0h1m-29 1h1m5 0h1m1 0h2m1 0h1m5 0h1m2 0h1m4 0h2m-23 1h2m4 0h4m1 0h2m2 0h1m1 0h2m3 0h3m-29 1h2m1 0h1m2 0h1m1 0h2m4 0h1m1 0h5m1 0h3m1 0h3m-28 1h4m3 0h1m1 0h4m7 0h4m2 0h1m-28 1h4m1 0h7m4 0h1m2 0h3m1 0h3m1 0h1m-26 1h1m1 0h2m2 0h2m1 0h3m1 0h1m1 0h1m2 0h1m2 0h1m1 0h3m-28 1h1m1 0h1m1 0h1m1 0h1m1 0h4m3 0h3m2 0h1m1 0h3m1 0h1m-23 1h1m3 0h1m7 0h4m1 0h4m1 0h1m-26 1h4m1 0h2m1 0h3m1 0h1m2 0h11m-19 1h1m3 0h3m1 0h1m3 0h1m3 0h5m-29 1h7m1 0h1m2 0h1m1 0h1m5 0h2m1 0h1m1 0h2m1 0h1m-28 1h1m5 0h1m1 0h3m4 0h1m2 0h1m1 0h1m3 0h2m2 0h1m-29 1h1m1 0h3m1 0h1m5 0h1m1 0h1m2 0h1m2 0h5m1 0h1m-27 1h1m1 0h3m1 0h1m1 0h4m2 0h3m4 0h1m1 0h3m2 0h1m-29 1h1m1 0h3m1 0h1m1 0h2m1 0h1m1 0h1m6 0h2m1 0h1m2 0h1m1 0h1m-29 1h1m5 0h1m3 0h1m3 0h1m1 0h1m3 0h2m1 0h1m1 0h1m1 0h1m-28 1h7m1 0h1m2 0h1m1 0h1m4 0h1m1 0h4m1 0h1m1 0h1"/></svg></div>
+                            <div>
+                                <span class="qr-label">Guide, source &amp; releases</span>
+                                <span class="qr-url">signeros.github.io/signeros</span>
+                            </div>
+                        </div>
+                    </div>
+                </td>
+
+                <!-- PANEL 1: FRONT COVER (upright) -->
+                <td class="panel">
+                    <div class="panel-inner cover-inner">
+                        <div class="corner-decor top-left"></div>
+                        <div class="corner-decor top-right"></div>
+                        <div class="corner-decor bottom-left"></div>
+                        <div class="corner-decor bottom-right"></div>
+
+                        <div class="cover-title">RECOVERY SHEET</div>
+                        <div class="cover-subtitle">SIGNEROS &bull; OFFLINE BITCOIN WALLET</div>
+                        <div class="divider-line">&#10022; &#128274; &#10022;</div>
+
+                        <!-- BITCOIN LOGO -->
+                        <div class="btc-logo-container">
+                            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                                <defs>
+                                    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+                                        <stop offset="0%" stop-color="#f7931a" stop-opacity="0.18" />
+                                        <stop offset="100%" stop-color="#f7931a" stop-opacity="0" />
+                                    </radialGradient>
+                                </defs>
+                                <circle cx="50" cy="50" r="48" fill="#ffffff" stroke="#1e293b" stroke-width="3" />
+                                <circle cx="50" cy="50" r="43" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="4,3" />
+                                <circle cx="50" cy="50" r="37" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.5" />
+                                <circle cx="50" cy="50" r="48" fill="url(#glow)" />
+                                <text x="50" y="68" font-family="Arial, sans-serif" font-size="56" font-weight="bold" fill="#f7931a" text-anchor="middle">&#8383;</text>
+                                <circle cx="50" cy="50" r="41" fill="none" stroke="#f7931a" stroke-width="1.2" opacity="0.3" />
+                            </svg>
+                        </div>
+
+                        <div class="main-title">THE ONLY COPY OF</div>
+                        <div class="main-sub">YOUR RECOVERY WORDS</div>
+
+                        <div class="cover-desc">
+                            Inside, hand-written, are the words that open a Bitcoin wallet.
+                            Whoever reads them can spend it; whoever loses them loses it. Keep
+                            it folded, keep it offline, never photograph it.
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        </table>
+
+    </div>
+    <!-- end page-wrapper -->
+</body>
+</html>
