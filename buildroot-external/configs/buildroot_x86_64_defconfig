@@ -62,7 +62,26 @@ BR2_FORTIFY_SOURCE_2=y
 #
 BR2_TARGET_GENERIC_HOSTNAME="signeros"
 BR2_TARGET_GENERIC_ISSUE="SignerOS air-gapped PSBT signer"
-BR2_TARGET_GENERIC_ROOT_PASSWD="*"
+# Root login is disabled by turning the option OFF, NOT by setting the password
+# string to "*". That distinction is the whole point.
+#
+# BR2_TARGET_GENERIC_ROOT_PASSWD is only read as an already-hashed value when it
+# starts with $1$, $5$ or $6$ (see package/skeleton-init-common/, the
+# BR2_TARGET_ENABLE_ROOT_LOGIN branch). "*" matches none of those, so Buildroot
+# took it as a CLEAR-TEXT password and ran `mkpasswd -m sha-256 "*"` on it in the
+# target-finalize hook - which meant two things, both wrong:
+#
+#   - root had the one-character password "*" rather than a locked account, and
+#   - mkpasswd picks a RANDOM salt, of random length, on every build. So
+#     /etc/shadow differed each time, therefore rootfs.cpio did, therefore
+#     bzImage did. That was the entire reproducibility failure: two clean builds
+#     of the same commit disagreed, and the only differing file in the whole
+#     initramfs was /etc/shadow (214 bytes vs 210 - the salt lengths).
+#
+# With root login off, skeleton-init-common writes the literal "*" into
+# /etc/shadow with no mkpasswd call at all. Deterministic, and actually locked.
+# post-build.sh asserts the result, so this cannot silently come back.
+# BR2_TARGET_ENABLE_ROOT_LOGIN is not set
 BR2_INIT_BUSYBOX=y
 # Device nodes: devtmpfs only.
 #

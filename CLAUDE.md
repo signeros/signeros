@@ -186,8 +186,9 @@ What that means when you add or change a screen:
 `buildroot-external/board/signeros/post-build.sh` fails the build if any of these is
 lost, checked against the *generated* artefacts rather than the defconfig: `CONFIG_NET`
 surviving kconfig, any BusyBox networking applet, any X11/Wayland/display-manager
-binary, any setuid/setgid file, an unresolvable `DT_NEEDED` or a build-host `RUNPATH`,
-a missing `CONFIG_CMDLINE_OVERRIDE`, or a production command line containing
+binary, any setuid/setgid file, any account in `/etc/shadow` whose password field is not
+`*`/`!`/`!!`, an unresolvable `DT_NEEDED` or a build-host `RUNPATH`, a missing
+`CONFIG_CMDLINE_OVERRIDE`, or a production command line containing
 `signeros.selftest=1` or a serial console. `scripts/test_in_qemu.sh` re-proves the
 runtime half inside the booted image (`socket()` returns `ENOSYS`, `/proc/net` absent,
 mount flags, the change-forgery refusal).
@@ -326,7 +327,25 @@ If a guardrail check fails, the check is almost certainly right. Fix the cause.
   combination up front.
 - **Reproducibility**: `BR2_REPRODUCIBLE=y`, every input pinned. Compare
   `output/images/bzImage`, not `signeros.img` — the latter embeds a per-key Secure Boot
-  signature and is expected to differ.
+  signature and is expected to differ. It did not hold until 2026-08-25, and the
+  way it broke is worth knowing because it will rhyme. `BR2_TARGET_GENERIC_ROOT_PASSWD="*"`
+  reads as "no root password"; Buildroot treats anything not starting `$1$`/`$5$`/`$6$`
+  as **clear text to be hashed**, so every `target-finalize` ran
+  `mkpasswd -m sha-256 "*"` with a fresh random salt of random length. `/etc/shadow`
+  changed on every build, and it lives in the initramfs, so `bzImage` did too — one
+  file, 4 bytes, whole claim false. It was also a privilege bug: root had the password
+  `*` rather than a locked account (unreachable — no `login`/`su`/`sulogin`/`passwd`
+  applet, no getty in `inittab` — which is why it survived). Fixed by
+  `# BR2_TARGET_ENABLE_ROOT_LOGIN is not set`, and `post-build.sh` now asserts every
+  shadow field, so it cannot come back quietly.
+- **Debug a hash mismatch by layer, never with `diffoscope` on `bzImage`.** That file
+  is xz-compressed, so one upstream byte diffuses across all of it. `rootfs.cpio` is
+  left uncompressed for exactly this: `sha256sum` both, and if the cpio moved,
+  `cpio -itv` on two archives names the file. Faster still — regenerate the rootfs from
+  an *unchanged* `output/target/` (`make -C buildroot O=… rootfs-cpio`, seconds): if the
+  hash moves with the tree untouched, no package build is the culprit. Keep each run's
+  `output/target/` and `diff -r` them. This found the defect above in minutes after two
+  hour-long builds had only established that it existed.
 - Secure Boot signing is opt-in via `SIGNEROS_SB_KEY` / `SIGNEROS_SB_CERT`;
   `build.sh` validates the pair in the first second rather than 90 minutes in.
   `keys/` is gitignored and `make_sb_keys.sh` refuses to overwrite an existing key.
@@ -344,6 +363,13 @@ signing** have been taken end to end. See the README section of the same name fo
 exactly what that covers, including which piece of evidence predates the grid
 rewrite.
 
+Reproducibility has now been *measured* rather than argued: **two full
+`make clean && make image` runs** of one commit give an identical `rootfs.cpio`
+and an identical `bzImage` (`cmp`, not just sha256). The same pair disagreed
+every time before the `/etc/shadow` fix, which is what makes it evidence. An
+incremental pair lands on the same bytes, so `make app`/`make reconfigure` do not
+quietly produce a different image from a clean build.
+
 What is still unproven:
 
 - **Secure Boot, all of it.** Nothing has been signed with `SIGNEROS_SB_KEY` and
@@ -352,6 +378,10 @@ What is still unproven:
 - **a real touchscreen panel** — that is Qt's `evdevtouch`, not `touchpad.cpp`,
   and QEMU's `usb-tablet` is an absolute pointer, so neither the hardware runs
   nor `make gui` says anything about it.
+- **any cross-machine comparison.** Every hash this tree has produced came from
+  one host, one distribution, one host compiler. "Two people get the same answer"
+  is still an argument from pinned inputs; what closes it is somebody else's
+  number, which is why the release publishes one to be contradicted.
 
 The mnemonic grids are no longer on that list, but nothing in this tree presses a
 key or clicks a cell either: `test-gui` is a pixel check on the splash, and the

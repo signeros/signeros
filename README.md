@@ -660,6 +660,16 @@ The kiosk runs as uid 1000, no supplementary groups, `/bin/false` shell, locked
 password. There is **no setuid binary anywhere on the image** — `post-build.sh`
 fails the build if one appears.
 
+**Every account is locked, and `post-build.sh` proves it** rather than trusting
+the configuration to have meant what it said. The field in `/etc/shadow` must be
+`*`, `!` or `!!`; a crypt hash fails the build and so does an empty field, which
+is not "locked" but "no password required". The check exists because setting
+`BR2_TARGET_GENERIC_ROOT_PASSWD="*"` looks like it locks root and does the
+opposite — it gives root the one-character password `*`, hashed with a fresh
+random salt every build. See [Reproducibility](#reproducibility) for the whole
+story; the short version is that a privilege defect and the tree's
+reproducibility defect turned out to be one line of configuration.
+
 So how does an unprivileged process power the machine off? It exits with status
 **42**. `signer-session`, which is root, turns that into
 `/usr/sbin/secure-poweroff`. One integer is the entire privileged interface
@@ -911,6 +921,16 @@ Executed in this environment, on this tree:
   including BIP32 vector 1, the BIP84/BIP86 reference wallets, the BIP49
   testnet address and BIP341's taproot tweak
 - every shell script parses (`make check-scripts`)
+- **byte-identical rebuilds**, after fixing the `/etc/shadow` defect described
+  under [Reproducibility](#reproducibility): **two full `make clean && make image`
+  runs** of the same commit produce an identical `rootfs.cpio` *and* an identical
+  `bzImage`, verified with `cmp` rather than only by hash. The same pair
+  disagreed every time before the fix, which is what makes it evidence rather
+  than a tautology. An incremental pair — reusing the built toolchain and
+  packages, re-running only `target-finalize`, the cpio generation and the kernel
+  relink and xz pass — lands on the *same* bytes as the clean pair, so
+  `make app` and `make reconfigure` are not quietly producing a different image
+  from the one a clean build gives
 
 Executed on real hardware, from a USB stick, on several different laptops and
 desktops with **Secure Boot disabled**:
@@ -953,6 +973,15 @@ Still unproven:
 - **a real touchscreen panel.** Touchscreens take Qt's `evdevtouch` handler
   rather than `touchpad.cpp`, and QEMU's `usb-tablet` is an absolute pointer, so
   neither the hardware runs above nor `make gui` is evidence about them.
+- **any comparison across two machines.** The rebuild pairs above are
+  reproducible *here*: every hash this tree has produced came from one host, one
+  distribution and one host compiler. What closes the remaining gap is somebody
+  else's number, which is why the release publishes one to be contradicted. The
+  pinning that should make it come out the same is real and is described under
+  [Reproducibility](#reproducibility) — Buildroot builds its own cross toolchain,
+  and the two host tools whose output reaches the artefact, `xz` and `cpio`, are
+  built by Buildroot rather than taken from the host. None of that is a
+  measurement.
 
 What is no longer on that list is the entry UI. It was proven by hand, because
 nothing here can prove it otherwise — `test-gui` is a pixel check on the splash,
@@ -996,6 +1025,52 @@ kernel image, which is the entire boot payload — kernel, root filesystem and
 command line — so agreeing on it is agreeing on everything that executes. Two
 people on different machines should get the same answer; if they do not, that is
 a bug worth reporting.
+
+**It was reported, and it was a bug.** Until 2026-08-25 this section was simply
+false. Two `make clean && make image` runs of the same commit produced two
+different `bzImage` hashes — on one machine, with nothing changed in between.
+
+The cause was one character of configuration. `BR2_TARGET_GENERIC_ROOT_PASSWD="*"`
+reads like "no root password", and the defconfig comment directly above it said
+exactly that. Buildroot reads it differently: only a value beginning `$1$`, `$5$`
+or `$6$` counts as already-hashed, and **every other value is a clear-text
+password to be encrypted** (`package/skeleton-init-common/`). So each
+`target-finalize` ran `mkpasswd -m sha-256 "*"`, and `mkpasswd` picks a random
+salt, of random length. `/etc/shadow` came out different on every build — 214
+bytes one run, 210 the next — and `/etc/shadow` is in the initramfs, which is
+inside `bzImage`. It was the only differing file in the entire image.
+
+Behind that sat a second defect the first one hid: root did not have a locked
+account, it had the one-character password `*`. Nothing on the image can
+authenticate a password — there is no `login`, `su`, `sulogin` or `passwd`
+applet, and `inittab` has no getty line — so it was never reachable, which is
+precisely why nothing noticed it for as long as it lasted.
+
+The fix is `# BR2_TARGET_ENABLE_ROOT_LOGIN is not set`, which makes
+skeleton-init-common write a literal `*` with no `mkpasswd` call at all:
+deterministic, and actually locked. `post-build.sh` now asserts the result —
+every account in `/etc/shadow` must be `*`, `!` or `!!`, and a crypt hash or an
+empty field fails the build. That one guardrail is a reproducibility check and a
+privilege check at the same time, because here they were the same bug.
+
+**If two hashes disagree again, hash the layers, not the image.** `bzImage` is
+xz-compressed, so a single upstream byte diffuses across the whole file and
+`diffoscope` on it reports a wall of noise. `rootfs.cpio` is deliberately left
+uncompressed, which is what makes this cheap:
+
+```bash
+sha256sum output/images/rootfs.cpio output/images/bzImage
+```
+
+If `rootfs.cpio` differs, the fault is in the target tree or the cpio step, and
+`cpio -itv` on both archives names the file outright — that is how the defect
+above was found, in minutes rather than another pair of hour-long builds. If only
+`bzImage` differs, the fault is in the kernel build or the xz pass. Keep each
+run's `output/target/` as well: `diff -r` between two target trees is faster than
+any other tool here. And regenerating just the rootfs from an *unchanged*
+`output/target/` (`make -C buildroot O=… rootfs-cpio`) takes seconds and settles
+the first question on its own — if the hash moves with the tree untouched, no
+package build is to blame.
 
 `signeros.img` deliberately does *not* match between two people: it embeds a
 Secure Boot signature, so it differs per signing key. Reproducing the payload and

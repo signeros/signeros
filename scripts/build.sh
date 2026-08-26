@@ -341,6 +341,20 @@ for f in signeros.img signeros-test.img; do
 	[ -L "$IMAGES/$f" ] && printf '  %-36s -> %s\n' "$f" "$(readlink "$IMAGES/$f")"
 done
 
+# The one number a rebuilder actually needs, printed rather than left to a
+# `sha256sum output/images/bzImage` they have to know to run: the comparison only
+# happens if the number is in front of the person who just spent an hour
+# producing it. What to compare it against is the digest GitHub shows beside the
+# bzImage asset on this version's release.
+#
+# The Buildroot tag is printed with it because the hash silently depends on it -
+# the same source built with a different --br-version gives a different bzImage,
+# and someone reporting a mismatch from that is reporting nothing.
+if [ -f "$IMAGES/bzImage" ] && command -v sha256sum >/dev/null 2>&1; then
+	printf '\n  bzImage sha256 (Buildroot %s) - compare with the release:\n    %s\n' \
+		"$BR_VERSION" "$(sha256sum "$IMAGES/bzImage" | cut -d' ' -f1)"
+fi
+
 cat <<EOF
 
 Next:

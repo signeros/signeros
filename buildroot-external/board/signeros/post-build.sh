@@ -312,6 +312,58 @@ done < <(find "$TARGET_DIR" -type f -perm /6000 2>/dev/null)
 [ "$suid_found" -eq 0 ] && ok "no setuid or setgid files on the image"
 
 # ---------------------------------------------------------------------------
+# 4b. Every account is locked, and locked the DETERMINISTIC way
+#
+# This is a reproducibility guardrail as much as a security one, and it exists
+# because the two failed together.
+#
+# BR2_TARGET_GENERIC_ROOT_PASSWD="*" reads like "no password". Buildroot reads it
+# as a clear-text password, because only $1$/$5$/$6$ count as pre-hashed, and
+# runs mkpasswd on it during target-finalize. mkpasswd salts randomly, with a
+# random salt LENGTH, so /etc/shadow came out different on every single build -
+# and /etc/shadow is in the initramfs, which is inside bzImage. Two clean builds
+# of one commit produced two different bzImage hashes, and this one file was the
+# only difference in the entire image. The fix is
+# `# BR2_TARGET_ENABLE_ROOT_LOGIN is not set` in the defconfig.
+#
+# So: a crypt hash in /etc/shadow means the reproducibility claim in the README
+# is false again, and it means an account that was supposed to be locked has a
+# password. Refuse both. A locked field is "*", "!" or "!!"; empty is NOT locked,
+# it means no password is required at all.
+# ---------------------------------------------------------------------------
+echo "--- guardrail: all accounts locked, no build-time password hash -----------"
+shadow="$TARGET_DIR/etc/shadow"
+if [ ! -r "$shadow" ]; then
+	fail "no readable /etc/shadow on the target - cannot prove accounts are locked"
+else
+	shadow_bad=0
+	while IFS=: read -r user hash _rest; do
+		[ -n "$user" ] || continue
+		case "$hash" in
+		'*'|'!'|'!!')
+			;;
+		'$'*)
+			fail "$user has a crypt password hash in /etc/shadow (${hash%%\$*}\$...). \
+Buildroot hashed a clear-text password with a random salt: the account is not \
+locked, and bzImage will differ on every build. See section 4b."
+			shadow_bad=1
+			;;
+		'')
+			fail "$user has an EMPTY password field in /etc/shadow - that is not locked, \
+it means no password is required. Lock it with '*'."
+			shadow_bad=1
+			;;
+		*)
+			fail "$user has an unrecognised password field in /etc/shadow: '$hash'"
+			shadow_bad=1
+			;;
+		esac
+	done < "$shadow"
+	[ "$shadow_bad" -eq 0 ] \
+		&& ok "every account in /etc/shadow is locked with a fixed, unsalted field"
+fi
+
+# ---------------------------------------------------------------------------
 # 5. Dynamic-linking audit (the "missing shared library / RPATH" check)
 #
 # This is the host-side half of what scripts/test_in_qemu.sh confirms at
