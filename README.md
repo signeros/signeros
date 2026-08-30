@@ -1,5 +1,7 @@
 # SignerOS
 
+Documentation and details: [signeros.org](https://signeros.org)
+
 A single-purpose, air-gapped, stateless x86_64 live USB operating system that
 does exactly three things: create a Bitcoin wallet, export watch-only keys for
 one you already have, and sign PSBT files (BIP174 / BIP370).
