@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#0d1117">
-<meta name="description" content="Somebody gave you bitcoin on a paper card. Here is how to move it into a wallet of your own, or turn it into your local currency - the quick way on a phone, and the fully offline way with SignerOS.">
+<meta name="description" content="Somebody gave you bitcoin on a paper card. The words on it are not a secret any more, so decide one thing - spend it, or keep it - and this page has the steps for either, on a phone or fully offline with SignerOS.">
 <title>Redeem a Bitcoin Gift Card — SignerOS</title>
 <style>
 /* No webfonts, no CDN, no analytics, no input boxes: this page makes zero
@@ -100,7 +100,7 @@ nav.top{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(7,9,13,.
 .where.hot{color:var(--amber);border-color:rgba(247,147,26,.4)}
 .where.cold{color:var(--green);border-color:rgba(63,185,80,.35)}
 .where.cash{color:var(--amber2);border-color:rgba(255,181,77,.35)}
-.wpath{font-family:var(--mono);font-size:11.5px;background:var(--panel2);border-left:2px solid var(--amber);padding:10px 13px;margin:0 0 11px;color:var(--ink);max-width:46em;overflow-x:auto;white-space:nowrap}
+.wpath{font-family:var(--mono);font-size:11.5px;background:var(--panel2);border-left:2px solid var(--amber);padding:10px 13px;margin:0 0 11px;color:var(--ink);max-width:64em;overflow-x:auto;white-space:nowrap}
 .wpath i{color:var(--mut);font-style:normal;user-select:none}
 
 /* boxes */
@@ -128,6 +128,17 @@ nav.top{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(7,9,13,.
 .route li::before{content:"›";position:absolute;left:2px;color:var(--amber);font-family:var(--mono)}
 .route.cold li::before{color:var(--green)}
 .route .rgo{margin-top:auto}
+
+/* the one setting nobody must get wrong */
+.keycall{border:1px solid rgba(247,147,26,.55);border-left:3px solid var(--amber);background:rgba(247,147,26,.07);padding:20px 22px;margin-top:26px;max-width:62em}
+.keycall h5{font-family:var(--mono);font-size:11px;letter-spacing:.18em;color:var(--amber);margin-bottom:10px}
+.keycall p{color:var(--dim);font-size:.95rem;margin-bottom:9px}
+.keycall p:last-child{margin-bottom:0}
+.keycall b{color:var(--ink);font-weight:600}
+.pill{display:inline-block;font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;border:1px solid rgba(247,147,26,.5);color:var(--amber2);padding:4px 9px;margin:3px 5px 3px 0}
+.pill.no{border-color:rgba(248,81,73,.45);color:var(--red)}
+.h3{font-family:var(--disp);font-weight:700;font-size:1.22rem;letter-spacing:.05em;text-transform:uppercase;margin:42px 0 8px}
+.h3+.intro{margin-bottom:0}
 
 /* lists */
 .olist{list-style:none;counter-reset:st;max-width:56em;margin-top:22px}
@@ -166,9 +177,10 @@ footer{border-top:1px solid var(--line2);padding:54px 0 70px;background:var(--bg
     <a class="brand" href="index.html">SIGNER<b>://</b>OS</a>
     <div class="navlinks">
       <a href="#first">Start here</a>
-      <a href="#fast">Fast route</a>
-      <a href="#cash">To local money</a>
-      <a href="#safe">Offline route</a>
+      <a href="#choose">Spend or keep</a>
+      <a href="#spend">Spend it</a>
+      <a href="#keep">Keep it</a>
+      <a href="#safe">Fully offline</a>
       <a href="#trouble">Trouble</a>
       <a href="#giving">Giving one</a>
     </div>
@@ -183,18 +195,19 @@ footer{border-top:1px solid var(--line2);padding:54px 0 70px;background:var(--bg
       <h1 class="display">Somebody gave<br>you <span class="blk">bitcoin</span></h1>
       <p class="lede">
         On the card is a list of words, written by hand. Those words <em>are</em> a Bitcoin
-        wallet: whoever can read them can spend what is in it. That is why the card was
-        handed to you closed, and why the first thing to do is move the money into a
-        wallet that only you can open.
+        wallet: whoever can read them can spend what is in it — and somebody already wrote
+        them, so at least two people have now seen them. <em>A secret two people know is
+        not a secret.</em> So there is one thing you have to do, and this page is only
+        about which one.
       </p>
       <div class="chips">
-        <span class="chip hot">Nothing to install to read this</span>
+        <span class="chip hot">One decision: spend it, or keep it</span>
         <span class="chip ok">This page has no input box</span>
-        <span class="chip">Two routes: 10 minutes, or fully offline</span>
+        <span class="chip">Nothing to install to read it</span>
       </div>
       <div class="btnrow">
-        <a class="btn btn-solid" href="#fast">The fast route</a>
-        <a class="btn btn-ghost" href="#safe">The offline route</a>
+        <a class="btn btn-solid" href="#choose">Which one am I?</a>
+        <a class="btn btn-ghost" href="#first">Read this first</a>
       </div>
     </div>
 
@@ -238,10 +251,18 @@ footer{border-top:1px solid var(--line2);padding:54px 0 70px;background:var(--bg
       yours, but the secret behind it was never only yours.</b>
     </p>
     <p class="intro">
-      So a gift card is a way to <i>receive</i> bitcoin, not a way to hold it. Both routes on
-      this page end the same way: the coins land in a wallet whose words you wrote down
-      yourself, or in your bank account. After that the card is a souvenir and can be shown
-      to anybody.
+      That is the whole reason this page exists. A wallet is only as private as the number of
+      people who could open it, and this one has always had at least two: you, and whoever
+      filled the card in. <b>A secret two people know is not a secret.</b> They almost
+      certainly mean you no harm — that is not the point. The point is that <i>you cannot
+      tell</i>, and you never will be able to, so a gift card is a way to <b>receive</b>
+      bitcoin and not a way to hold it.
+    </p>
+    <p class="intro">
+      So doing nothing is the one answer with a real cost. Everything else on this page ends
+      the same way: the coins are somewhere the card can no longer reach — your bank account,
+      or a wallet whose words only you have ever seen — and the card becomes a keepsake you
+      can show to anybody.
     </p>
 
     <div class="cardok">
@@ -255,65 +276,79 @@ footer{border-top:1px solid var(--line2);padding:54px 0 70px;background:var(--bg
     <p class="note">
       // If the amount on the card is small, it is still worth doing this properly — but see
       <a href="#trouble" style="color:var(--amber)">what to do about fees</a> first: moving a
-      very small amount can cost more than it holds.
+      very small amount can cost more than it holds, and then leaving it on the card until it
+      is worth moving is the sensible answer rather than the lazy one.
     </p>
   </div>
 </section>
 
-<section class="sec" id="routes">
+<section class="sec" id="choose">
   <div class="wrap">
-    <div class="shead"><span class="snum">02</span><span class="srule"></span><span class="stag">Pick one</span></div>
-    <h2 class="h2">Two ways to bring it home</h2>
+    <div class="shead"><span class="snum">02</span><span class="srule"></span><span class="stag">One decision</span></div>
+    <h2 class="h2">Spend it, or keep it?</h2>
     <p class="intro">
-      They differ in one thing only: whether the words are typed into a device that can go
-      online. The fast route is what almost everybody does, and for a gift-sized amount it is
-      a reasonable trade. The offline route is what you would want if the card holds real
-      money, or if you plan to keep the bitcoin rather than spend it.
+      Answer this before you touch the card, because the two answers need different things
+      from you. It is not really a question about bitcoin — it is a question about what you
+      want the money to be.
     </p>
 
     <div class="duo">
       <div class="route">
-        <h3>The fast route</h3>
-        <div class="rsub">≈ 10 minutes · a phone · a little trust</div>
-        <p>You type the card's words into a well-known wallet app, see the balance, and send
-           everything to a fresh wallet you made yourself.</p>
+        <h3>Spend it</h3>
+        <div class="rsub">A phone, then an exchange · mostly waiting</div>
+        <p>You would like this as ordinary money: in your bank account, or spent on
+           something. Bitcoin is a step on the way, not the destination.</p>
         <ul>
-          <li>Nothing to buy, nothing to build</li>
-          <li>Works with any modern wallet app</li>
-          <li>The words touch one online device: your phone</li>
-          <li>Fine for a gift-sized amount, moved promptly</li>
+          <li>Open the card's wallet on your phone</li>
+          <li>Send the coins to an exchange in your country</li>
+          <li>Sell them for your own currency, withdraw to your bank</li>
+          <li>Nothing of your own left to look after afterwards</li>
         </ul>
-        <div class="rgo"><a class="btn btn-solid" href="#fast">Do it this way</a></div>
+        <div class="rgo"><a class="btn btn-solid" href="#spend">Show me this →</a></div>
       </div>
 
       <div class="route cold">
-        <h3>The offline route</h3>
-        <div class="rsub">≈ an evening · a spare computer · no trust needed</div>
-        <p>You put the words into a computer that <i>cannot</i> go online, and only a
-           finished, signed transaction ever crosses over on a USB stick.</p>
+        <h3>Keep it</h3>
+        <div class="rsub">Your own wallet first · 20 minutes, or an evening</div>
+        <p>You would like to hold bitcoin. Then the first job is not the card at all: it is
+           a wallet of your own, because the card is not one.</p>
         <ul>
-          <li>The words never touch anything connected</li>
-          <li>Also gives you a proper wallet of your own</li>
-          <li>Needs a spare PC and a USB stick</li>
-          <li>Worth it if the amount matters, or you want to keep it</li>
+          <li>Make a new wallet — on a phone, or offline with SignerOS</li>
+          <li>Write <i>its</i> words on paper, seen by nobody but you</li>
+          <li>Move the gift out of the card and into it</li>
+          <li>Then the card is empty and the secret does not matter</li>
         </ul>
-        <div class="rgo"><a class="btn btn-ghost" href="#safe">Do it this way</a></div>
+        <div class="rgo"><a class="btn btn-ghost" href="#keep">Show me this →</a></div>
       </div>
+    </div>
+
+    <div class="cardwarn">
+      <h5>IF YOU CANNOT DECIDE</h5>
+      <p>Pick <b>keep it</b>. It settles the urgent half — the coins stop being reachable by
+         anybody but you — and decides nothing permanent: selling later, from your own
+         wallet, works exactly the same way, and by then the card is out of the story.</p>
+      <p>What you should not pick is <b>later</b>. The card is the one arrangement where
+         waiting has a cost.</p>
     </div>
   </div>
 </section>
 
-<section class="sec" id="fast">
+<section class="sec" id="spend">
   <div class="wrap">
-    <div class="shead"><span class="snum">03</span><span class="srule"></span><span class="stag">Fast route</span></div>
-    <h2 class="h2">Into a wallet of your own, on a phone</h2>
+    <div class="shead"><span class="snum">03</span><span class="srule"></span><span class="stag">Spend it</span></div>
+    <h2 class="h2">Into money you can spend</h2>
     <p class="intro">
-      The example below uses <b>BlueWallet</b>, because it is free, well known and asks for
-      nothing but the words. <b>Sparrow</b> on a desktop, <b>Nunchuk</b>, <b>Blockstream
-      Green</b> or <b>Electrum</b> do the same job; the steps have the same shape in all of
-      them. Get the app from the official app store listing or from the project's own site,
-      and check the name letter by letter — fake wallets exist and they exist for exactly
-      this moment.
+      Three things happen in order: you open the card's wallet on your phone, you send the
+      coins to an exchange, and the exchange turns them into your local currency and sends
+      that to your bank. Nothing here needs a wallet of your own — the card is emptied in one
+      move, which is what makes this route acceptable despite the words having been seen.
+    </p>
+    <p class="intro">
+      The example uses <b>BlueWallet</b>, because it is free, well known and asks for nothing
+      but the words. <b>Sparrow</b> on a desktop, <b>Nunchuk</b>, <b>Blockstream Green</b> or
+      <b>Electrum</b> do the same job and the steps have the same shape. Install it from the
+      official app store listing or the project's own site and check the name letter by
+      letter — fake wallets exist, and they exist for exactly this moment.
     </p>
 
     <div class="wt">
@@ -322,9 +357,9 @@ footer{border-top:1px solid var(--line2);padding:54px 0 70px;background:var(--bg
         <div>
           <span class="where hot">ON YOUR PHONE</span>
           <h4>Install the wallet, then turn off sharing</h4>
-          <p>Install it, open it once, and decline anything optional: no cloud backup, no
-             screenshots, no “save to photos”. You are about to type a secret into this app
-             and you do not want a copy of it leaving the phone.</p>
+          <p>Open it once and decline everything optional: no cloud backup, no screenshots,
+             no “save to photos”. You are about to type a secret into this app, and you do
+             not want a copy of it leaving the phone.</p>
         </div>
       </div>
 
@@ -332,15 +367,14 @@ footer{border-top:1px solid var(--line2);padding:54px 0 70px;background:var(--bg
         <div class="wn">02</div>
         <div>
           <span class="where hot">ON YOUR PHONE</span>
-          <h4>Import the card</h4>
+          <h4>Open the card as a wallet</h4>
           <div class="wpath"><i>BlueWallet →</i> Add wallet <i>→</i> Import wallet <i>→</i> type the words <i>→</i> Import</div>
           <p>Type the words in the order they are numbered on the card, all lower case,
-             separated by single spaces. If the card names a <b>passphrase</b>, enter it in the
-             field the app offers for it — without it the same words open a different, empty
-             wallet.</p>
-          <p>The app checks the words against the standard 2048-word list and refuses a
-             mis-spelling, which is exactly what you want: a wallet that opens is a wallet you
-             read correctly.</p>
+             single spaces. If the card names a <b>passphrase</b>, put it in the field the
+             app offers for it — without it the same words open a different, empty wallet.</p>
+          <p>The app checks every word against the standard 2048-word list and refuses a
+             mis-spelling, which is exactly what you want: a wallet that opens at all is a
+             wallet you read correctly.</p>
         </div>
       </div>
 
@@ -348,121 +382,289 @@ footer{border-top:1px solid var(--line2);padding:54px 0 70px;background:var(--bg
         <div class="wn">03</div>
         <div>
           <span class="where hot">ON YOUR PHONE</span>
-          <h4>Check the balance, and the fingerprint if the card has one</h4>
-          <p>The amount on the card should appear within a few seconds. If it says zero, do
-             not panic and do not re-type anything yet — go to
+          <h4>Check the balance against the card</h4>
+          <p>The amount should appear within a few seconds. If it says zero, do not re-type
+             anything yet and do not panic — go to
              <a href="#trouble" style="color:var(--amber)">Trouble</a>: nine times out of ten
-             it is an address-type setting, not a lost coin.</p>
+             it is an address-type setting, not a lost coin. If the card carries a
+             <b>fingerprint</b>, this is where it should match what the app shows.</p>
         </div>
       </div>
 
       <div class="wstep">
         <div class="wn">04</div>
         <div>
-          <span class="where hot">ON YOUR PHONE</span>
-          <h4>Make a wallet that is yours</h4>
-          <p>In the same app, create a <b>new</b> wallet. Write its words on paper, in order,
-             and keep that paper the way you would keep the equivalent in cash. Nobody has
-             ever seen those words — that is the whole difference between it and the card.</p>
-          <p>If you would rather not keep money on a phone at all, this is the moment to use a
-             hardware wallet, or the <a href="#safe" style="color:var(--amber)">offline
-             route</a>, and send the gift straight there.</p>
+          <span class="where cash">AT THE EXCHANGE</span>
+          <h4>Open an account and finish the identity checks</h4>
+          <p>Pick an exchange that operates legally where you live, that people around you
+             have actually used, and that can pay out to your bank. This page names none:
+             every country has different ones and different rules. Expect an ID document and
+             a selfie, and get all of that done <b>before</b> you send any coins, not after.</p>
         </div>
       </div>
 
       <div class="wstep">
         <div class="wn">05</div>
         <div>
-          <span class="where hot">ON YOUR PHONE</span>
-          <h4>Send everything across</h4>
-          <div class="wpath">Gift wallet <i>→</i> Send <i>→</i> paste your new wallet's receive address <i>→</i> use full balance <i>→</i> confirm</div>
-          <p>Copy a receive address from your new wallet, paste it into a send from the gift
-             wallet, and choose <b>send max</b> / <b>use full balance</b> so nothing is left
-             behind. A normal fee is fine; there is no hurry.</p>
-          <p>Wait for one confirmation — usually minutes, occasionally an hour. When it
-             confirms, the money is behind words that only you know, and the card is empty.</p>
+          <span class="where cash">AT THE EXCHANGE</span>
+          <h4>Get the deposit address — and choose Bitcoin SegWit</h4>
+          <div class="wpath"><i>Exchange →</i> Deposit <i>→</i> Bitcoin / BTC <i>→</i> network: Bitcoin <i>→</i> format: SegWit</div>
+          <p>This is the one screen on the whole route where a wrong click loses the money,
+             so it has a box of its own below. Copy the address by <b>paste or QR only</b> —
+             never re-type a bitcoin address — and check the minimum deposit while you are
+             there: many exchanges silently swallow anything below a threshold.</p>
         </div>
       </div>
 
       <div class="wstep">
         <div class="wn">06</div>
         <div>
+          <span class="where hot">ON YOUR PHONE</span>
+          <h4>Send the whole gift</h4>
+          <div class="wpath">Gift wallet <i>→</i> Send <i>→</i> the deposit address <i>→</i> use full balance <i>→</i> confirm</div>
+          <p>Choose <b>send max</b> / <b>use full balance</b> so nothing is left behind, and
+             compare the first and last four characters of the address after pasting. A
+             normal fee is fine; there is no hurry. Then wait for the exchange to credit it —
+             it decides how many confirmations, usually one to three blocks, so minutes to
+             an hour.</p>
+        </div>
+      </div>
+
+      <div class="wstep">
+        <div class="wn">07</div>
+        <div>
+          <span class="where cash">AT THE EXCHANGE</span>
+          <h4>Sell, withdraw, and keep the numbers</h4>
+          <p>Sell the bitcoin for your currency, then withdraw to your bank account. Expect a
+             trading fee, possibly a withdrawal fee, and a bank transfer that may take a day.
+             Do not leave the money sitting on the exchange: an exchange is not a wallet, and
+             what is on one is held by them, not by you.</p>
+          <p>Write down what you received, what you sold it for, and when. Many countries tax
+             the gain between the two, and the exchange's own statement is what you will be
+             asked for.</p>
+        </div>
+      </div>
+
+      <div class="wstep">
+        <div class="wn">08</div>
+        <div>
           <span class="where cold">AFTERWARDS</span>
           <h4>Retire the card</h4>
           <p>Delete the imported gift wallet from the app if you like — it holds nothing now.
-             Keep the card as a keepsake, or destroy it. Either is safe once the transaction
-             has confirmed.</p>
+             Keep the card as a keepsake or destroy it; both are safe once the transaction has
+             confirmed.</p>
         </div>
       </div>
     </div>
 
+    <div class="keycall">
+      <h5>THE ONE SETTING TO GET RIGHT: BITCOIN SEGWIT</h5>
+      <p>An exchange's deposit screen asks two questions that look like the same question.
+         The first is <b>which coin and which network</b>. The answer is Bitcoin's own
+         network, and nothing else on the list is it:</p>
+      <p>
+        <span class="pill">✓ Bitcoin · BTC · on-chain</span>
+        <span class="pill no">✗ Lightning</span>
+        <span class="pill no">✗ BEP-20 / BSC</span>
+        <span class="pill no">✗ ERC-20 / wrapped BTC</span>
+        <span class="pill no">✗ Any other chain</span>
+      </p>
+      <p>Those others are separate rails that happen to have “BTC” in the name. An ordinary
+         send to one of them does not bounce — it is simply gone, and no support desk can
+         reverse it.</p>
+      <p>The second question is <b>which address format</b>, and the answer there is
+         <b>SegWit</b> — often written <i>Native SegWit</i>, <i>bech32</i>, or shown as an
+         address beginning <b>bc1q</b>. That is the format the gift wallet itself is built
+         around, and it is the cheapest to send to. If the exchange offers
+         <i>Legacy</i> (<b>1…</b>) or <i>SegWit-compatible</i> (<b>3…</b>) instead, they do
+         work — you just pay more fee for the privilege. If it offers no choice at all, the
+         address it gives you is the right one.</p>
+      <p><b>Read the address out of the app you are sending from, too.</b> If your wallet
+         shows a warning that the destination is on another network, stop and re-read this
+         box rather than tapping through it.</p>
+    </div>
+
     <div class="cardwarn">
-      <h5>WHAT YOU ARE TRUSTING ON THIS ROUTE</h5>
-      <p>That the app is the real one, and that the phone is not compromised. Both are usually
-         true, and for a birthday-sized gift moved the same day the risk is small — but it is
-         not zero, and it is the reason the offline route exists.</p>
-      <p>Until the sweep confirms, the giver could in principle spend the coins first. Not a
-         reason for fear; a reason not to leave the card in a drawer for a year.</p>
+      <h5>THREE THINGS THAT SURPRISE PEOPLE</h5>
+      <p><b>Fees are per transaction, not per amount.</b> Moving a small gift can cost a
+         noticeable slice of it when the network is busy. Check the fee the app proposes
+         before confirming, and if it is absurd, wait a day — fees fall.</p>
+      <p><b>The price moves.</b> What the card says was put in is what it was worth then. It
+         may be worth more or less today; neither is a mistake, and neither is anybody's
+         fault.</p>
+      <p><b>The identity checks take longer than the bitcoin part.</b> If they drag on for
+         days, the card is sitting there with its secret known the whole time — in that case
+         do <a href="#keep" style="color:var(--amber)">keep it</a> first, into a wallet of
+         your own, and sell from there when the account is ready.</p>
     </div>
   </div>
 </section>
 
-<section class="sec" id="cash">
+<section class="sec" id="keep">
   <div class="wrap">
-    <div class="shead"><span class="snum">04</span><span class="srule"></span><span class="stag">To local money</span></div>
-    <h2 class="h2">Turning it into your own currency</h2>
+    <div class="shead"><span class="snum">04</span><span class="srule"></span><span class="stag">Keep it</span></div>
+    <h2 class="h2">Into a wallet that is only yours</h2>
     <p class="intro">
-      Bitcoin becomes ordinary money at an exchange: you send coins in, sell them for your
-      local currency, and withdraw to your bank. Every country has different exchanges and
-      different rules, so this page names none — pick one that operates legally where you
-      live, that people around you have actually used, and that supports your bank.
-    </p>
-    <p class="intro">
-      <b>If you intend to cash out straight away</b>, you can send from the gift wallet
-      directly to the exchange and skip a transaction fee. <b>If you want to keep some
-      bitcoin</b>, do the sweep in section 03 first and send from your own wallet.
+      Keeping bitcoin on the gift card is the one thing this page argues against, and it has
+      nothing to do with the card being paper. It is that the words were written by a hand
+      that was not yours. <b>So the order matters: your own wallet has to exist before the
+      gift moves anywhere.</b> Make it first, empty the card into it second.
     </p>
 
-    <ol class="olist">
-      <li><b>Open the account and pass the identity checks.</b> Exchanges are required to know who you are; expect an ID document and a selfie. Do this before you send anything, not after.</li>
-      <li><b>Find the deposit address.</b> Deposit → Bitcoin → <b>on-chain / Bitcoin network</b>. If a screen offers you Lightning, BEP-20, wrapped BTC or anything other than the Bitcoin network, that is a different rail: an on-chain send to it can be lost for good.</li>
-      <li><b>Check the minimum deposit.</b> Many exchanges silently ignore deposits below a threshold. If the gift is smaller than that minimum, do not send it there — keep it in your own wallet instead.</li>
-      <li><b>Send, and copy the address by paste or QR only.</b> Never type a bitcoin address by hand. Compare the first and last four characters after pasting.</li>
-      <li><b>Wait for confirmations.</b> The exchange decides how many; one to three blocks is typical, so minutes to an hour.</li>
-      <li><b>Sell, then withdraw.</b> Sell the bitcoin for your currency, then withdraw to your bank account. Expect a trading fee, possibly a withdrawal fee, and a bank transfer that may take a day.</li>
-      <li><b>Keep the numbers.</b> What you received, what you sold it for, and when. Many countries tax the gain between the two, and the exchange's statement is what you will be asked for.</li>
-    </ol>
+    <h3 class="h3">Step one — make a wallet of your own</h3>
+    <p class="intro">
+      Two ways, and they differ in one thing: whether your new words are ever typed into a
+      device that can go online. Both give you a real wallet that nobody else has ever seen
+      the words of.
+    </p>
 
-    <div class="cardwarn">
-      <h5>THREE THINGS THAT SURPRISE PEOPLE</h5>
-      <p><b>Fees are per transaction, not per amount.</b> Moving 20 units of currency worth of
-         bitcoin can cost a noticeable slice of it when the network is busy. Check the fee the
-         app proposes before confirming, and if it is absurd, wait a day — fees fall.</p>
-      <p><b>The price moves.</b> What the card says was put in is what it was worth then. It may
-         be worth more or less today; neither is a mistake.</p>
-      <p><b>An exchange is not a wallet.</b> Money left sitting on one is held by the exchange,
-         not by you. Sell and withdraw, or keep it in your own wallet — pick one.</p>
+    <div class="duo">
+      <div class="route">
+        <h3>On your phone</h3>
+        <div class="rsub">≈ 5 minutes · free · good enough for a gift</div>
+        <p>A <b>self-custody</b> wallet app — BlueWallet, Nunchuk, Blockstream Green,
+           Electrum on a desktop — creates the wallet on the device and shows you its words
+           once. Write them on paper straight away; that paper <i>is</i> the wallet.</p>
+        <ul>
+          <li><b>Add wallet → Bitcoin → SegWit</b>, then <b>create</b>, not import</li>
+          <li>Say no to cloud backup, screenshots and “save to photos”</li>
+          <li>Nobody has ever seen these words — that is the whole difference from the card</li>
+          <li>The words exist on a phone, so the phone is now part of your security</li>
+        </ul>
+        <div class="rgo"><a class="btn btn-ghost" href="paper_wallet.html">Print a recovery sheet →</a></div>
+      </div>
+
+      <div class="route cold">
+        <h3>Offline, with SignerOS</h3>
+        <div class="rsub">≈ an evening · a spare computer · a USB stick</div>
+        <p>SignerOS is a free system on a USB stick that turns a computer you already own
+           into an offline wallet machine. It has no network stack at all, never touches the
+           machine's hard drives, and forgets everything when you switch it off.</p>
+        <ul>
+          <li><b>Create a wallet</b> makes the words in memory and shows them to you</li>
+          <li>You copy them onto paper and type them all back to prove you did</li>
+          <li>The only file it writes is a <b>watch-only</b> one: public keys, safe to carry</li>
+          <li>Your new words never touch anything that could be online</li>
+        </ul>
+        <div class="rgo"><a class="btn btn-solid" href="index.html">What SignerOS is →</a></div>
+      </div>
+    </div>
+
+    <p class="note">
+      // Either way, check that what you made is <b>self-custody</b>: the app showed you a
+      list of words and asked you to write them down. If it only ever showed you an email
+      login, it is an account at a company, not a wallet, and moving the gift there is
+      swapping one stranger for another.<br>
+      // Going the SignerOS way and want the <i>card's</i> words never to touch a phone
+      either? Then do <a href="#safe" style="color:var(--amber)">the fully offline route</a>
+      instead of step two below — it does both halves on the offline machine.
+    </p>
+
+    <h3 class="h3">Step two — empty the card into it</h3>
+    <p class="intro">
+      This is where the card's words are typed in, on the phone, and it is a one-way trip:
+      the wallet you are about to open is temporary and worth nothing afterwards.
+    </p>
+
+    <div class="wt">
+      <div class="wstep">
+        <div class="wn">01</div>
+        <div>
+          <span class="where cold">YOUR OWN WALLET</span>
+          <h4>Copy one of your own receive addresses</h4>
+          <p>In the wallet you just made, tap <b>Receive</b> and copy the address it shows —
+             it begins <b>bc1q</b>. Keep it on the clipboard, or better, in front of you on
+             the SignerOS screen or a piece of paper. This is where the gift is going.</p>
+        </div>
+      </div>
+
+      <div class="wstep">
+        <div class="wn">02</div>
+        <div>
+          <span class="where hot">ON YOUR PHONE</span>
+          <h4>Open the card as a second, temporary wallet</h4>
+          <div class="wpath"><i>BlueWallet →</i> Add wallet <i>→</i> Import wallet <i>→</i> type the card's words <i>→</i> Import</div>
+          <p>Same as the spend route: the words in their numbered order, all lower case, plus
+             the <b>passphrase</b> if the card names one. The gift's balance appears. If the
+             card carries a fingerprint, check it here.</p>
+          <p>Give this wallet a name like <i>gift — temporary</i> if the app lets you. It is
+             not your wallet and it is not meant to survive the evening.</p>
+        </div>
+      </div>
+
+      <div class="wstep">
+        <div class="wn">03</div>
+        <div>
+          <span class="where hot">ON YOUR PHONE</span>
+          <h4>Send everything to your own address</h4>
+          <div class="wpath">Gift wallet <i>→</i> Send <i>→</i> your own bc1q address <i>→</i> use full balance <i>→</i> confirm</div>
+          <p>Choose <b>send max</b> / <b>use full balance</b> so nothing is left behind, and
+             compare the first and last four characters of the address after pasting. Both
+             wallets are on the Bitcoin network, so there is no network to choose here — only
+             the address, and it must be one <i>your own</i> wallet showed you.</p>
+        </div>
+      </div>
+
+      <div class="wstep">
+        <div class="wn">04</div>
+        <div>
+          <span class="where cold">YOUR OWN WALLET</span>
+          <h4>Watch it arrive, then throw the card's wallet away</h4>
+          <p>The amount appears in your own wallet within minutes, occasionally an hour.
+             Once it has one confirmation, delete the temporary gift wallet from the app: its
+             words are worthless now, and that is the point. The money is behind words that
+             nobody has ever seen but you.</p>
+        </div>
+      </div>
+
+      <div class="wstep">
+        <div class="wn">05</div>
+        <div>
+          <span class="where cold">AFTERWARDS</span>
+          <h4>Look after the paper, not the app</h4>
+          <p>The app can be deleted, the phone can be lost or replaced — the words on your
+             paper are what restores the wallet. Keep that paper the way you would keep the
+             same amount in cash: somewhere dry, somewhere private, and not photographed.
+             There is a
+             <a href="paper_wallet.html" style="color:var(--amber)">printable sheet</a> for
+             it that fetches nothing and can be printed from the offline machine.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="cardok">
+      <h5>WHY THIS IS FINISHED, AND THE CARD ROUTE NEVER WAS</h5>
+      <p>The gift card's words were seen by somebody else and cannot be un-seen, so the money
+         behind them was never entirely yours. The words you wrote in step one were shown once,
+         on a screen you were holding, and written by your own hand. That is the difference the
+         whole exercise buys, and it lasts as long as the paper does.</p>
     </div>
   </div>
 </section>
 
 <section class="sec" id="safe">
   <div class="wrap">
-    <div class="shead"><span class="snum">05</span><span class="srule"></span><span class="stag">Offline route</span></div>
-    <h2 class="h2">The route where the words never go online</h2>
+    <div class="shead"><span class="snum">05</span><span class="srule"></span><span class="stag">Fully offline</span></div>
+    <h2 class="h2">Keeping it without the words going online at all</h2>
     <p class="intro">
-      SignerOS is a free system on a USB stick that turns a computer you already own into an
-      offline signing device. It has no network stack at all, it never touches the machine's
-      hard drives, and it forgets everything when you switch it off. Transactions cross
-      between it and your everyday computer as files on a second USB stick — never as a
-      connection. <a href="index.html" style="color:var(--amber)">What it is and how to get
-      it →</a>
+      This is <b>keep it</b> done to the end. In section 04 your own words never touch a
+      network, but the <i>card's</i> words are typed into a phone — and for a gift-sized
+      amount, moved the same evening, that is a reasonable trade. Here even that is avoided:
+      the card's words go into a machine that cannot go online, and only a finished, signed
+      transaction ever crosses over on a USB stick.
     </p>
     <p class="intro">
-      On this route you do two things at once: you <b>create a wallet of your own</b>, whose
+      SignerOS is the free system that makes the machine. It has no network stack at all, it
+      never touches the computer's hard drives, and it forgets everything when you switch it
+      off. <a href="index.html" style="color:var(--amber)">What it is and how to get it →</a>
+      You will also need one wallet program on your everyday computer to watch balances and
+      build the transaction — <b>Sparrow</b> in the steps below — which never sees a secret.
+    </p>
+    <p class="intro">
+      Two things happen at once on this route: you <b>create a wallet of your own</b>, whose
       words are written on paper and have never been anywhere near a network, and you
-      <b>empty the gift card into it</b> without the card's words ever reaching an online
-      machine.
+      <b>empty the gift card into it</b> with the card's words never reaching an online
+      machine either.
     </p>
 
     <div class="wt">
@@ -582,6 +784,31 @@ footer{border-top:1px solid var(--line2);padding:54px 0 70px;background:var(--bg
               The words without it open a valid, empty wallet — which looks exactly like a
               wrongly-copied word. If the passphrase is lost, the money is lost; ask the giver
               while they still remember.</td>
+        </tr>
+        <tr>
+          <td>The exchange asks which <i>network</i> to deposit on</td>
+          <td>Answer <b>Bitcoin</b> — the coin's own network, sometimes written <i>BTC</i> or
+              <i>on-chain</i>. If it then asks for an address <i>format</i>, take
+              <b>SegWit</b> / <i>bech32</i>, the address beginning <b>bc1q</b>. Lightning,
+              BEP-20, ERC-20 and “wrapped” BTC are different rails: an ordinary send to one
+              of them is not bounced back, it is lost. There is a
+              <a href="#spend" style="color:var(--amber)">box about exactly this screen</a>.</td>
+        </tr>
+        <tr>
+          <td>You are not sure the wallet you made is really yours</td>
+          <td>The test is one question: <b>did it show you a list of words and ask you to
+              write them down?</b> If yes, it is self-custody and the words are the wallet. If
+              it only asked for an email and a password, it is an account at a company —
+              moving the gift there swaps one stranger for another and adds a login you can
+              be locked out of.</td>
+        </tr>
+        <tr>
+          <td>The coins left the gift wallet but have not arrived</td>
+          <td>Look at the receiving side, not the sending side. An exchange credits a deposit
+              only after the confirmations it requires, and only if the deposit is above its
+              minimum. Your own wallet shows an incoming payment straight away, usually as
+              “pending”. If both show nothing after an hour, check the address you actually
+              sent to — the first and last four characters against the one you copied.</td>
         </tr>
         <tr>
           <td>The fee is a large share of the gift</td>
