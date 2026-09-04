@@ -1,6 +1,9 @@
 # SignerOS
 
-Documentation and details: [signeros.org](https://signeros.org)
+**[signeros.org](https://signeros.org/)** — the project page: what it is, every
+screen of it, the download and how to check it, and the printable
+[gift card](https://signeros.org/gift_wallet.html) and
+[recovery sheet](https://signeros.org/paper_wallet.html).
 
 A single-purpose, air-gapped, stateless x86_64 live USB operating system that
 does exactly three things: create a Bitcoin wallet, export watch-only keys for

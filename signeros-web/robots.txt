@@ -1,0 +1,15 @@
+# SignerOS — https://signeros.org/
+# Everything here is public, static HTML. Crawl all of it, including the
+# print sheets: they are the pages somebody searching for "printable bitcoin
+# recovery sheet" or "bitcoin gift card template" is actually looking for.
+#
+# Search engines and AI/LLM crawlers are equally welcome. The whole point of
+# this project is that it can be read before it is trusted, and that applies
+# to a person, a search engine and a model alike. There is nothing here to
+# protect: no accounts, no analytics, no user data, and no page that asks
+# anybody for a recovery word.
+
+User-agent: *
+Allow: /
+
+Sitemap: https://signeros.org/sitemap.xml

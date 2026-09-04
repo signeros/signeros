@@ -4,8 +4,168 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#0d1117">
-<meta name="description" content="SignerOS — a USB stick that turns a computer you already own into an offline Bitcoin signing device. It cannot go online, it cannot touch the machine's hard drives, and it leaves nothing behind.">
-<title>SignerOS — Air-Gapped Bitcoin Signing OS</title>
+<meta name="description" content="Free and open source: one USB image turns a computer you already own into an air-gapped Bitcoin signer. It runs in memory, has no network stack at all, signs PSBT files and leaves nothing behind.">
+<title>SignerOS — Air-Gapped Bitcoin Wallet on a USB Stick</title>
+<link rel="canonical" href="https://signeros.org/">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="SignerOS">
+<meta property="og:locale" content="en">
+<meta property="og:title" content="SignerOS — Air-Gapped Bitcoin Wallet on a USB Stick">
+<meta property="og:description" content="Free and open source: one USB image turns a computer you already own into an air-gapped Bitcoin signer. It runs in memory, has no network stack at all, signs PSBT files and leaves nothing behind.">
+<meta property="og:url" content="https://signeros.org/">
+<meta property="og:image" content="https://signeros.org/og-signeros.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="SignerOS — air-gapped Bitcoin wallet on a USB stick">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="SignerOS — Air-Gapped Bitcoin Wallet on a USB Stick">
+<meta name="twitter:description" content="Free and open source: one USB image turns a computer you already own into an air-gapped Bitcoin signer. It runs in memory, has no network stack at all, signs PSBT files and leaves nothing behind.">
+<meta name="twitter:image" content="https://signeros.org/og-signeros.png">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": "https://signeros.org/#website",
+      "url": "https://signeros.org/",
+      "name": "SignerOS",
+      "description": "Free and open source: one USB image turns a computer you already own into an air-gapped Bitcoin signer. It runs in memory, has no network stack at all, signs PSBT files and leaves nothing behind.",
+      "inLanguage": "en",
+      "publisher": {
+        "@id": "https://signeros.org/#project"
+      }
+    },
+    {
+      "@type": "Organization",
+      "@id": "https://signeros.org/#project",
+      "name": "SignerOS",
+      "url": "https://signeros.org/",
+      "sameAs": [
+        "https://github.com/signeros/signeros"
+      ]
+    },
+    {
+      "@type": "SoftwareApplication",
+      "@id": "https://signeros.org/#software",
+      "name": "SignerOS",
+      "alternateName": "SignerOS air-gapped Bitcoin signing OS",
+      "description": "A bootable USB image that turns an ordinary x86-64 PC into an air-gapped Bitcoin signing device. It creates wallets, exports watch-only keys and signs PSBT files. No network support is compiled into it, it cannot read the host machine's drives, it runs entirely in RAM and it writes nothing derived from a seed to any medium.",
+      "url": "https://signeros.org/",
+      "softwareVersion": "1.0.2",
+      "applicationCategory": [
+        "SecurityApplication",
+        "FinanceApplication"
+      ],
+      "applicationSubCategory": "Bitcoin wallet / PSBT signer",
+      "operatingSystem": "Bootable x86-64 UEFI image (self-contained Linux, runs from RAM)",
+      "softwareRequirements": "Any x86-64 PC or laptop with UEFI firmware and a USB port; a mouse or trackpad and a keyboard. No internet connection and no installation.",
+      "downloadUrl": "https://github.com/signeros/signeros/releases",
+      "installUrl": "https://signeros.org/#flash",
+      "codeRepository": "https://github.com/signeros/signeros",
+      "license": "https://opensource.org/licenses/MIT",
+      "isAccessibleForFree": true,
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "image": "https://signeros.org/og-signeros.png",
+      "featureList": [
+        "Creates a Bitcoin wallet offline and exports public keys only",
+        "Exports watch-only account xpubs, output descriptors and BIP48 multisig cosigner keys",
+        "Signs PSBT transactions after showing amount, destination and verified change",
+        "No network stack in the kernel: no Wi-Fi, Ethernet or Bluetooth support at all",
+        "Runs entirely in RAM and cannot see the host computer's hard drives",
+        "Reproducible builds: two clean builds of one commit produce an identical kernel image",
+        "Recovery words are never written to disk, log or temporary file"
+      ],
+      "isPartOf": {
+        "@id": "https://signeros.org/#website"
+      }
+    },
+    {
+      "@type": "FAQPage",
+      "@id": "https://signeros.org/#faq",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Does SignerOS ever touch the internet?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "It cannot, and that is stronger than \"it does not\". The ability to use a network is not switched off in this system — it was left out of it. There is no Wi-Fi, no Ethernet, no Bluetooth, and no program on the stick that could use them if they existed. Plugging in a cable does nothing. This is also not a promise anyone has to take on trust: the project refuses to produce an image at all if that ever stops being true, and it is tested again on the finished system before release."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Can anything persist after I power off?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Nothing except the file you asked it to save. Everything runs in the computer's memory, and the machine's own hard drives are invisible to it, so it could not write to them even if something on it tried. The only place it can save anything is your stick, and the only things it saves there are files that are safe to share: a signed transaction, or the public keys your everyday wallet needs. Your recovery words are never written anywhere at all — not to the stick, not to a log, not to a temporary file. That last one is checked automatically before every release rather than being a promise on a web page."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Which wallets work with it?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Any wallet that can watch a balance from public keys and can save a payment to a file instead of sending it. Sparrow and Bitcoin Core are the usual choices; Blockstream Green works too, and the exported file is deliberately written so that all three can use it directly — you copy the one line your wallet asks for. Everything travels as files on the stick: there is no camera and no QR scanning here."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Where do I type my recovery words?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Only on the SignerOS screen, on a machine that has no way to reach anywhere. As you type, the words go into a protected area of memory that is erased as soon as it is finished with, and nowhere else. If what you hold is a private key from a wallet rather than a set of words, that works here too."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Can I use a passphrase — the “25th word”?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes, everywhere you can type recovery words — and it is shown on screen and asked for twice. That is on purpose. Any passphrase is a valid passphrase, so a wrong one does not produce an error: it quietly gives you a different, empty wallet, and nothing anywhere will tell you why your money is missing. The machine also treats every keyboard as a US one, so on a Turkish or German layout the punctuation is not where your keys say it is — seeing the characters is what catches that. Leaving it empty is perfectly normal; most wallets have none."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What will it refuse to sign?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Two things above all. First, a transaction file that does not contain enough information for the machine to work out the fee: leave a piece out and a transaction can look like it pays a trivial fee while actually handing most of your balance to a miner. SignerOS says exactly what is missing and what to ask your wallet for, and there is no way to override it. Second, a file that claims one of the payments is your own change when your key says otherwise. Working that out from your key rather than believing the file is the difference between showing you a real receipt and showing you one written by whoever sent you the file. A deliberately forged example of that attack is part of the project's own tests, and a version that signed it could not be released."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What hardware do I need?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "An ordinary PC or laptop that can start from a USB stick — an old one is ideal, and it does not need to be fast or in good shape, since nothing is installed on it. Roughly anything made in the last decade will do; very old machines start up in a way this does not support. Plus a USB stick of 1 GB or more, which you do not need to format. A keyboard is expected, and a mouse, trackpad or touchscreen all work."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Should I download the release or build it myself?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Download it to try it — that is what it is published for, and an afternoon spent watching the thing work is not wasted. Build it before you trust a wallet to it. The two are not rivals: everyone who builds the same version gets an identical result, so building it and finding the same number we published is what turns \"their file\" into \"the file I checked myself\". It also gets you the one thing a published image cannot have — a signature made with a key you hold instead of one somebody else does. And if your number ever comes out different from ours, say so publicly. That is the whole point of doing it this way."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is it free?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes, and it always will be. SignerOS is open source under the MIT license: anyone may read it, build it, change it or check it, and there is nothing to buy, register or subscribe to. Donations keep the kettle on, nothing more."
+          }
+        }
+      ]
+    }
+  ]
+}
+</script>
 <style>
 /* No webfonts, no CDN, no analytics: this page makes zero network requests.
    The palette is the kiosk's own — src/btc_signer_gui/src/ui/theme.h. */
@@ -61,7 +221,9 @@ nav.top{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(7,9,13,.
 .lg{color:var(--dim)}.lg .ok{color:var(--green);font-weight:600}.lg .pr{color:var(--amber)}
 .crt{display:inline-block;width:8px;height:15px;background:var(--amber);vertical-align:-2px;animation:blink 1s steps(2) infinite}
 @keyframes blink{50%{opacity:0}}
-.display{font-family:var(--disp);font-weight:700;font-size:clamp(2.6rem,6.4vw,4.6rem);line-height:1;letter-spacing:.01em;margin:34px 0 18px;text-transform:uppercase}
+.display{font-family:var(--disp);font-weight:700;font-size:clamp(2.6rem,6.4vw,4.6rem);line-height:1;letter-spacing:.01em;margin:34px 0 10px;text-transform:uppercase}
+.h1sub{display:block;font-family:var(--disp);font-weight:700;font-size:clamp(1.02rem,2vw,1.5rem);line-height:1.15;letter-spacing:.02em;text-transform:uppercase;color:var(--dim);margin:12px 0 18px;max-width:26em}
+.h1sub b{color:var(--amber2);font-weight:700}
 .display .blk{color:var(--amber)}
 .lede{font-size:clamp(1.05rem,1.6vw,1.22rem);color:var(--dim);max-width:34em}
 .lede em{color:var(--ink);font-style:normal;border-bottom:1px solid var(--amber)}
@@ -331,6 +493,11 @@ details .a code{font-size:.85em}
 
 /* on paper */
 .pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:36px}
+.pgrid.two{grid-template-columns:repeat(2,1fr);margin-top:26px}
+/* the fork at the top of the page: the two things people arrive wanting */
+.doors{padding:74px 0 10px}
+.doors .deyebrow{font-family:var(--mono);font-size:10.5px;letter-spacing:.22em;color:var(--amber);text-transform:uppercase}
+.doors h2{font-family:var(--disp);font-weight:700;font-size:clamp(1.3rem,2.6vw,1.8rem);text-transform:uppercase;letter-spacing:.03em;margin:12px 0 0}
 @media(max-width:940px){.pgrid{grid-template-columns:1fr}}
 .pcard{display:flex;flex-direction:column;border:1px solid var(--line);background:var(--panel);padding:28px 26px;position:relative;overflow:hidden;transition:transform .18s ease,border-color .2s}
 .pcard::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:var(--amber)}
@@ -419,7 +586,7 @@ footer{border-top:1px solid var(--line);padding:54px 0 44px;background:var(--bg2
         <div class="term-head"><span class="dot a"></span><span class="dot g"></span><span class="dot d"></span><span class="term-title">signeros — boot log</span></div>
         <div class="term-body" id="bootLog"></div>
       </div>
-      <h1 class="display hfade" id="bigTitle" style="animation-delay:.25s"><span id="titleTxt">SIGNEROS</span><span class="blk">▮</span></h1>
+      <h1 class="display hfade" id="bigTitle" style="animation-delay:.25s"><span id="titleTxt">SIGNEROS</span><span class="blk">▮</span><span class="h1sub">Turn a computer you already own into an <b>air-gapped Bitcoin wallet</b></span></h1>
       <p class="lede hfade" style="animation-delay:.4s">A USB stick that turns a computer you already own into an <em>offline Bitcoin signing device</em>. While it is running, that machine cannot go online and cannot see its own hard drives. Switch it off and everything you did is gone.</p>
       <div class="chips hfade" style="animation-delay:.55s">
         <span class="chip hot">NEVER ONLINE</span>
@@ -456,6 +623,28 @@ footer{border-top:1px solid var(--line);padding:54px 0 44px;background:var(--bg2
     <span>IT CANNOT GO ONLINE <i>◆</i></span><span>IT CANNOT SEE YOUR HARD DRIVES <i>◆</i></span><span>UNSIGNED FILE IN → SIGNED FILE OUT <i>◆</i></span><span>YOUR WORDS NEVER GET SAVED <i>◆</i></span><span>ONE APP, ONE PURPOSE <i>◆</i></span><span>FREE AND OPEN SOURCE <i>◆</i></span><span>BUILD IT YOURSELF AND CHECK <i>◆</i></span>
   </div>
 </div>
+
+<!-- ══════════ THE FORK: WHAT DID YOU COME HERE FOR ══════════ -->
+<section class="doors" id="start">
+  <div class="wrap">
+    <div class="deyebrow rv">Start here</div>
+    <h2 class="rv">Two things people come here to do</h2>
+    <div class="pgrid two">
+      <a class="pcard rv" href="#app">
+        <span class="plabel">A WALLET OF YOUR OWN</span>
+        <h3>Turn your own computer into a Bitcoin wallet</h3>
+        <p>Any PC or old laptop with a USB port becomes an offline signing device for as long as it is switched on: write one image to a stick, start the machine from it, and create a wallet whose recovery words never touch anything connected. Nothing is installed, your disks are never read, and taking the stick out leaves no trace.</p>
+        <span class="pgo">See all three flows, screen by screen →</span>
+      </a>
+      <a class="pcard rv" style="--d:.08s" href="gift_wallet.html">
+        <span class="plabel">A PRESENT SOMEBODY CAN HOLD</span>
+        <h3>Give bitcoin as a printed paper gift</h3>
+        <p>Make the wallet on a machine that cannot go online, write its words onto a printable A4 card by hand, and hand it over closed. The card carries a QR to a page that tells the person you gave it to exactly what to do next — whether they want to spend it or keep it.</p>
+        <span class="pgo">Print a gift card →</span>
+      </a>
+    </div>
+  </div>
+</section>
 
 <!-- ══════════ 01 PREMISE ══════════ -->
 <section class="sec" id="premise">

@@ -2,7 +2,124 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <title>Recovery Sheet – SignerOS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="A free A4 sheet to write a 12 or 24 word Bitcoin recovery phrase on by hand, with numbered lines, the master fingerprint and a passphrase reminder. Print it blank; the page has no field to type a seed into.">
+    <title>Printable Bitcoin Recovery Sheet — Free A4 Template</title>
+    <link rel="canonical" href="https://signeros.org/paper_wallet.html">
+    <meta name="robots" content="index,follow,max-image-preview:large">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="SignerOS">
+    <meta property="og:locale" content="en">
+    <meta property="og:title" content="Printable Bitcoin Recovery Sheet — Free A4 Template">
+    <meta property="og:description" content="A free A4 sheet to write a 12 or 24 word Bitcoin recovery phrase on by hand, with numbered lines, the master fingerprint and a passphrase reminder. Print it blank; the page has no field to type a seed into.">
+    <meta property="og:url" content="https://signeros.org/paper_wallet.html">
+    <meta property="og:image" content="https://signeros.org/og-signeros.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="SignerOS — air-gapped Bitcoin wallet on a USB stick">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Printable Bitcoin Recovery Sheet — Free A4 Template">
+    <meta name="twitter:description" content="A free A4 sheet to write a 12 or 24 word Bitcoin recovery phrase on by hand, with numbered lines, the master fingerprint and a passphrase reminder. Print it blank; the page has no field to type a seed into.">
+    <meta name="twitter:image" content="https://signeros.org/og-signeros.png">
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebPage",
+          "@id": "https://signeros.org/paper_wallet.html",
+          "url": "https://signeros.org/paper_wallet.html",
+          "name": "Printable Bitcoin Recovery Sheet — Free A4 Template",
+          "description": "A free A4 sheet to write a 12 or 24 word Bitcoin recovery phrase on by hand, with numbered lines, the master fingerprint and a passphrase reminder. Print it blank; the page has no field to type a seed into.",
+          "inLanguage": "en",
+          "isPartOf": {
+            "@id": "https://signeros.org/#website"
+          },
+          "primaryImageOfPage": {
+            "@type": "ImageObject",
+            "url": "https://signeros.org/og-signeros.png"
+          },
+          "about": [
+            {
+              "@type": "Thing",
+              "name": "BIP39 recovery phrase backup"
+            },
+            {
+              "@type": "Thing",
+              "name": "Printable A4 template"
+            },
+            {
+              "@type": "Thing",
+              "name": "Bitcoin seed phrase storage"
+            }
+          ]
+        },
+        {
+          "@type": "BreadcrumbList",
+          "itemListElement": [
+            {
+              "@type": "ListItem",
+              "position": 1,
+              "name": "SignerOS",
+              "item": "https://signeros.org/"
+            },
+            {
+              "@type": "ListItem",
+              "position": 2,
+              "name": "Printable recovery sheet",
+              "item": "https://signeros.org/paper_wallet.html"
+            }
+          ]
+        },
+        {
+          "@type": "HowTo",
+          "@id": "https://signeros.org/paper_wallet.html#howto",
+          "name": "Back up a Bitcoin recovery phrase on paper, by hand",
+          "description": "Print the sheet blank, write the words the offline machine showed you in order with a pen, and check the wallet's fingerprint and first address before trusting it.",
+          "url": "https://signeros.org/paper_wallet.html",
+          "supply": [
+            {
+              "@type": "HowToSupply",
+              "name": "A4 paper and a pen"
+            }
+          ],
+          "tool": [
+            {
+              "@type": "HowToTool",
+              "name": "A computer booted from a SignerOS USB stick"
+            }
+          ],
+          "step": [
+            {
+              "@type": "HowToStep",
+              "name": "Start the offline machine",
+              "text": "Boot a computer from the SignerOS stick: it runs in memory, cannot go online and forgets everything at shutdown."
+            },
+            {
+              "@type": "HowToStep",
+              "name": "Write the words on the sheet",
+              "text": "Choose Create a wallet and copy the words onto the numbered panels in order, by hand. The machine then makes you type every word back."
+            },
+            {
+              "@type": "HowToStep",
+              "name": "Take the public file",
+              "text": "SignerOS writes a watch-only file to the stick. Open it in a coordinator that can watch balances and prepare payments but never spend, and check its fingerprint and first address against the machine's."
+            },
+            {
+              "@type": "HowToStep",
+              "name": "Pay somebody",
+              "text": "The watch-only wallet saves the payment as a .psbt file on the stick. Choose Sign a transaction, check the amount and the address on screen, then sign and carry the file back."
+            },
+            {
+              "@type": "HowToStep",
+              "name": "Recover, later",
+              "text": "Choose Export watch-only keys and type these words in, with your passphrase if you used one. The fingerprint on screen must match the sheet."
+            }
+          ]
+        }
+      ]
+    }
+    </script>
     <!-- Print this sheet BLANK and fill it in by hand.
          No webfonts, no CDN, no images: this page makes zero network requests,
          because a page that fetches anything while a seed is in the room is a
@@ -442,6 +559,24 @@
         }
 
         /* ---------- PRINT ---------- */
+        /* Screen only, and only when the display is narrower than the sheet:
+           an A4 landscape page is 287mm wide, so on a phone it would drag the
+           whole document sideways - which is also what a mobile-first crawler
+           reports as unusable. Give the sheet its own scrolling strip instead
+           and leave the instructions above it at normal size, since that is
+           the part somebody reads on a phone before printing from a computer.
+           @media print never sees this. */
+        @media screen and (max-width: 1180px) {
+            .sheet-scroll {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            .screen-note {
+                margin-left: 10px;
+                margin-right: 10px;
+            }
+        }
+
         @media print {
             .screen-note {
                 display: none;
@@ -492,6 +627,7 @@
         </p>
     </div>
 
+    <div class="sheet-scroll">
     <div class="page-wrapper">
 
         <!-- FOLD GUIDES -->
@@ -752,6 +888,7 @@
             </tr>
         </table>
 
+    </div>
     </div>
     <!-- end page-wrapper -->
 </body>

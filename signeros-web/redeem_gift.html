@@ -4,8 +4,187 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#0d1117">
-<meta name="description" content="Somebody gave you bitcoin on a paper card. The words on it are not a secret any more, so decide one thing - spend it, or keep it - and this page has the steps for either, on a phone or fully offline with SignerOS.">
-<title>Redeem a Bitcoin Gift Card — SignerOS</title>
+<meta name="description" content="Somebody handed you bitcoin on a paper card. Its words are not a secret any more, so there is one decision: spend it through an exchange, or keep it in a wallet of your own. Step by step, on a phone or fully offline.">
+<title>Redeem a Bitcoin Gift Card — Spend It or Keep It</title>
+<link rel="canonical" href="https://signeros.org/redeem_gift.html">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="SignerOS">
+<meta property="og:locale" content="en">
+<meta property="og:title" content="Redeem a Bitcoin Gift Card — Spend It or Keep It">
+<meta property="og:description" content="Somebody handed you bitcoin on a paper card. Its words are not a secret any more, so there is one decision: spend it through an exchange, or keep it in a wallet of your own. Step by step, on a phone or fully offline.">
+<meta property="og:url" content="https://signeros.org/redeem_gift.html">
+<meta property="og:image" content="https://signeros.org/og-gift.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Give bitcoin on paper — printable gift card and redeem guide">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Redeem a Bitcoin Gift Card — Spend It or Keep It">
+<meta name="twitter:description" content="Somebody handed you bitcoin on a paper card. Its words are not a secret any more, so there is one decision: spend it through an exchange, or keep it in a wallet of your own. Step by step, on a phone or fully offline.">
+<meta name="twitter:image" content="https://signeros.org/og-gift.png">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebPage",
+      "@id": "https://signeros.org/redeem_gift.html",
+      "url": "https://signeros.org/redeem_gift.html",
+      "name": "Redeem a Bitcoin Gift Card — Spend It or Keep It",
+      "description": "Somebody handed you bitcoin on a paper card. Its words are not a secret any more, so there is one decision: spend it through an exchange, or keep it in a wallet of your own. Step by step, on a phone or fully offline.",
+      "inLanguage": "en",
+      "isPartOf": {
+        "@id": "https://signeros.org/#website"
+      },
+      "primaryImageOfPage": {
+        "@type": "ImageObject",
+        "url": "https://signeros.org/og-gift.png"
+      },
+      "about": [
+        {
+          "@type": "Thing",
+          "name": "Bitcoin gift card"
+        },
+        {
+          "@type": "Thing",
+          "name": "BIP39 recovery words"
+        },
+        {
+          "@type": "Thing",
+          "name": "Self-custody Bitcoin wallet"
+        }
+      ]
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "SignerOS",
+          "item": "https://signeros.org/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Redeem a gift card",
+          "item": "https://signeros.org/redeem_gift.html"
+        }
+      ]
+    },
+    {
+      "@type": "HowTo",
+      "@id": "https://signeros.org/redeem_gift.html#spend",
+      "name": "Spend a bitcoin gift card: turn it into your local currency",
+      "description": "Open the card's wallet in a phone app, send the coins to an exchange on the Bitcoin network with a SegWit deposit address, sell them and withdraw to your bank account.",
+      "totalTime": "P1D",
+      "url": "https://signeros.org/redeem_gift.html#spend",
+      "tool": [
+        {
+          "@type": "HowToTool",
+          "name": "A phone with a self-custody wallet app such as BlueWallet"
+        },
+        {
+          "@type": "HowToTool",
+          "name": "An account at a bitcoin exchange that serves your country"
+        }
+      ],
+      "step": [
+        {
+          "@type": "HowToStep",
+          "name": "Install a wallet app and turn off sharing",
+          "text": "Install a well-known wallet from its official app store listing or the project's own site, open it once and decline every optional cloud backup, screenshot and photo-library permission."
+        },
+        {
+          "@type": "HowToStep",
+          "name": "Open the card as a wallet",
+          "text": "Choose Add wallet then Import wallet and type the card's words in their numbered order, all lower case, plus the passphrase if the card names one."
+        },
+        {
+          "@type": "HowToStep",
+          "name": "Check the balance against the card",
+          "text": "The amount on the card should appear within seconds. If the card carries a master fingerprint, it must match what the app shows."
+        },
+        {
+          "@type": "HowToStep",
+          "name": "Open an exchange account and finish the identity checks",
+          "text": "Pick an exchange that operates legally where you live and can pay out to your bank, and complete its identity verification before sending any coins."
+        },
+        {
+          "@type": "HowToStep",
+          "name": "Get the deposit address and choose Bitcoin SegWit",
+          "text": "On the exchange's deposit screen the network must be Bitcoin's own on-chain network — never Lightning, BEP-20, ERC-20 or wrapped BTC — and the address format should be SegWit (bech32), the address beginning bc1q. Copy the address by paste or QR only, and check the minimum deposit."
+        },
+        {
+          "@type": "HowToStep",
+          "name": "Send the whole gift",
+          "text": "From the gift wallet choose Send, paste the deposit address, use send max or full balance, compare the first and last four characters, and confirm."
+        },
+        {
+          "@type": "HowToStep",
+          "name": "Sell, withdraw and keep the numbers",
+          "text": "Sell the bitcoin for your currency and withdraw to your bank account. Record what you received, what you sold it for and when: many countries tax the gain."
+        },
+        {
+          "@type": "HowToStep",
+          "name": "Retire the card",
+          "text": "Once the transaction has confirmed the card holds nothing. Delete the imported wallet if you like, and keep or destroy the card."
+        }
+      ]
+    },
+    {
+      "@type": "HowTo",
+      "@id": "https://signeros.org/redeem_gift.html#keep",
+      "name": "Keep a bitcoin gift card: move it into a wallet of your own",
+      "description": "The words on a gift card were written by somebody else, so make a wallet of your own first — on a phone or offline with SignerOS — and then move the gift into it.",
+      "totalTime": "PT30M",
+      "url": "https://signeros.org/redeem_gift.html#keep",
+      "tool": [
+        {
+          "@type": "HowToTool",
+          "name": "A self-custody wallet app, or a SignerOS USB stick and a spare PC"
+        },
+        {
+          "@type": "HowToTool",
+          "name": "Paper and a pen for your own recovery words"
+        }
+      ],
+      "step": [
+        {
+          "@type": "HowToStep",
+          "name": "Make a wallet of your own",
+          "text": "Either create a new wallet in a self-custody phone app (Add wallet, Bitcoin, SegWit, create — not import), or create one offline with SignerOS on a computer that cannot go online."
+        },
+        {
+          "@type": "HowToStep",
+          "name": "Write your own recovery words on paper",
+          "text": "Write them in order, by hand, and keep no other copy. That paper is the wallet; there is a printable recovery sheet for it."
+        },
+        {
+          "@type": "HowToStep",
+          "name": "Copy one of your own receive addresses",
+          "text": "In your new wallet tap Receive and copy the address it shows, which begins bc1q. That is where the gift is going."
+        },
+        {
+          "@type": "HowToStep",
+          "name": "Open the card as a second, temporary wallet",
+          "text": "In the phone app import the card's words as a separate wallet, with its passphrase if it names one. The gift's balance appears."
+        },
+        {
+          "@type": "HowToStep",
+          "name": "Send everything to your own address",
+          "text": "From the temporary wallet choose Send, paste your own address, use send max or full balance, and confirm."
+        },
+        {
+          "@type": "HowToStep",
+          "name": "Delete the temporary wallet",
+          "text": "Once the payment has a confirmation the card's words are worthless. Delete the imported wallet and look after your own paper instead."
+        }
+      ]
+    }
+  ]
+}
+</script>
 <style>
 /* No webfonts, no CDN, no analytics, no input boxes: this page makes zero
    network requests and never asks anybody for their recovery words.

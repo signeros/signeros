@@ -2,7 +2,137 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <title>Bitcoin Gift Card</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="A free A4 gift card you print blank and fill in by hand: pick the occasion, type the name and a note, and write the wallet&#x27;s recovery words inside with a pen. Folds into four panels; the receiver gets a QR to a page that explains what to do.">
+    <title>Printable Bitcoin Gift Card — Free A4 Template</title>
+    <link rel="canonical" href="https://signeros.org/gift_wallet.html">
+    <meta name="robots" content="index,follow,max-image-preview:large">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="SignerOS">
+    <meta property="og:locale" content="en">
+    <meta property="og:title" content="Printable Bitcoin Gift Card — Free A4 Template">
+    <meta property="og:description" content="A free A4 gift card you print blank and fill in by hand: pick the occasion, type the name and a note, and write the wallet&#x27;s recovery words inside with a pen. Folds into four panels; the receiver gets a QR to a page that explains what to do.">
+    <meta property="og:url" content="https://signeros.org/gift_wallet.html">
+    <meta property="og:image" content="https://signeros.org/og-gift.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="Give bitcoin on paper — printable A4 gift card">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Printable Bitcoin Gift Card — Free A4 Template">
+    <meta name="twitter:description" content="A free A4 gift card you print blank and fill in by hand: pick the occasion, type the name and a note, and write the wallet&#x27;s recovery words inside with a pen. Folds into four panels; the receiver gets a QR to a page that explains what to do.">
+    <meta name="twitter:image" content="https://signeros.org/og-gift.png">
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebPage",
+          "@id": "https://signeros.org/gift_wallet.html",
+          "url": "https://signeros.org/gift_wallet.html",
+          "name": "Printable Bitcoin Gift Card — Free A4 Template",
+          "description": "A free A4 gift card you print blank and fill in by hand: pick the occasion, type the name and a note, and write the wallet's recovery words inside with a pen. Folds into four panels; the receiver gets a QR to a page that explains what to do.",
+          "inLanguage": "en",
+          "isPartOf": {
+            "@id": "https://signeros.org/#website"
+          },
+          "primaryImageOfPage": {
+            "@type": "ImageObject",
+            "url": "https://signeros.org/og-gift.png"
+          },
+          "about": [
+            {
+              "@type": "Thing",
+              "name": "Bitcoin gift card"
+            },
+            {
+              "@type": "Thing",
+              "name": "Printable A4 template"
+            },
+            {
+              "@type": "Thing",
+              "name": "Gifting bitcoin"
+            }
+          ]
+        },
+        {
+          "@type": "BreadcrumbList",
+          "itemListElement": [
+            {
+              "@type": "ListItem",
+              "position": 1,
+              "name": "SignerOS",
+              "item": "https://signeros.org/"
+            },
+            {
+              "@type": "ListItem",
+              "position": 2,
+              "name": "Printable gift card",
+              "item": "https://signeros.org/gift_wallet.html"
+            }
+          ]
+        },
+        {
+          "@type": "HowTo",
+          "@id": "https://signeros.org/gift_wallet.html#howto",
+          "name": "Give bitcoin as a present on a printed paper card",
+          "description": "Create the wallet on a machine that cannot go online, write its recovery words onto the printed card by hand, verify the wallet before funding it, then hand the card over closed.",
+          "url": "https://signeros.org/gift_wallet.html",
+          "supply": [
+            {
+              "@type": "HowToSupply",
+              "name": "A4 paper and a pen"
+            },
+            {
+              "@type": "HowToSupply",
+              "name": "Bitcoin to fund the wallet with"
+            }
+          ],
+          "tool": [
+            {
+              "@type": "HowToTool",
+              "name": "A computer that can boot SignerOS from a USB stick"
+            },
+            {
+              "@type": "HowToTool",
+              "name": "A watch-only coordinator wallet such as Sparrow"
+            }
+          ],
+          "step": [
+            {
+              "@type": "HowToStep",
+              "name": "Create the wallet on a machine that cannot go online",
+              "text": "SignerOS boots from a USB stick, runs in RAM and writes nothing private. Twelve words is plenty for a gift and much less to copy by hand."
+            },
+            {
+              "@type": "HowToStep",
+              "name": "Write the words on the card and nowhere else",
+              "text": "Not in a note app, not in a photo, not in a password manager. A copy you keep is a wallet you can still empty."
+            },
+            {
+              "@type": "HowToStep",
+              "name": "Prove the wallet before you fund it",
+              "text": "Open the watch-only file of public keys in a coordinator and check that the master fingerprint and the first address match what the machine showed you."
+            },
+            {
+              "@type": "HowToStep",
+              "name": "Fund the first receive address",
+              "text": "Send a small test amount first if the gift is significant, and confirm it arrives before sending the rest."
+            },
+            {
+              "@type": "HowToStep",
+              "name": "Fill in the fingerprint, the amount and the date",
+              "text": "Write them on the inside panel so the receiver can tell they opened the right wallet."
+            },
+            {
+              "@type": "HowToStep",
+              "name": "Hand it over closed",
+              "text": "Say the one sentence that matters: move it into your own wallet soon, and never type these words into a web page. The back of the card carries a QR to the page that walks the receiver through both options."
+            }
+          ]
+        }
+      ]
+    }
+    </script>
     <!-- Print this card BLANK, fill the words in by hand.
          No webfonts, no CDN, no images, no requests: everything here is markup.
          Structure and print geometry follow paper_wallet.html; the palette is
@@ -617,6 +747,24 @@
         }
 
         /* ---------- PRINT ---------- */
+        /* Screen only, and only when the display is narrower than the sheet:
+           an A4 landscape page is 287mm wide, so on a phone it would drag the
+           whole document sideways - which is also what a mobile-first crawler
+           reports as unusable. Give the sheet its own scrolling strip instead
+           and leave the instructions above it at normal size, since that is
+           the part somebody reads on a phone before printing from a computer.
+           @media print never sees this. */
+        @media screen and (max-width: 1180px) {
+            .sheet-scroll {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            .tools {
+                margin-left: 10px;
+                margin-right: 10px;
+            }
+        }
+
         @media print {
             .tools {
                 display: none;
@@ -695,6 +843,7 @@
         </div>
     </div>
 
+    <div class="sheet-scroll">
     <div class="page-wrapper">
 
         <div class="fold-line-h"></div>
@@ -999,6 +1148,7 @@
             </tr>
         </table>
 
+    </div>
     </div>
 
     <script>

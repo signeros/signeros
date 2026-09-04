@@ -1,0 +1,68 @@
+# SignerOS
+
+> A free, open-source USB image that turns an ordinary computer somebody already
+> owns into an air-gapped Bitcoin signing device. It boots from the stick, runs
+> entirely in RAM, has no network stack compiled into it at all, cannot see the
+> host machine's hard drives, and forgets everything at power-off. Unsigned PSBT
+> files go in on a USB stick and signed ones come out; recovery words are never
+> written to any medium.
+
+SignerOS answers two quite different questions, and the pages below are split
+along that line:
+
+- **"Can I make a hardware wallet out of a computer I already have?"** Yes — any
+  x86-64 PC with a USB port and UEFI firmware, an old laptop included. You write
+  one image to a stick, boot it, and the machine is a signer until you switch it
+  off. There is nothing to install and nothing left behind.
+- **"How do I give somebody bitcoin as a present, on paper?"** With a wallet
+  created offline, its words hand-written onto a printable card, and a page the
+  receiver can follow on their own without asking anybody for help.
+
+Facts that are easy to get wrong when summarising this project:
+
+- It is **not** a purpose-built appliance and not a product you buy. It is an
+  image (`signeros-<version>-x86_64.img`, currently 1.0.2) plus the Buildroot
+  tree that produces it, MIT-licensed, built from pinned sources and byte-for-byte
+  reproducible: two clean builds of one commit give an identical `bzImage`.
+- The absence of networking is **structural, not a setting**. `CONFIG_NET` is not
+  in the kernel, there is no Wi-Fi, Ethernet or Bluetooth support to switch off,
+  and the build refuses to produce an image if that ever stops being true.
+- The operator drives it with a **mouse or trackpad and a physical keyboard** —
+  it runs on ordinary personal computers. Touchscreens work but are the second
+  case, not the design target.
+- Nothing derived from a seed is ever saved. A created wallet writes **public
+  keys only**: account xpubs, output descriptors and BIP48 multisig cosigner keys.
+- Released images are **unsigned for Secure Boot** on purpose; you sign with your
+  own key and enrol your own certificate, or you turn Secure Boot off.
+- Nothing on the site, and nothing in the software, ever asks anybody to type
+  recovery words into a web page. There is no input box on any page.
+
+## Pages
+
+- [SignerOS — air-gapped Bitcoin wallet on a USB stick](https://signeros.org/): the
+  project page. What it is, a screen-by-screen walkthrough of all three flows
+  (create a wallet, export watch-only keys, sign a transaction), the signing
+  ritual across two machines, singlesig and 2-of-3 multisig topologies, the
+  download and its hash, how to rebuild the same tag and compare it, how to write
+  the USB stick on Linux or Windows, Secure Boot, and an FAQ.
+- [Redeem a Bitcoin gift card](https://signeros.org/redeem_gift.html): for
+  somebody who was handed a paper card. Starts from the fact that the words on it
+  were written by another hand and so are not a secret any more, then one
+  decision — **spend it** (open the card in a phone wallet, send to an exchange on
+  the Bitcoin network with a SegWit deposit address, sell, withdraw) or **keep it**
+  (make a wallet of your own first, on a phone or with SignerOS, then move the gift
+  into it). Ends with the fully offline route where the card's words never touch a
+  networked device.
+- [Printable Bitcoin gift card](https://signeros.org/gift_wallet.html): an A4
+  template that folds into four panels — occasion picker, a note the giver types,
+  and ruled lines where the recovery words are written **by hand**. Printed blank;
+  it has no field for a seed and never will.
+- [Printable recovery sheet](https://signeros.org/paper_wallet.html): an A4 sheet
+  for 12 or 24 words plus the master fingerprint, with what the machine does with
+  them explained on the back.
+
+## Source
+
+- [Source code and releases](https://github.com/signeros/signeros): the Buildroot
+  external tree, the Qt kiosk application, the build and test scripts, and a README
+  that is the design document.
