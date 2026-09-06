@@ -326,8 +326,14 @@ If a guardrail check fails, the check is almost certainly right. Fix the cause.
   does not link, so the *system* is `BR2_OPTIMIZE_2`. `build.sh` refuses that
   combination up front.
 - **Reproducibility**: `BR2_REPRODUCIBLE=y`, every input pinned. Compare
-  `output/images/bzImage`, not `signeros.img` — the latter embeds a per-key Secure Boot
-  signature and is expected to differ. It did not hold until 2026-08-25, and the
+  `output/images/bzImage`; a *signed* `signeros.img` embeds a per-key Secure Boot
+  signature and is expected to differ. An unsigned one reproduces too, but only since
+  2026-09-06: `mkfs.vfat` was stamping the build clock into each partition's FAT
+  volume-label entry, so the released 1.0.2 image and a rebuild of it differed in 14
+  bytes while every byte the machine executes was identical. `--invariant` in the
+  `extraargs` of every vfat block in the genimage configs fixes it, and it must come
+  **before** `-i` or mkfs.fat's constant volume ID replaces the fixed one. The bzImage
+  claim did not hold until 2026-08-25 either, and the
   way it broke is worth knowing because it will rhyme. `BR2_TARGET_GENERIC_ROOT_PASSWD="*"`
   reads as "no root password"; Buildroot treats anything not starting `$1$`/`$5$`/`$6$`
   as **clear text to be hashed**, so every `target-finalize` ran

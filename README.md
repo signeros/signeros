@@ -119,16 +119,23 @@ then does `mount -o remount,ro /`, so even the RAM copy is read-only for the res
 of the session. `/tmp`, `/run` and `/dev/shm` are tmpfs; `/mnt/data` is the only
 writable storage the system can reach.
 
-The build prints both figures, because the unpacked one is permanently occupied
-physical memory:
+[post-image.sh](buildroot-external/board/signeros/post-image.sh) prints both
+figures at the end of every build, because the unpacked one is permanently
+occupied physical memory:
 
 ```
-  production image
-  bootx64.efi ......  22400 KiB   (kernel + initramfs, one signed PE)
-  of which rootfs ..  44500 KiB   (unpacked into RAM at boot)
-  ------------------------------
-  ESP payload ......  22400 KiB of 262144 KiB (8%)
+  production image, SignerOS 1.0.2
+  bootx64.efi .........  20768 KiB   ESP payload, 7% of 262144 KiB
+                                     kernel + initramfs + command line,
+                                     one UNSIGNED PE binary
+  rootfs unpacked .....  44840 KiB   permanently resident RAM
 ```
+
+The second figure is not a part of the first. `bootx64.efi` carries the root
+filesystem xz-compressed inside it; `rootfs unpacked` is what the kernel expands
+into tmpfs at boot and never gives back, which is why it is the larger of the
+two and the one that decides how much RAM the appliance costs. The build fails
+outright if the payload no longer fits the 256 MiB ESP.
 
 The price of linking the rootfs into the kernel is build latency: any change
 under `src/` now relinks and recompresses the kernel, so `make app` is minutes
@@ -241,16 +248,27 @@ src/btc_signer_gui/
 │   │                                  the descriptor file - the ONLY thing
 │   │                                  wallet creation ever writes
 │   └── selftest.{h,cpp}             the headless end-to-end exercise
-├── src/ui/                          Qt Widgets: theme, keyboard, the screens,
-│   │                                  and touchpad.cpp - the pointer handler
-│   │                                  Qt does not ship and libinput cannot
+├── src/ui/                          Qt Widgets: theme, the screens, and
+│   │                                  touchpad.cpp - the pointer handler Qt
+│   │                                  does not ship and libinput cannot
 │   │                                  provide without udev
 │   ├── secret_buffers.{h,cpp}       every secret in the process, in one place
-│   ├── seed_view.{h,cpp}            paints a mnemonic without ever building
-│   │                                  a QString out of it
+│   ├── seed_view.{h,cpp}            paints a mnemonic without ever building a
+│   │                                  QString out of it - and is the entry
+│   │                                  grid both mnemonic screens edit through
+│   ├── osk_panel.{h,cpp}            the on-screen keyboard, as a layer across
+│   │                                  the bottom of the screen rather than a
+│   │                                  row inside each page
+│   ├── save_as.{h,cpp}              the page that names an output file,
+│   │                                  shared by all three writers
 │   ├── screen_splash.cpp            three seconds, drawn with QPainter
-│   ├── screen_home.cpp              create a wallet, or sign a transaction
-│   └── screen_create.cpp            the seven-page creation wizard
+│   ├── screen_home.cpp              create, export keys, or sign
+│   ├── screen_create.cpp            the eight-page creation wizard
+│   ├── screen_import.cpp            words you already have → the same export
+│   ├── screen_scan.cpp              pick a .psbt off the data partition
+│   ├── screen_inspect.cpp           what the file says, before a key exists
+│   ├── screen_sign.cpp              key entry, confirmation, signature
+│   └── screen_shutdown.cpp          the exit-42 path, and what is shown
 ├── src/tools/ramwipe.c              shutdown-time free-memory scrub
 └── src/main.cpp                     kiosk and --self-test in one binary
 
@@ -260,15 +278,113 @@ scripts/
 ├── test_in_qemu.sh                  UEFI boot + signing + pixel verification
 ├── make_test_data.py                independent PSBT fixture + verifier
 ├── host_selftest.sh                 fast core-only loop
+├── make_og_images.py  ppm2png.py    the site's link-preview images, and the
+│                                      QEMU screendump converter
 └── flash_usb.sh                     write and verify a stick - and unmount it
                                        first, because a desktop that mounts
                                        PSBT_DATA the instant the write ends
                                        rewrites the FAT dirty flag and fails
                                        the readback on a perfect stick
 
+signeros-web/                        the project page at signeros.org, four
+                                       self-contained HTML files with no build
+                                       step and no runtime network requests
+
 VERSION                              one line: the release version, and the
                                        only place it is written down
 ```
+
+---
+
+## The interface, and what drives it
+
+The machine this runs on is an ordinary personal computer - a laptop or a desktop
+the operator already owns, booted from a stick - so **a mouse or a trackpad is
+the first-choice input, not a fallback**, and a physical keyboard is assumed
+present. Touchscreen panels are supported and have to keep working, but they are
+the second case rather than the one the screens are designed around.
+
+None of it is configured, because there is no udev to configure it with.
+`configureInputDevices()` in [main.cpp](src/btc_signer_gui/src/main.cpp)
+enumerates `/dev/input/event*` at startup and classifies each device by its evdev
+capability bits, and exactly two decisions follow from what it finds:
+
+| Found | Consequence |
+|---|---|
+| a pointer - a mouse, a touchpad or an absolute tablet. A touchscreen deliberately does **not** count | the framebuffer cursor is drawn (`QT_QPA_FB_HIDECURSOR=0`, mirrored into `theme::cursorVisible()` so the platform cursor and the per-widget cursors cannot disagree). With no pointer it stays hidden: a cursor chasing a finger is noise |
+| a keyboard | the on-screen keyboard is hidden by default and the space goes to the content instead. **F2** brings it back on any page that takes typing |
+
+From which comes the rule a new screen has to keep: **every flow must be
+completable with the keyboard alone *and* with the pointer alone.** Optional aids
+may be one or the other - the word-count buttons are click-only and **F4** does
+the same job from the keyboard - but nothing on the path to a signature or an
+export may be.
+
+### The screen holds the focus, so the chrome is drawn by hand
+
+Entry screens set `Qt::NoFocus` on every button they contain, so that Space
+reaches the secure buffer instead of re-triggering the last button pressed. The
+screen itself keeps the focus and routes characters into a `SecureString` from
+its own `keyPressEvent`; focus traversal is not what moves the cursor anywhere on
+this machine.
+
+Two consequences, both of them things that were got wrong first:
+
+- **Nothing else on a page may take the focus.** A `QScrollArea` defaults to
+  `WheelFocus`, which made it the one focusable widget on the signing screen's
+  confirmation page: it took the focus when the page appeared, after the screen
+  had asked for it, and the first Enter there did nothing. Every scroll area on
+  a page of `NoFocus` buttons now sets `NoFocus` too.
+- **Qt draws no focus ring and no caret**, so a field nobody can see the focus of
+  is a field nobody trusts. `screen_sign` is the worked example: the mnemonic and
+  the passphrase are two cards, **both on screen at once**, the active one
+  carrying an accent border, an accent caption and a blinking caret in its label,
+  and a click on either card moves the typing there. **F3** does the same from the
+  keyboard, on the signing and import screens alike - without it a wallet with a
+  passphrase is unusable on a keyboard-driven machine, which it was until
+  2026-08-09. The pair of "Typing: key / Typing: passphrase" toggles this replaced
+  was a tab strip in all but name: it hid the passphrase behind a control you had
+  to know about, and said nothing about where the next keystroke would land.
+
+### The on-screen keyboard is a layer, not a row
+
+[osk_panel.h](src/btc_signer_gui/src/ui/osk_panel.h) is a child of the *screen*,
+positioned across the bottom on top of whichever page is showing, opaque, one per
+screen. It used to be a widget inside each page's column, which meant every page
+had to find room for it - and the pages that most need a keyboard are the ones
+with no room, which is how you get key rows a few pixels tall on exactly the
+screen somebody is typing a seed into.
+
+Being a layer, it carries three things the pages therefore do not: an **echo
+line**, because the field being typed into is usually underneath it now; the
+**BIP39 suggestions**, which move into the panel while it is up and back to the
+page when it is down, never both; and a **"hide keys"** key, because the page's
+own buttons are behind it too. Every page that takes typing also carries a
+visible **On-screen keys (F2)** button - F2 alone is not discoverable, and a
+laptop that reports a keyboard may still be used as a tablet.
+
+### Every file is named by the operator
+
+Both writers take a file name: `PsbtEngine::writeResult` and `writeWalletExport`.
+The screens get it from the shared [save_as.h](src/btc_signer_gui/src/ui/save_as.h)
+page, which offers the old timestamped name - `signed_20260811-190438.psbt`,
+`signeros-<fingerprint>-<timestamp>.descriptors.txt` - already free of
+collisions, so Enter is still the whole interaction for anybody who does not
+care. It is a fine default and a poor name: a stick that comes back from a week
+of use holds six of them and nothing says which transaction or which wallet any
+of them is, and the operator, who is the only person who knows, was never asked.
+
+What a name may be is decided by `sanitiseFileName()`: one path component,
+printable ASCII, no leading dot, extension enforced, and the rules are applied
+again *inside* the writers rather than trusted to the page - a UI that forgot to
+sanitise must not be able to write `../something`. A name already in use is an
+error rather than a silent `-2` suffix. `runFileNameChecks()` in
+[core/selftest.cpp](src/btc_signer_gui/src/core/selftest.cpp) is the build gate
+for all of it.
+
+On the signing screen the order is **sign, wipe, name, write**, so the naming
+step holds no key material and a failed write can be retried from it without the
+mnemonic being anywhere in the process.
 
 ---
 
@@ -289,12 +405,14 @@ So the flow is built around one rule:
 > locked RAM, for as long as the creation screen is open, and is wiped on the way
 > out.
 
-The single file that reaches the data partition is
-`signeros-<fingerprint>-<timestamp>.descriptors.txt`: output descriptors and
+The single file that reaches the data partition holds output descriptors and
 extended **public** keys for BIP84, BIP86, BIP49 and BIP44, plus the BIP48
-multisig cosigner keys described below, account 0. It is
-enough for Sparrow, Bitcoin Core or any other coordinator to watch the wallet
-and build transactions for it, and it cannot spend a satoshi.
+multisig cosigner keys described below, account 0. It is enough for Sparrow,
+Bitcoin Core or any other coordinator to watch the wallet and build transactions
+for it, and it cannot spend a satoshi. The operator names it on the page before
+it is written - `signeros-<fingerprint>-<timestamp>.descriptors.txt` is offered
+as the default, so Enter is still the whole interaction. See
+[Every file is named by the operator](#every-file-is-named-by-the-operator).
 
 Each script type gets **three** uncommented descriptor lines: the multipath
 `<0;1>` form, then the same keys as a separate receive and change pair. The pair
@@ -411,16 +529,26 @@ is deliberately available throughout - handwriting is genuinely ambiguous, and
 the alternative to letting someone look twice is a wallet lost to a badly formed
 digit.
 
-An optional BIP39 passphrase follows. It is shown in clear once, on the
-confirmation page, for the same reason: a passphrase remembered incorrectly is
-exactly as lost as a seed written down incorrectly, and this device will not
-store it either. A long one is broken into lines of 32 characters where it is
-shown, and the page says so - a passphrase is a single token with no spaces to
-wrap at, and a label asked to lay one out reports a minimum width as wide as
-the whole thing. That minimum reaches the QStackedWidget holding the screens,
-which takes the widest minimum of every page it holds, so a 160-character
-passphrase used to push the window past the edge of the panel and carry the
-buttons in the bottom right of the following pages out of sight.
+An optional BIP39 passphrase follows, and it is **shown in clear and typed
+twice** - here, on the import screen and on the signing screen alike. A
+passphrase remembered incorrectly is exactly as lost as a seed written down
+incorrectly, and this device will not store it either. The two checks catch
+different failures and both are needed: showing the characters catches the
+keyboard layout, since this build reads every keyboard as US, and a second entry
+catches a slip, which no amount of looking will. `passphraseConfirmBuffer()` is
+the fourth secure buffer and `passphraseConfirmed()` the only comparison; the
+derivation never runs on an unconfirmed one.
+
+An **empty** passphrase is simply accepted. Most wallets have none, an "are you
+sure?" in front of the common case is a step everybody learns to press past, and
+it would have to appear from nowhere on an already full page. A long one is
+broken into lines of 32 characters where it is shown, and the page says so - a
+passphrase is a single token with no spaces to wrap at, and a label asked to lay
+one out reports a minimum width as wide as the whole thing. That minimum reaches
+the QStackedWidget holding the screens, which takes the widest minimum of every
+page it holds, so a 160-character passphrase used to push the window past the
+edge of the panel and carry the buttons in the bottom right of the following
+pages out of sight.
 
 The window is additionally pinned to the size of the screen, which is what makes
 that a clipped label rather than an unreachable button next time. Capping it
@@ -484,10 +612,13 @@ arrows and clicks move between cells, Space and Enter finish one, a wrong word
 is fixed where it stands. Two things differ, and both follow from the seed
 having been made somewhere else:
 
-**The word count is chosen here**, 12 / 15 / 18 / 21 / 24, because the device
-has no way to know it. That choice is what lets the grid show every cell before
-the first keystroke instead of growing as words arrive, which is the whole
-reason a cell can be numbered and navigated to at all.
+**The word count is chosen on the entry page itself**, 12 / 15 / 18 / 21 / 24,
+by button or by **F4**. Creation asks the same question, but it asks it first and
+it is a different question - how much entropy to mint - and the answer is then a
+fact about the seed the machine holds. Here the machine has no way to know, so
+the operator says, and that is what lets the grid show every cell before the
+first keystroke instead of growing as words arrive: which is the whole reason a
+cell can be numbered and navigated to at all.
 
 **The words are shown in clear.** Creation masks its grid deliberately: the
 operator is meant to be copying from their paper and not from the screen, and a
@@ -826,7 +957,7 @@ payload", including the awkward parts:
   [external.mk](buildroot-external/external.mk)). `make test` therefore still
   exercises the same source, the same kernel configuration and the same
   `rootfs.cpio` you ship.
-- **There is no  GUI variant to boot into.** `make gui` opens the
+- **There is no GUI variant to boot into.** `make gui` opens the
   production image and generates a *mainnet* fixture instead, so the addresses on
   screen match what `make_test_data.py` printed. The fixture follows the image
   rather than the other way round.
@@ -834,7 +965,10 @@ payload", including the awkward parts:
   inside the kernel. `./scripts/build.sh --no-test-image` halves the kernel work
   when you are only iterating on the UI.
 - **A signed image is reproducible only per key.** Compare `output/images/bzImage`
-  — the unsigned UKI, which is the whole boot payload — not `signeros.img`.
+  — the unsigned UKI, which is the whole boot payload — rather than
+  `signeros.img`, which additionally carries a signature made with your key. An
+  unsigned `signeros.img` does reproduce byte for byte, but `bzImage` is the
+  figure to publish and to argue over, because it is the part a machine runs.
 
 ---
 
@@ -917,8 +1051,11 @@ Executed in this environment, on this tree:
   UEFI in QEMU, and the framebuffer rendering test on the production image
 - `./scripts/host_selftest.sh` — the signing core built against libwally
   **1.5.6**, signing the fixture, with every signature verified independently by
-  `make_test_data.py`, and all four exported account keys diffed against its
-  derivation
+  `make_test_data.py`, and every exported key diffed against its derivation: the
+  four account xpubs and first addresses for accounts 0 *and* 1, plus the BIP48
+  cosigner keys for both (`wallet-expect --section cosigners`), which sit a level
+  deeper and are therefore what a wrong path length would still get plausibly
+  wrong
 - the change-forgery gate, end to end: `forged_change.psbt.bad` (this wallet's
   fingerprint and change path over an address it does not control) is reported
   as a mismatch and refused, in both the host run and the booted image
@@ -936,6 +1073,17 @@ Executed in this environment, on this tree:
   relink and xz pass — lands on the *same* bytes as the clean pair, so
   `make app` and `make reconfigure` are not quietly producing a different image
   from the one a clean build gives
+- **the assembled images too, since 2026-09-06.** Two `make image` runs give a
+  `cmp`-identical `signeros-<version>-x86_64.img` and
+  `signeros-test-<version>-x86_64.img`, which they did not before `--invariant`
+  reached the vfat blocks of the genimage configs — see
+  [Reproducibility](#reproducibility) for the 14 bytes that were moving
+- **the published release against a rebuild of it.** The 1.0.2 image downloaded
+  from the project page was unpacked and the `bootx64.efi` on its ESP is
+  byte-identical to the `bzImage` a rebuild produces here eleven days later,
+  `2eeeaf12…`. That is the whole boot payload, and it is the strongest form this
+  measurement takes on one machine: it is still *this* host, so the cross-machine
+  comparison below remains unmade
 
 Executed on real hardware, from a USB stick, on several different laptops and
 desktops with **Secure Boot disabled**:
@@ -997,9 +1145,10 @@ screen that takes typing inherits that: `make gui` first, then a stick.
 
 ## Versioning
 
-`VERSION` at the repo root holds one line - `0.1.0` - and it is the only place
-the release version is written down. Everything that needs it reads it from
-there, so cutting a release is that one edit followed by a build:
+`VERSION` at the repo root holds one line - `1.0.2` at the time of writing - and
+it is the only place the release version is written down. Everything that needs
+it reads it from there, so cutting a release is that one edit followed by a
+build:
 
 | Where it ends up | How |
 |---|---|
@@ -1007,7 +1156,7 @@ there, so cutting a release is that one edit followed by a build:
 | `/etc/signeros-build` inside the initramfs | `post-build.sh` stamps `SIGNEROS_VERSION=`, so the version is part of what `bzImage` hashes to - the published hash is a hash *of a version*, not of an anonymous build |
 | the splash, the home screen and the shutdown screen | compiled in as `SIGNEROS_VERSION_STR`, passed by the package makefile as a `-D`. `btc_signer_gui --version` prints the same string |
 
-`SIGNEROS_VERSION=0.2.0-rc1 make image` overrides the file for a build you do
+`SIGNEROS_VERSION=1.1.0-rc1 make image` overrides the file for a build you do
 not want to commit a version bump for. `build.sh` validates the string in its
 first second - it becomes a file name, a C string literal and an on-screen
 label - and forces the kiosk's configure step when it changes, because a
@@ -1077,9 +1226,23 @@ any other tool here. And regenerating just the rootfs from an *unchanged*
 the first question on its own — if the hash moves with the tree untouched, no
 package build is to blame.
 
-`signeros.img` deliberately does *not* match between two people: it embeds a
-Secure Boot signature, so it differs per signing key. Reproducing the payload and
-signing it locally is the intended workflow, the same split Debian and Fedora use.
+A **signed** `signeros.img` deliberately does *not* match between two people: the
+Secure Boot signature is made with your key, so the image differs per key.
+Reproducing the payload and signing it locally is the intended workflow, the same
+split Debian and Fedora use.
+
+An **unsigned** one now does match, which it did not until 2026-09-06. The
+released 1.0.2 image and a local rebuild of the same commit differed in exactly
+14 bytes: the creation and write timestamps in each partition's FAT
+volume-label directory entry, which `mkfs.vfat` takes from the clock rather than
+from `SOURCE_DATE_EPOCH`. Nothing that executes was affected - the `bootx64.efi`
+inside both images has the same sha256 as `output/images/bzImage` here - but it
+made `sha256sum signeros.img` useless as a comparison between two people, which
+is the first thing anybody tries. `--invariant` in the `extraargs` of every vfat
+block in the genimage configs fixes it, and it has to come *before* `-i` or
+mkfs.fat's own constant volume ID silently replaces the fixed one. Two
+consecutive `make image` runs now produce a `cmp`-identical `signeros.img` *and*
+`signeros-test.img`.
 
 libwally-core is fetched by git tag with submodules rather than as a tarball with
 a recorded hash, because a hash committed here would have to be taken on trust
@@ -1149,7 +1312,9 @@ mechanism the self-test image uses.
 | `DATA_LABEL` | filesystem label to look for (`PSBT_DATA`) |
 | `MOUNT_POINT` | `/mnt/data` |
 | `DATA_DEV` | explicit device override, for when several volumes share the label |
+| `DATA_WAIT_SECS` | how long `S01mount-data` waits for the volume to appear (`8`) |
 | `QPA` | `auto`, `linuxfb`, `eglfs` |
+| `FONT_DIR` | where the kiosk looks for its fonts (`/usr/share/fonts/dejavu`) |
 | `WRITE_FINAL_TX` | also write a broadcast-ready raw transaction when the PSBT completes |
 
 Building for testnet: `BR2_PACKAGE_BTC_SIGNER_GUI_NETWORK="testnet"`, or add
