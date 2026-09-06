@@ -124,11 +124,11 @@ figures at the end of every build, because the unpacked one is permanently
 occupied physical memory:
 
 ```
-  production image, SignerOS 1.0.2
+  production image, SignerOS 1.0.3
   bootx64.efi .........  20768 KiB   ESP payload, 7% of 262144 KiB
                                      kernel + initramfs + command line,
                                      one UNSIGNED PE binary
-  rootfs unpacked .....  44840 KiB   permanently resident RAM
+  rootfs unpacked .....  44836 KiB   permanently resident RAM
 ```
 
 The second figure is not a part of the first. `bootx64.efi` carries the root
@@ -1072,7 +1072,12 @@ Executed in this environment, on this tree:
   packages, re-running only `target-finalize`, the cpio generation and the kernel
   relink and xz pass — lands on the *same* bytes as the clean pair, so
   `make app` and `make reconfigure` are not quietly producing a different image
-  from the one a clean build gives
+  from the one a clean build gives. Re-measured on 1.0.3, after both fixes below:
+  `make clean && make image` reproduces the incremental tree's `rootfs.cpio`,
+  `bzImage` *and* `signeros-<version>-x86_64.img` byte for byte, and guardrail 4b
+  passes against a target tree the toolchain has just repopulated from nothing —
+  which is what proves the removal is a build step rather than something somebody
+  once deleted by hand
 - **the assembled images too, since 2026-09-06.** Two `make image` runs give a
   `cmp`-identical `signeros-<version>-x86_64.img` and
   `signeros-test-<version>-x86_64.img`, which they did not before `--invariant`
@@ -1147,7 +1152,7 @@ screen that takes typing inherits that: `make gui` first, then a stick.
 
 ## Versioning
 
-`VERSION` at the repo root holds one line - `1.0.2` at the time of writing - and
+`VERSION` at the repo root holds one line - `1.0.3` at the time of writing - and
 it is the only place the release version is written down. Everything that needs
 it reads it from there, so cutting a release is that one edit followed by a
 build:
