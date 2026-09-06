@@ -187,7 +187,9 @@ What that means when you add or change a screen:
 lost, checked against the *generated* artefacts rather than the defconfig: `CONFIG_NET`
 surviving kconfig, any BusyBox networking applet, any X11/Wayland/display-manager
 binary, any setuid/setgid file, any account in `/etc/shadow` whose password field is not
-`*`/`!`/`!!`, an unresolvable `DT_NEEDED` or a build-host `RUNPATH`, a missing
+`*`/`!`/`!!`, an unresolvable `DT_NEEDED` or a build-host `RUNPATH`, **any file whose contents
+name the build directory** (`BASE_DIR`/`HOST_DIR`/`BUILD_DIR`/the repo root - the
+check that a cross-machine `bzImage` mismatch is usually one of), a missing
 `CONFIG_CMDLINE_OVERRIDE`, or a production command line containing
 `signeros.selftest=1` or a serial console. `scripts/test_in_qemu.sh` re-proves the
 runtime half inside the booted image (`socket()` returns `ENOSYS`, `/proc/net` absent,
@@ -332,7 +334,13 @@ If a guardrail check fails, the check is almost certainly right. Fix the cause.
   volume-label entry, so the released 1.0.2 image and a rebuild of it differed in 14
   bytes while every byte the machine executes was identical. `--invariant` in the
   `extraargs` of every vfat block in the genimage configs fixes it, and it must come
-  **before** `-i` or mkfs.fat's constant volume ID replaces the fixed one. The bzImage
+  **before** `-i` or mkfs.fat's constant volume ID replaces the fixed one.
+  Separately, the *first* cross-machine comparison (2026-09-06) disagreed on
+  `bzImage` itself: `usr/lib/libstdc++.so.*-gdb.py`, a GCC helper Buildroot copies to
+  the target, is a text file containing the build machine's absolute paths, so it was
+  in `rootfs.cpio` and no two checkouts at different paths could ever have matched.
+  `post-build.sh` deletes it and guardrail 4b greps the tree for build paths. Every
+  hash published before that fix is reproducible only under the same directory. The bzImage
   claim did not hold until 2026-08-25 either, and the
   way it broke is worth knowing because it will rhyme. `BR2_TARGET_GENERIC_ROOT_PASSWD="*"`
   reads as "no root password"; Buildroot treats anything not starting `$1$`/`$5$`/`$6$`

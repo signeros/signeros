@@ -74,6 +74,18 @@ rm -rf "$TARGET_DIR"/usr/share/doc \
 find "$TARGET_DIR/usr/lib" -maxdepth 1 -name '*.a' -delete 2>/dev/null
 find "$TARGET_DIR/usr/lib" -maxdepth 1 -name '*.la' -delete 2>/dev/null
 
+# GCC installs a GDB pretty-printer helper next to libstdc++, and Buildroot
+# copies it to the target. It is useless here twice over - there is no GDB and
+# no Python on this image - and it is worse than useless: it is a text file
+# containing the *absolute paths of the machine that built it*, e.g.
+#   pythondir = '/home/you/src/signeros/output/host/share/gcc-14.3.0/python'
+# So it lands in rootfs.cpio, therefore inside bzImage, and every builder whose
+# checkout sits at a different path gets a different published hash. It also
+# tells everyone who runs the image where the builder keeps their files. The
+# guardrail in section 4b is what stops the next one of these arriving quietly.
+find "$TARGET_DIR/usr/lib" -maxdepth 1 -name '*-gdb.py' -delete 2>/dev/null
+rm -rf "$TARGET_DIR"/usr/share/gdb
+
 # Stamp the build so the GUI's shutdown screen can show what is running.
 #
 # The version comes from VERSION at the repo root, the same line the image file
@@ -361,6 +373,37 @@ it means no password is required. Lock it with '*'."
 	done < "$shadow"
 	[ "$shadow_bad" -eq 0 ] \
 		&& ok "every account in /etc/shadow is locked with a fixed, unsalted field"
+fi
+
+# ---------------------------------------------------------------------------
+# 4b. GUARDRAIL - nothing on the image names the machine that built it
+#
+# Reproducibility is checked by comparing hashes, which tells you *that* two
+# builds disagree and never *why*. This says why, at the moment it happens: a
+# file on the image containing the build directory's absolute path cannot be
+# the same on two machines, so it breaks the published-hash claim outright -
+# and it also ships the builder's directory layout to every user.
+#
+# It has caught one already: usr/lib/libstdc++.so.*-gdb.py, removed above.
+# ---------------------------------------------------------------------------
+echo "--- guardrail: no build-host paths on the image ---------------------------"
+
+leaks=""
+for hostpath in "${BASE_DIR:-}" "${HOST_DIR:-}" "${BUILD_DIR:-}" \
+                "$(cd "$BOARD_DIR/../../.." 2>/dev/null && pwd)"; do
+	[ -n "$hostpath" ] || continue
+	hits="$(grep -rlF -- "$hostpath" "$TARGET_DIR" 2>/dev/null || true)"
+	[ -n "$hits" ] && leaks="$leaks$hits
+"
+done
+leaks="$(printf '%s' "$leaks" | sed '/^$/d' | sort -u)"
+if [ -n "$leaks" ]; then
+	fail "these files carry this build machine's absolute paths. They differ on
+       every host, so bzImage cannot reproduce, and they publish the builder's
+       directory layout to everyone who runs the image:"
+	printf '%s\n' "$leaks" | sed "s|^$TARGET_DIR|       |"
+else
+	ok "no file on the image names the build directory"
 fi
 
 # ---------------------------------------------------------------------------

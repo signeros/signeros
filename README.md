@@ -1126,15 +1126,17 @@ Still unproven:
 - **a real touchscreen panel.** Touchscreens take Qt's `evdevtouch` handler
   rather than `touchpad.cpp`, and QEMU's `usb-tablet` is an absolute pointer, so
   neither the hardware runs above nor `make gui` is evidence about them.
-- **any comparison across two machines.** The rebuild pairs above are
-  reproducible *here*: every hash this tree has produced came from one host, one
-  distribution and one host compiler. What closes the remaining gap is somebody
-  else's number, which is why the release publishes one to be contradicted. The
-  pinning that should make it come out the same is real and is described under
-  [Reproducibility](#reproducibility) — Buildroot builds its own cross toolchain,
-  and the two host tools whose output reaches the artefact, `xz` and `cpio`, are
-  built by Buildroot rather than taken from the host. None of that is a
-  measurement.
+- **agreement across two machines.** It has now been *attempted*, once, and it
+  **disagreed**: a second machine built 1.0.2 and produced a different `bzImage`.
+  The cause was found and fixed the same day — a toolchain file carrying the
+  builder's absolute paths, described under
+  [Reproducibility](#reproducibility) — and it means every hash published before
+  that fix was only ever reproducible by a builder whose checkout sat at the same
+  path. What has *not* happened yet is the run that would close this: the same
+  two machines building the fixed tree and comparing again. Until that number
+  comes back, cross-machine reproducibility remains an argument from pinned
+  inputs, not a measurement — and the one measurement so far went against it,
+  which is exactly what publishing a hash to be contradicted is for.
 
 What is no longer on that list is the entry UI. It was proven by hand, because
 nothing here can prove it otherwise — `test-gui` is a pixel check on the splash,
@@ -1243,6 +1245,30 @@ block in the genimage configs fixes it, and it has to come *before* `-i` or
 mkfs.fat's own constant volume ID silently replaces the fixed one. Two
 consecutive `make image` runs now produce a `cmp`-identical `signeros.img` *and*
 `signeros-test.img`.
+
+**And the first cross-machine comparison failed, on 2026-09-06.** Someone built
+1.0.2 on a different machine and got a different `bzImage`. The cause was one
+file: `/usr/lib/libstdc++.so.6.0.33-gdb.py`, a GDB pretty-printer helper GCC
+installs beside libstdc++ and Buildroot copies to the target. It is a *text*
+file, and what it contains is the absolute path of the machine that built it:
+
+```
+pythondir = '/home/you/src/signeros/output/host/share/gcc-14.3.0/python'
+libdir    = '/home/you/src/signeros/output/host/x86_64-buildroot-linux-gnu/lib/../lib64'
+```
+
+It shipped inside `rootfs.cpio`, so it was inside `bzImage`, so **no two people
+whose checkouts sit at different paths could ever have agreed** - the published
+hash was reproducible only for builds under the same directory as the release.
+It was also a small disclosure: a signer that tells everyone who runs it where
+its builder keeps their files. And it was useless in both directions, since this
+image has neither GDB nor Python.
+
+`post-build.sh` now deletes it, and - because deleting one file fixes one file -
+**guardrail 4b** greps the whole target tree for `BASE_DIR`, `HOST_DIR`,
+`BUILD_DIR` and the repo root, and fails the build naming any file that carries
+one. A hash comparison can only tell you *that* two builds disagree; this says
+*why*, on the machine where it happened, at the moment it happens.
 
 libwally-core is fetched by git tag with submodules rather than as a tarball with
 a recorded hash, because a hash committed here would have to be taken on trust
