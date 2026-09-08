@@ -187,7 +187,11 @@ What that means when you add or change a screen:
 lost, checked against the *generated* artefacts rather than the defconfig: `CONFIG_NET`
 surviving kconfig, any BusyBox networking applet, any X11/Wayland/display-manager
 binary, any setuid/setgid file, any account in `/etc/shadow` whose password field is not
-`*`/`!`/`!!`, an unresolvable `DT_NEEDED` or a build-host `RUNPATH`, **any file whose contents
+`*`/`!`/`!!`, an unresolvable `DT_NEEDED`, a build-host `RUNPATH`, an ELF whose `.dynstr` still
+holds patchelf's **all-X padding** (an erased `RPATH` keeps its *length*, and what
+is left is an empty `RUNPATH` tag, so neither the RUNPATH check nor the path grep
+below can see it - this is the one reproducibility check that has to be made
+against the artefact), **any file whose contents
 name the build directory** (`BASE_DIR`/`HOST_DIR`/`BUILD_DIR`/the repo root - the
 check that a cross-machine `bzImage` mismatch is usually one of), a PCRE2 libtool
 that would still embed a build-directory `RPATH` or a libstdc++ built with

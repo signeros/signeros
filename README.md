@@ -1325,7 +1325,20 @@ a theory. `external.mk` now clears libtool's `hardcode_libdir_flag_spec` and
 disables its `LD_RUN_PATH` mechanism before the link, so no `RPATH` is written
 in the first place - these are target libraries in the default `/usr/lib`, so
 none was ever needed. Both halves are load-bearing: clearing only the first
-fixes the two executables and leaves the library dependent on the path.
+fixes the two executables and leaves the library dependent on the path. Three of
+those files are not on the image at all any more: only `libpcre2-16` is linked,
+by `libQt5Core`, and `pcre2grep`, `pcre2test`, `libpcre2-8` and `libpcre2-posix`
+were 714 KiB of resident RAM nothing referenced.
+
+The class of defect outlives the package, though, so **guardrail 5** now fails on
+any ELF whose `.dynstr` holds an all-X string. That check had to go in the
+artefact rather than in a package's configuration, because nothing else can see
+this: after patchelf has sanitised it the file keeps a `RUNPATH` tag with an
+*empty* value, so the build-host RUNPATH check passes, the path grep in guardrail
+4b passes, and the only surviving evidence is the padding itself. Reproducing the
+old defect on purpose - set a build-directory `RPATH`, run Buildroot's own
+`--make-rpath-relative` over it - leaves 62 `X` bytes in `.dynstr` and trips the
+new check; the whole target tree has none.
 
 The second cause was the build *host* rather than the build directory. GCC's
 `libstdc++-v3` configure probes for `msgfmt` and uses gettext for exception

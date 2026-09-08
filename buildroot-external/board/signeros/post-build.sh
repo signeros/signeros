@@ -430,8 +430,15 @@ fi
 # Path scanning cannot detect erased RPATH bytes or host-dependent configure
 # probes. Check the build inputs too, including stale incremental packages.
 echo "--- guardrail: deterministic PCRE2 and libstdc++ configuration ------------"
+#
+# Both loops count what they inspected. A glob that matches nothing prints
+# nothing, and nothing is exactly what a passing check looks like - which is the
+# failure mode this whole file exists to prevent, so the empty case is answered
+# explicitly rather than skipped.
+checked=0
 for libtool in "${BUILD_DIR:-/nonexistent}"/pcre2-*/libtool; do
 	[ -f "$libtool" ] || continue
+	checked=$((checked + 1))
 	if ! grep -qx 'hardcode_libdir_flag_spec=""' "$libtool" ||
 	   grep -qx 'runpath_var=LD_RUN_PATH' "$libtool"; then
 		fail "PCRE2 still embeds build-directory RPATHs. Rebuild it with:
@@ -440,8 +447,21 @@ for libtool in "${BUILD_DIR:-/nonexistent}"/pcre2-*/libtool; do
 		ok "PCRE2 does not embed build-directory RPATHs at link time"
 	fi
 done
+if [ "$checked" -eq 0 ]; then
+	if ls "$TARGET_DIR"/usr/lib/libpcre2-*.so* >/dev/null 2>&1; then
+		fail "the image ships PCRE2, but there is no $BUILD_DIR/pcre2-*/libtool to
+       check it against - so how it was linked is unknown. Build the package in
+       this output tree:
+       make -C buildroot O=<output> pcre2-dirclean pcre2"
+	else
+		ok "no PCRE2 on the image; nothing to check"
+	fi
+fi
+
+checked=0
 for gcc_config in "${BUILD_DIR:-/nonexistent}"/host-gcc-final-*/build/*/libstdc++-v3/config.h; do
 	[ -f "$gcc_config" ] || continue
+	checked=$((checked + 1))
 	if grep -q '^#define _GLIBCXX_USE_NLS 1' "$gcc_config"; then
 		fail "libstdc++ has host-dependent NLS enabled. Use the updated defconfig
        (--disable-nls for GCC) and a clean toolchain build."
@@ -449,6 +469,15 @@ for gcc_config in "${BUILD_DIR:-/nonexistent}"/host-gcc-final-*/build/*/libstdc+
 		ok "libstdc++ NLS is disabled"
 	fi
 done
+if [ "$checked" -eq 0 ]; then
+	if grep -q '^BR2_TOOLCHAIN_BUILDROOT=y' "${BR2_CONFIG:-/nonexistent}" 2>/dev/null; then
+		fail "this configuration builds its own toolchain, but no
+       host-gcc-final-*/build/*/libstdc++-v3/config.h was found to check. A
+       toolchain built in another output tree cannot be verified from here."
+	else
+		warn "external toolchain: whether libstdc++ has NLS cannot be checked here"
+	fi
+fi
 
 # ---------------------------------------------------------------------------
 # 5. Dynamic-linking audit (the "missing shared library / RPATH" check)
@@ -456,6 +485,10 @@ done
 # This is the host-side half of what scripts/test_in_qemu.sh confirms at
 # runtime: every DT_NEEDED of every ELF on the image resolves to a library
 # that is actually on the image, and no RUNPATH points into the build host.
+#
+# It also carries the one reproducibility check that has to be made against the
+# artefact rather than against a package's configuration - see the all-X strings
+# below.
 # ---------------------------------------------------------------------------
 echo "--- audit: shared library resolution --------------------------------------"
 
@@ -483,6 +516,23 @@ else
 		done < <("$READELF" -d "$elf" 2>/dev/null \
 			| sed -n 's/.*(NEEDED).*Shared library: \[\(.*\)\].*/\1/p')
 
+		# Buildroot's fix-rpath sanitises an RPATH with patchelf, which overwrites
+		# the string with X bytes but *keeps its length*, so the path is genuinely
+		# gone - guardrail 4b is satisfied, and right to be - while the file still
+		# encodes how many characters the build directory's name had. That is what
+		# made three PCRE2 files in v1.0.3 differ between two checkouts of the same
+		# commit at different paths. An all-X string in .dynstr is the fingerprint,
+		# and unlike the path itself it survives into the artefact, so this catches
+		# the *next* package to acquire a build-directory RPATH rather than only the
+		# one that had one. The link-time fix is still the fix; this is the check.
+		if "$READELF" -p .dynstr "$elf" 2>/dev/null | grep -qE '\]  X{8,}$'; then
+			fail "${elf#$TARGET_DIR} carries an erased RPATH: an all-X string in
+       .dynstr, whose length still depends on the build directory. Stop the
+       RPATH being written at link time - PCRE2 in external.mk is the worked
+       example."
+			missing=1
+		fi
+
 		while IFS= read -r rpath; do
 			case "$rpath" in
 			*"${HOST_DIR:-@@nope@@}"*|*/output/host/*|*"$TARGET_DIR"*)
@@ -496,7 +546,8 @@ else
 	              "$TARGET_DIR/usr/sbin" "$TARGET_DIR/usr/lib" \
 	              -type f 2>/dev/null)
 
-	[ "$missing" -eq 0 ] && ok "every DT_NEEDED resolves on-image; no host RUNPATHs"
+	[ "$missing" -eq 0 ] && ok "every DT_NEEDED resolves on-image; no host RUNPATHs,
+     no erased-RPATH padding"
 fi
 
 # ---------------------------------------------------------------------------

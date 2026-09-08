@@ -95,7 +95,18 @@ build does not reconfigure an already-configured package. A stale package is
 therefore the one way these defects travel forward, and it is a state no
 configuration file admits to. `post-build.sh` checks the *generated* libtool
 script PCRE2 was configured with and the *generated* `config.h` libstdc++ was
-built with, and fails with the command that fixes it.
+built with, and fails with the command that fixes it. Neither glob is allowed to
+match nothing silently: if the image ships PCRE2 with no libtool to check it
+against, or the configuration builds its own toolchain with no libstdc++
+`config.h` to read, that is a failure and not a pass.
+
+The RPATH half is also checked in the artefact, which is where this defect is
+actually visible. Guardrail 5 fails on any ELF whose `.dynstr` contains an all-X
+string. Nothing else catches it: patchelf leaves a `RUNPATH` tag with an empty
+value, so the build-host RUNPATH check is satisfied, and the path text is gone,
+so guardrail 4b is too. Setting a build-directory `RPATH` on a library and
+running Buildroot's own `--make-rpath-relative` over it leaves 62 `X` bytes and
+trips the check; the target tree as built has none.
 
 ## What this does not establish
 
