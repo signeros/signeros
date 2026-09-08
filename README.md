@@ -1078,9 +1078,12 @@ Executed in this environment, on this tree:
   `signeros-<version>-x86_64.img` byte for byte, and guardrail 4b passes against a
   target tree the toolchain has just repopulated from nothing — which is what
   proves the removal is a build step rather than something somebody once deleted
-  by hand. Measured once more on the corrected recipe that became 1.0.4: a second
-  `build.sh` run reproduces the first's `rootfs.cpio`, `bzImage` and production
-  image byte for byte
+  by hand. Measured once more while the PCRE2 and libstdc++ fixes were being
+  validated: a second `build.sh` run reproduced the first's `rootfs.cpio`,
+  `bzImage` and production image byte for byte. That pair predates the removal of
+  the unused PCRE2 files, so what 1.0.4 itself has behind it is one clean build,
+  not a matching pair - the published number is a number to be contradicted,
+  which is the only thing it was ever offered as
 - **the assembled images too, since 2026-09-06.** Two `make image` runs give a
   `cmp`-identical `signeros-<version>-x86_64.img` and
   `signeros-test-<version>-x86_64.img`, which they did not before `--invariant`
