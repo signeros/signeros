@@ -200,7 +200,8 @@ nav.top{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(7,9,13,.
 .topin{display:flex;align-items:center;justify-content:space-between;height:58px}
 .brand{font-family:var(--mono);font-size:14px;letter-spacing:.06em}
 .brand b{color:var(--amber);font-weight:600}
-.navlinks{display:flex;gap:26px}
+.navlinks{display:flex;gap:20px}
+@media(max-width:1120px){.navlinks{gap:13px}}
 .navlinks a{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);transition:color .2s}
 .navlinks a:hover{color:var(--amber)}
 .ghpill{font-family:var(--mono);font-size:11px;letter-spacing:.1em;border:1px solid var(--line);padding:7px 13px;color:var(--dim);transition:.2s}
@@ -566,6 +567,7 @@ footer{border-top:1px solid var(--line);padding:54px 0 44px;background:var(--bg2
     <a class="brand" href="#top">SIGNER<b>://</b>OS</a>
     <div class="navlinks">
       <a href="what-is-bitcoin.html">Simply Bitcoin</a>
+      <a href="why-signeros.html">Why SignerOS</a>
       <a href="#app">The App</a>
       <a href="#ritual">Ritual</a>
       <a href="#download">Download</a>
@@ -1371,7 +1373,7 @@ footer{border-top:1px solid var(--line);padding:54px 0 44px;background:var(--bg2
   <div class="wrap">
     <div class="fgrid">
       <div class="fcol"><b>SIGNEROS</b><br>Air-gapped Bitcoin signing OS<br>MIT © <span id="yr"></span> <a href="https://github.com/signeros/signeros" target="_blank" rel="noopener">&lt;MFA&gt;</a></div>
-      <div class="fcol"><b>PROJECT</b><br><a href="what-is-bitcoin.html">Simply Bitcoin</a><br><a href="https://github.com/signeros/signeros" target="_blank" rel="noopener">Source code</a><br><a href="#download">Download &amp; build</a><br><a href="#secureboot">Secure Boot</a></div>
+      <div class="fcol"><b>PROJECT</b><br><a href="what-is-bitcoin.html">Simply Bitcoin</a><br><a href="why-signeros.html">Why SignerOS</a><br><a href="https://github.com/signeros/signeros" target="_blank" rel="noopener">Source code</a><br><a href="#download">Download &amp; build</a><br><a href="#secureboot">Secure Boot</a></div>
       <div class="fcol"><b>SUPPORT</b><br><a href="#donate">Donate (BTC)</a><br><a href="#faq">FAQ</a><br><a href="#flash">USB guide</a></div>
       <div class="fcol"><b>ON PAPER</b><br><a href="redeem_gift.html">Redeem a gift card</a><br><a href="gift_wallet.html">Print a gift card</a><br><a href="paper_wallet.html">Print a recovery sheet</a></div>
       <div class="fcol"><b>PRIVACY</b><br>No trackers · no analytics<br>No cookies · single HTML file<br>No webfonts, no CDN:<br>this page makes no requests.</div>

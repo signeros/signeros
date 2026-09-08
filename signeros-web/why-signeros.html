@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="An honest comparison of six ways to hold your own bitcoin: an offline PC with Bitcoin Core, Tails with Electrum, SignerOS, a hot wallet on a PC, a hot wallet on a phone, and a hardware wallet. Written by the author of one of them, with the rows where it comes last marked as such.">
+<title>Why SignerOS — Six Self-Custody Setups, Honestly Compared</title>
+<link rel="canonical" href="https://signeros.org/why-signeros.html">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="SignerOS">
+<meta property="og:locale" content="en">
+<meta property="og:title" content="Why SignerOS — Six Self-Custody Setups, Honestly Compared">
+<meta property="og:description" content="Offline PC with Bitcoin Core, Tails with Electrum, SignerOS, hot wallet on PC, hot wallet on mobile, hardware wallet: what each is genuinely good at, and where each one hurts. Including where SignerOS is the weakest of the six.">
+<meta property="og:url" content="https://signeros.org/why-signeros.html">
+<meta property="og:image" content="https://signeros.org/og-signeros.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="SignerOS — air-gapped Bitcoin wallet on a USB stick">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Why SignerOS — Six Self-Custody Setups, Honestly Compared">
+<meta name="twitter:description" content="A comparison table across twelve categories, written by the author of one of the six options, with its own weakest rows called out rather than hidden.">
+<meta name="twitter:image" content="https://signeros.org/og-signeros.png">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebPage",
+      "@id": "https://signeros.org/why-signeros.html",
+      "url": "https://signeros.org/why-signeros.html",
+      "name": "Why SignerOS — Six Self-Custody Setups, Honestly Compared",
+      "description": "A category-by-category comparison of an offline PC with Bitcoin Core, Tails with Electrum, SignerOS, a hot wallet on a PC, a hot wallet on a phone, and a hardware wallet.",
+      "inLanguage": "en",
+      "isPartOf": { "@id": "https://signeros.org/#website" },
+      "primaryImageOfPage": { "@type": "ImageObject", "url": "https://signeros.org/og-signeros.png" },
+      "about": [
+        { "@type": "Thing", "name": "Bitcoin self-custody comparison" },
+        { "@type": "Thing", "name": "Air-gapped Bitcoin signing" },
+        { "@type": "Thing", "name": "Hardware wallet alternatives" },
+        { "@type": "Thing", "name": "Tails and Electrum offline signing" }
+      ]
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "SignerOS", "item": "https://signeros.org/" },
+        { "@type": "ListItem", "position": 2, "name": "Why SignerOS", "item": "https://signeros.org/why-signeros.html" }
+      ]
+    },
+    {
+      "@type": "Article",
+      "headline": "Why SignerOS — six self-custody setups, honestly compared",
+      "description": "What each of six self-custody setups is genuinely good at, and where each one hurts, including the categories where SignerOS is the weakest of the six.",
+      "inLanguage": "en",
+      "isAccessibleForFree": true,
+      "mainEntityOfPage": { "@id": "https://signeros.org/why-signeros.html" },
+      "image": "https://signeros.org/og-signeros.png",
+      "author": { "@type": "Organization", "name": "SignerOS" },
+      "publisher": { "@type": "Organization", "name": "SignerOS" }
+    },
+    {
+      "@type": "FAQPage",
+      "@id": "https://signeros.org/why-signeros.html#faq",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Is SignerOS safer than a hardware wallet?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Not in every way, and it would be dishonest to say so. SignerOS is stronger on supply chain (you buy nothing, so nothing can be tampered with in transit), on network isolation (there is no network code in the kernel at all, rather than a network stack left unplugged) and on leaving no trace (it runs from RAM and forgets everything at power-off). A hardware wallet is stronger on physical security: a secure element, a PIN, wipe-after-N-attempts and a dedicated display are things a general-purpose PC does not have. It is also stronger on maturity, since established vendors have years of external review that a new project does not."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What is SignerOS actually the weakest at?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Independent review: it is new, written by one author, and has had no external security audit. Physical protection: the USB stick holds no key, but there is no secure element and no PIN, so everything rests on the paper backup and the optional passphrase. Everyday convenience: you boot a machine and type your recovery words for every signing session. And its reproducible-build claim, while measured on one machine, has not yet been confirmed by a second one."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is Tails with Electrum good enough instead?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "For many people, yes. Tails is amnesic, widely used and independently reviewed far more than SignerOS is, and Electrum's offline signing workflow is well established. The difference is that Tails has a full network stack and reaches the internet through Tor by design, so keeping the signing session offline is a discipline you maintain, not a property of the system. SignerOS has no network code compiled into it, which removes the discipline from the equation but also removes every other use of that machine."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Can I use SignerOS together with a hardware wallet?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes, and it is a good use of it. A multisig wallet whose signers are different kinds of device is not vulnerable to a single vendor, a single firmware bug or a single supply chain. SignerOS exports BIP48 cosigner keys for exactly this, and verifies P2WSH and P2SH-P2WSH change against the witness script when it signs."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is a hot wallet on my phone a bad idea?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Not for the amount you would carry in a pocket. Modern phones keep app secrets in hardware-backed storage and are updated more reliably than most desktops, so a good mobile wallet is a reasonable place for spending money. It is an online, general-purpose device running dozens of other programs, which is why it is a poor place for savings."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What does SignerOS not protect against?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Anything below the operating system on the machine you boot: compromised UEFI firmware, a management engine, or hardware implanted in the computer itself. It does not protect a recovery phrase you have written into a phone, a photograph or a cloud drive. It does not protect you from losing your only backup, which is how most self-custodied bitcoin is actually lost. And it cannot help if you are physically coerced."
+          }
+        }
+      ]
+    }
+  ]
+}
+</script>
+<style>
+/* No webfonts, no CDN, no analytics, no input boxes: zero network requests.
+   Palette and type are index.html's. */
+:root{
+  --bg:#0d1117; --bg2:#10151c; --panel:#161b22; --panel2:#11161d;
+  --line:#30363d; --line2:#222932;
+  --ink:#e6edf3; --dim:#9aa4b2; --mut:#6b7683;
+  --amber:#f7931a; --amber2:#ffb54d; --green:#3fb950; --red:#f85149; --warnc:#d29922;
+  --disp:ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+  --sans:ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+  --mono:ui-monospace,'SFMono-Regular','Cascadia Mono','DejaVu Sans Mono',Menlo,Consolas,monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.65;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+::selection{background:var(--amber);color:#0a0a0a}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:1160px;margin:0 auto;padding:0 24px}
+.wrap.wide{max-width:1320px}
+section{scroll-margin-top:84px}
+
+nav.top{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(7,9,13,.93);border-bottom:1px solid var(--line2)}
+.topin{display:flex;align-items:center;justify-content:space-between;height:58px}
+.brand{font-family:var(--mono);font-size:14px;letter-spacing:.06em}
+.brand b{color:var(--amber);font-weight:600}
+.navlinks{display:flex;gap:26px}
+.navlinks a{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);transition:color .2s}
+.navlinks a:hover,.navlinks a.on{color:var(--amber)}
+.ghpill{font-family:var(--mono);font-size:11px;letter-spacing:.1em;border:1px solid var(--line);padding:7px 13px;color:var(--dim);transition:.2s}
+.ghpill:hover{border-color:var(--amber);color:var(--amber);transform:translateY(-1px)}
+@media(max-width:860px){.navlinks{display:none}}
+
+.hero{padding:132px 0 74px;background:
+  radial-gradient(900px 460px at 82% -12%,rgba(247,147,26,.07),transparent 60%),
+  linear-gradient(180deg,var(--bg2),var(--bg))}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.24em;color:var(--amber);text-transform:uppercase}
+.display{font-family:var(--disp);font-weight:700;font-size:clamp(2.2rem,5.4vw,3.9rem);line-height:1.02;letter-spacing:.01em;margin:20px 0 18px;text-transform:uppercase}
+.display .blk{color:var(--amber)}
+.lede{font-size:clamp(1.02rem,1.5vw,1.16rem);color:var(--dim);max-width:46em}
+.lede em{color:var(--ink);font-style:normal;border-bottom:1px solid var(--amber)}
+
+.sec{padding:92px 0;border-top:1px solid var(--line2)}
+.shead{display:flex;align-items:center;gap:18px;margin-bottom:14px}
+.snum{font-family:var(--mono);font-size:12px;letter-spacing:.2em;color:var(--amber);white-space:nowrap}
+.srule{flex:1;height:1px;background:var(--line2)}
+.stag{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;color:var(--mut);text-transform:uppercase;white-space:nowrap}
+.h2{font-family:var(--disp);font-weight:700;font-size:clamp(1.6rem,3.4vw,2.4rem);text-transform:uppercase;line-height:1.14;margin-bottom:16px}
+.intro{color:var(--dim);max-width:52em;margin-bottom:10px}
+.intro b{color:var(--ink);font-weight:600}
+.intro+.intro{margin-top:14px}
+
+/* the bias declaration */
+.bias{border:1px solid rgba(210,153,34,.45);background:rgba(210,153,34,.06);padding:18px 20px;max-width:56em;margin-top:26px}
+.bias h5{font-family:var(--mono);font-size:11px;letter-spacing:.18em;color:var(--warnc);margin-bottom:9px}
+.bias p{font-size:.93rem;color:var(--dim);margin-bottom:9px}
+.bias p:last-child{margin-bottom:0}
+.bias b{color:var(--ink);font-weight:600}
+
+/* the six, as cards */
+.six{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:34px}
+@media(max-width:1000px){.six{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:680px){.six{grid-template-columns:1fr}}
+.opt{border:1px solid var(--line);background:var(--panel);padding:22px;position:relative;overflow:hidden}
+.opt::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:var(--line)}
+.opt.mine::before{background:var(--amber)}
+.opt.mine{background:linear-gradient(180deg,rgba(247,147,26,.05),var(--panel))}
+.opt h3{font-family:var(--disp);font-weight:700;font-size:1.08rem;letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px}
+.opt .osub{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--mut);text-transform:uppercase;margin-bottom:14px}
+.opt p{color:var(--dim);font-size:.9rem;margin-bottom:10px}
+.opt p:last-child{margin-bottom:0}
+.opt b{color:var(--ink);font-weight:600}
+.opt .best{color:var(--green)}
+.opt .cost{color:var(--red)}
+
+/* comparison table */
+.tblwrap{overflow-x:auto;margin-top:34px;border:1px solid var(--line2)}
+.ctbl{width:100%;border-collapse:collapse;font-size:.85rem;min-width:1180px}
+.ctbl th,.ctbl td{text-align:left;padding:13px 14px;border-bottom:1px solid var(--line2);vertical-align:top}
+.ctbl thead th{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--dim);text-transform:uppercase;border-bottom:1px solid var(--line);background:var(--bg2);position:sticky;top:0;z-index:2}
+.ctbl thead th.mine{color:var(--amber)}
+.ctbl tbody th{font-family:var(--sans);font-weight:600;font-size:.86rem;color:var(--ink);width:170px;background:var(--bg);position:sticky;left:0;z-index:1;border-right:1px solid var(--line2)}
+.ctbl td{color:var(--dim);width:15%}
+.ctbl td.mine{background:rgba(247,147,26,.045)}
+.ctbl td b{font-family:var(--mono);font-size:10px;letter-spacing:.1em;display:block;margin-bottom:3px;font-weight:600}
+.g b{color:var(--green)} .a b{color:var(--warnc)} .r b{color:var(--red)}
+.tnote{font-family:var(--mono);font-size:10.5px;color:var(--mut);margin-top:14px;letter-spacing:.04em;line-height:1.9;max-width:66em}
+
+/* weakest section */
+.weak{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:30px}
+@media(max-width:860px){.weak{grid-template-columns:1fr}}
+.wcard{border:1px solid var(--line);border-left:2px solid var(--red);background:var(--panel2);padding:18px 20px}
+.wcard h5{font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--red);margin-bottom:8px}
+.wcard p{font-size:.91rem;color:var(--dim)}
+.wcard b{color:var(--ink);font-weight:600}
+
+/* who should use what */
+.olist{list-style:none;counter-reset:st;max-width:58em;margin-top:26px}
+.olist li{counter-increment:st;position:relative;padding:14px 0 14px 52px;border-bottom:1px dashed var(--line2);color:var(--dim);font-size:.93rem}
+.olist li::before{content:counter(st,decimal-leading-zero);position:absolute;left:0;top:15px;font-family:var(--mono);font-size:12px;color:var(--amber)}
+.olist b{color:var(--ink);font-weight:600}
+
+.keycall{border:1px solid rgba(247,147,26,.55);border-left:3px solid var(--amber);background:rgba(247,147,26,.07);padding:20px 22px;margin-top:30px;max-width:62em}
+.keycall h5{font-family:var(--mono);font-size:11px;letter-spacing:.18em;color:var(--amber);margin-bottom:10px}
+.keycall p{color:var(--dim);font-size:.95rem;margin-bottom:9px}
+.keycall p:last-child{margin-bottom:0}
+.keycall b{color:var(--ink);font-weight:600}
+
+.qa{border-top:1px solid var(--line2);padding:22px 0}
+.qa:last-of-type{border-bottom:1px solid var(--line2)}
+.qa h3{font-family:var(--disp);font-weight:700;font-size:1.06rem;letter-spacing:.02em;margin-bottom:8px}
+.qa p{color:var(--dim);font-size:.94rem;max-width:58em;margin-bottom:9px}
+.qa p:last-child{margin-bottom:0}
+.qa b{color:var(--ink);font-weight:600}
+
+.btnrow{display:flex;flex-wrap:wrap;gap:14px;margin-top:28px}
+.btn{display:inline-block;font-family:var(--mono);font-size:12.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;padding:14px 22px;border:1px solid var(--line);border-radius:2px;transition:transform .18s ease,box-shadow .18s ease,border-color .18s,color .18s}
+.btn-solid{background:var(--amber);border-color:var(--amber);color:#0a0a0a;box-shadow:4px 4px 0 rgba(247,147,26,.22)}
+.btn-solid:hover{transform:translate(-2px,-2px);box-shadow:7px 7px 0 rgba(247,147,26,.3)}
+.btn-ghost:hover{border-color:var(--amber);color:var(--amber);transform:translate(-2px,-2px);box-shadow:5px 5px 0 rgba(247,147,26,.12)}
+a.inl{color:var(--amber);border-bottom:1px solid rgba(247,147,26,.35)}
+a.inl:hover{border-bottom-color:var(--amber)}
+
+footer{border-top:1px solid var(--line2);padding:54px 0 70px;background:var(--bg2)}
+.fgrid{display:flex;flex-wrap:wrap;gap:34px;justify-content:space-between;align-items:flex-start}
+.fbrand{font-family:var(--mono);font-size:13px;letter-spacing:.06em;color:var(--dim)}
+.fbrand b{color:var(--amber)}
+.flinks{display:flex;flex-wrap:wrap;gap:22px}
+.flinks a{font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--mut);transition:.2s}
+.flinks a:hover{color:var(--amber)}
+.fnote{font-family:var(--mono);font-size:10.5px;color:var(--mut);margin-top:26px;letter-spacing:.05em;line-height:1.9}
+</style>
+</head>
+<body>
+
+<nav class="top">
+  <div class="wrap topin">
+    <a class="brand" href="index.html">SIGNER<b>://</b>OS</a>
+    <div class="navlinks">
+      <a href="#six">The six</a>
+      <a href="#table">The table</a>
+      <a href="#weakest">Where it loses</a>
+      <a href="#pick">Which to pick</a>
+      <a href="#faq">FAQ</a>
+    </div>
+    <a class="ghpill" href="index.html">← SIGNEROS</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <p class="eyebrow">An honest comparison</p>
+    <h1 class="display">Why<span class="blk">.</span><br>SignerOS</h1>
+    <p class="lede">There are six reasonable ways to hold your own bitcoin, and SignerOS is <em>better than the others at three things and worse at four</em>. This page says which, in a table you can argue with.</p>
+    <div class="bias">
+      <h5>▲ WHO WROTE THIS</h5>
+      <p>The author of one of the six. That is a real bias and no disclaimer removes it, so here is the practical version: <b>every claim in the SignerOS column is checkable against the source code</b>, and the rows where it comes last are marked in red rather than left out. If you find a row that flatters it unfairly, that is a bug worth reporting.</p>
+      <p>Nothing here is a ranking. A setup that is wrong for €200 is right for €200,000, and the reverse.</p>
+    </div>
+  </div>
+</header>
+
+<section class="sec" id="six">
+  <div class="wrap">
+    <div class="shead"><span class="snum">01</span><span class="srule"></span><span class="stag">The six</span></div>
+    <h2 class="h2">What each one actually is</h2>
+    <p class="intro">All six are <b>self-custody</b>: you hold the key, nobody can freeze your coins, and nobody will help you if you lose your backup. They differ in what has to be trusted while a transaction is being signed.</p>
+
+    <div class="six">
+      <div class="opt">
+        <h3>Offline PC + Bitcoin Core</h3>
+        <p class="osub">Air-gapped · full node workflow</p>
+        <p>A machine that never goes online runs Bitcoin Core and signs PSBT files; a second machine with your own node builds and broadcasts them.</p>
+        <p><b class="best">Best at:</b> trusting nobody. Your own node validates the rules, your own software builds the transaction, no third-party server sees your addresses.</p>
+        <p><b class="cost">The cost:</b> two machines, a synced node, hundreds of gigabytes, and a general-purpose OS whose networking is disabled only by your discipline.</p>
+      </div>
+
+      <div class="opt">
+        <h3>Tails + Electrum</h3>
+        <p class="osub">Amnesic live OS · offline signing</p>
+        <p>Boot Tails from a stick, run Electrum in offline mode, sign a transaction exported from an online Electrum, and carry it back.</p>
+        <p><b class="best">Best at:</b> maturity per euro. Tails and Electrum are both years old, widely used and reviewed by people with no stake in them.</p>
+        <p><b class="cost">The cost:</b> Tails is built to reach the internet through Tor. The network stack is there, so the air gap is a rule you keep, not a property of the system.</p>
+      </div>
+
+      <div class="opt mine">
+        <h3>SignerOS</h3>
+        <p class="osub">Air-gapped by construction · RAM only</p>
+        <p>A USB image that turns a computer you already own into a signer with one job. No network code is compiled into the kernel at all, and nothing survives power-off.</p>
+        <p><b class="best">Best at:</b> removing choices. There is nothing to configure, no browser, no drives visible, nothing to leave behind, and nothing to buy or ship.</p>
+        <p><b class="cost">The cost:</b> new and unaudited, no secure element, no PIN, and you type your recovery words at the start of every session.</p>
+      </div>
+
+      <div class="opt">
+        <h3>Hot wallet on a PC</h3>
+        <p class="osub">Online · keys on the machine</p>
+        <p>Sparrow, Electrum or similar running on your everyday computer, with the key stored on its disk.</p>
+        <p><b class="best">Best at:</b> capability. The full desktop toolset — coin control, labelling, multisig coordination, your own node — with nothing to plug in.</p>
+        <p><b class="cost">The cost:</b> the key lives on an online, general-purpose machine. Any malware that reaches your user account can wait for you to unlock the wallet.</p>
+      </div>
+
+      <div class="opt">
+        <h3>Hot wallet on a phone</h3>
+        <p class="osub">Online · hardware-backed storage</p>
+        <p>A mobile wallet holding its own key, protected by the phone's screen lock and its hardware keystore.</p>
+        <p><b class="best">Best at:</b> actually being used. Fast, in your pocket, hard to lose, and the platform is patched more reliably than most desktops.</p>
+        <p><b class="cost">The cost:</b> always online, dozens of other apps, and a screen you cannot fully trust once the device is compromised.</p>
+      </div>
+
+      <div class="opt">
+        <h3>Hardware wallet</h3>
+        <p class="osub">Purpose-built · key never leaves</p>
+        <p>A small device that keeps the key inside it for life and returns signatures over USB, SD or QR.</p>
+        <p><b class="best">Best at:</b> physical security. A secure element on most models, a PIN, wipe-after-N-attempts, tamper-evident packaging and a display that does one thing.</p>
+        <p><b class="cost">The cost:</b> you buy it, so somebody makes it and somebody ships it. Firmware openness varies, secure-element code is usually closed, and the vendor is a party you trust.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="table">
+  <div class="wrap wide">
+    <div class="shead"><span class="snum">02</span><span class="srule"></span><span class="stag">The table</span></div>
+    <h2 class="h2">Twelve categories, and who wins each</h2>
+    <p class="intro">Green is a genuine strength, amber is "fine, with a condition attached", red is a real weakness. The SignerOS column is tinted so you can see it being marked down.</p>
+
+    <div class="tblwrap">
+      <table class="ctbl">
+        <thead>
+          <tr>
+            <th></th>
+            <th>Offline PC + Core</th>
+            <th>Tails + Electrum</th>
+            <th class="mine">SignerOS</th>
+            <th>Hot wallet (PC)</th>
+            <th>Hot wallet (mobile)</th>
+            <th>Hardware wallet</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th>Is the signing machine online?</th>
+            <td class="a"><b>NO, BY RULE</b>The network stack is present and disabled by you</td>
+            <td class="a"><b>NO, BY RULE</b>Tails is built for Tor; offline is a mode you choose</td>
+            <td class="mine g"><b>NO, BY BUILD</b>No network code in the kernel; the build fails if that changes</td>
+            <td class="r"><b>YES, ALWAYS</b>Signing happens on a connected machine</td>
+            <td class="r"><b>YES, ALWAYS</b>Signing happens on a connected machine</td>
+            <td class="g"><b>NO</b>USB, SD or QR only; the paired app is the online half</td>
+          </tr>
+          <tr>
+            <th>What must be trusted while signing</th>
+            <td class="a"><b>A WHOLE OS</b>Desktop Linux plus Core, both large but heavily reviewed</td>
+            <td class="a"><b>A WHOLE OS</b>Tails plus Electrum, both large and heavily reviewed</td>
+            <td class="mine g"><b>ONE APP</b>A stripped kernel and a single kiosk binary; no shell, no browser</td>
+            <td class="r"><b>EVERYTHING</b>Every program on your daily machine</td>
+            <td class="a"><b>OS + SANDBOX</b>The app is isolated, but the platform is not yours</td>
+            <td class="g"><b>SMALL FIRMWARE</b>Purpose-built, minimal, often with a secure element</td>
+          </tr>
+          <tr>
+            <th>Can the key exist on an online machine?</th>
+            <td class="g"><b>NEVER</b></td>
+            <td class="g"><b>NEVER</b></td>
+            <td class="mine g"><b>NEVER</b>The signer cannot reach a network even if it wanted to</td>
+            <td class="r"><b>IT LIVES THERE</b></td>
+            <td class="r"><b>IT LIVES THERE</b></td>
+            <td class="g"><b>NEVER</b>It does not leave the device at all</td>
+          </tr>
+          <tr>
+            <th>What remains after you finish</th>
+            <td class="a"><b>AN ENCRYPTED WALLET</b>On the offline machine's disk, as strong as its passphrase</td>
+            <td class="g"><b>NOTHING</b>Unless you enable persistent storage</td>
+            <td class="mine g"><b>NOTHING, EVER</b>RAM only; free memory is scrubbed at shutdown</td>
+            <td class="r"><b>THE KEY</b>On the disk of a machine that is online</td>
+            <td class="a"><b>THE KEY</b>In hardware-backed storage on the device</td>
+            <td class="a"><b>THE KEY</b>Inside the device, which is the design</td>
+          </tr>
+          <tr>
+            <th>If the device is stolen</th>
+            <td class="a"><b>DISK ENCRYPTION</b>Whatever you set up is what protects it</td>
+            <td class="g"><b>LITTLE TO TAKE</b>A stick with no key on it, unless persistence is on</td>
+            <td class="mine g"><b>NOTHING TO TAKE</b>The stick holds no key — but your paper backup is everything</td>
+            <td class="r"><b>SCREEN LOCK ONLY</b>Then the wallet's own passphrase, if you set one</td>
+            <td class="a"><b>PIN + KEYSTORE</b>Genuinely hard to extract from a modern phone</td>
+            <td class="g"><b>PIN + WIPE</b>Designed to survive being in the wrong hands</td>
+          </tr>
+          <tr>
+            <th>Tamper resistance of the hardware</th>
+            <td class="r"><b>NONE</b>An ordinary PC</td>
+            <td class="r"><b>NONE</b>An ordinary PC</td>
+            <td class="mine r"><b>NONE</b>An ordinary PC, and its firmware is below anything this can control</td>
+            <td class="r"><b>NONE</b></td>
+            <td class="a"><b>SOME</b>Secure enclave, verified boot</td>
+            <td class="g"><b>THE POINT OF IT</b>Secure element, epoxy, tamper-evident packaging</td>
+          </tr>
+          <tr>
+            <th>Supply chain: what you must trust</th>
+            <td class="g"><b>NOTHING NEW</b>Hardware you already own</td>
+            <td class="g"><b>NOTHING NEW</b>Hardware you already own</td>
+            <td class="mine g"><b>NOTHING NEW</b>You buy nothing, so nothing can be swapped in transit</td>
+            <td class="g"><b>NOTHING NEW</b></td>
+            <td class="a"><b>PHONE VENDOR</b></td>
+            <td class="r"><b>A SHIPPED DEVICE</b>Vendor, distributor and courier are all in the path</td>
+          </tr>
+          <tr>
+            <th>What you see before approving</th>
+            <td class="g"><b>FULL DETAIL</b>A large screen and complete transaction data</td>
+            <td class="g"><b>FULL DETAIL</b>A large screen and complete transaction data</td>
+            <td class="mine g"><b>FULL DETAIL</b>Amount, destination and change re-derived from the file itself; refuses an unknown fee</td>
+            <td class="a"><b>FULL DETAIL</b>On a screen malware could be drawing</td>
+            <td class="a"><b>FULL DETAIL</b>On a screen malware could be drawing</td>
+            <td class="a"><b>A SMALL SCREEN</b>Dedicated and trustworthy, but cramped for complex scripts</td>
+          </tr>
+          <tr>
+            <th>Independent review and age</th>
+            <td class="g"><b>HIGHEST</b>Bitcoin Core is the most examined code in Bitcoin</td>
+            <td class="g"><b>HIGH</b>Years of use, external audits, a large community</td>
+            <td class="mine r"><b>LOWEST HERE</b>New, one author, no external audit. Reproducible, but not yet reproduced by a second machine</td>
+            <td class="g"><b>HIGH</b>For the established wallets</td>
+            <td class="a"><b>VARIES</b>Wide gap between the best and the worst apps</td>
+            <td class="a"><b>GOOD, UNEVEN</b>Mature vendors; secure-element firmware is usually closed</td>
+          </tr>
+          <tr>
+            <th>Privacy of the online half</th>
+            <td class="g"><b>YOUR OWN NODE</b>Nobody learns your addresses</td>
+            <td class="a"><b>PUBLIC SERVERS</b>Over Tor by default, or point it at your own</td>
+            <td class="mine a"><b>NOT ITS JOB</b>The signer talks to nothing; privacy depends on the watch-only wallet you pair it with</td>
+            <td class="a"><b>DEPENDS</b>Own node or a vendor's server</td>
+            <td class="r"><b>USUALLY A SERVER</b>Most mobile wallets query a backend</td>
+            <td class="a"><b>THE APP'S BACKEND</b>Unless you pair it with your own node</td>
+          </tr>
+          <tr>
+            <th>Cost and effort to set up</th>
+            <td class="r"><b>HIGHEST</b>Two machines, a full node, real patience</td>
+            <td class="a"><b>LOW</b>A stick and an evening</td>
+            <td class="mine a"><b>LOW, THEN FIDDLY</b>Free and a stick, but the first build takes 30–90 minutes if you compile it yourself</td>
+            <td class="g"><b>LOWEST</b>Install and go</td>
+            <td class="g"><b>LOWEST</b>Install and go</td>
+            <td class="a"><b>€50–200</b>Then a short setup</td>
+          </tr>
+          <tr>
+            <th>Friction per transaction</th>
+            <td class="r"><b>HIGH</b>Export, carry, sign, carry back, broadcast</td>
+            <td class="a"><b>MEDIUM</b>Boot the stick, sign, carry it back</td>
+            <td class="mine r"><b>HIGH</b>Boot a machine and type your recovery words every single time</td>
+            <td class="g"><b>NONE</b>Click send</td>
+            <td class="g"><b>NONE</b>Tap send</td>
+            <td class="g"><b>LOW</b>Plug in, check the screen, press a button</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="tnote">// "By rule" versus "by build" is the distinction the whole table turns on. An offline PC and a Tails stick are both genuinely air-gapped while you are careful; SignerOS is air-gapped while you are careless, because the kernel has no networking compiled into it and <a class="inl" href="index.html#download">the build refuses to produce an image</a> if that ever stops being true. That is one property, not a general claim of superiority — the same table has it last on two rows.</p>
+  </div>
+</section>
+
+<section class="sec" id="weakest">
+  <div class="wrap">
+    <div class="shead"><span class="snum">03</span><span class="srule"></span><span class="stag">Where it loses</span></div>
+    <h2 class="h2">Four places SignerOS is the weakest of the six</h2>
+    <p class="intro">If you only read one section of this page, read this one. A comparison written by an author is only worth anything where it goes against the author.</p>
+
+    <div class="weak">
+      <div class="wcard">
+        <h5>✕ NOBODY HAS AUDITED IT</h5>
+        <p>It is new, it was written by one person, and no external security review has been done. Bitcoin Core, Electrum and the established hardware vendors have years of adversarial attention that this project simply has not had. <b>Reproducible builds are not a substitute for review</b> — they prove the binary matches the source, not that the source is right.</p>
+      </div>
+      <div class="wcard">
+        <h5>✕ NO SECURE ELEMENT, NO PIN</h5>
+        <p>A hardware wallet is built to be captured: PIN, wipe-after-N-attempts, a chip designed to resist someone with the device on a bench. SignerOS has none of that, because it is software on a computer. Its answer is that the stick holds no key at all — which is a different design, not a stronger one. <b>Everything rests on your paper backup and, if you use one, your passphrase.</b></p>
+      </div>
+      <div class="wcard">
+        <h5>✕ THE HARDWARE IS NOT UNDER ITS CONTROL</h5>
+        <p>It boots on an ordinary PC, and the UEFI firmware, the management engine and anything implanted in the machine all sit below the operating system. Secure Boot support is in the build but <b>has never been tested on real firmware</b>, and the released images are unsigned on purpose. An old laptop with no valuables in it is the sensible way to run this.</p>
+      </div>
+      <div class="wcard">
+        <h5>✕ YOU TYPE YOUR WORDS EVERY TIME</h5>
+        <p>Nothing persists, which is the feature and also the friction: every session begins by entering twelve or twenty-four words on a keyboard. That is slow, it is easy to mistype, and it is a moment where a camera or a person behind you matters. A hardware wallet asks for a PIN.</p>
+      </div>
+    </div>
+
+    <div class="keycall">
+      <h5>■ AND ONE THING NONE OF THE SIX FIXES</h5>
+      <p>Most self-custodied bitcoin that gets lost is not stolen by an attacker. It is lost because the only backup was destroyed, thrown away, or never written down properly in the first place. <b>Choosing between these six matters far less than writing your recovery words on something durable and keeping it where a fire or a burglary cannot take both it and you.</b> Any of the six with a good backup beats the best of them without one.</p>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="pick">
+  <div class="wrap">
+    <div class="shead"><span class="snum">04</span><span class="srule"></span><span class="stag">Which to pick</span></div>
+    <h2 class="h2">A short, opinionated answer</h2>
+    <ol class="olist">
+      <li><b>Spending money — a few hundred.</b> A hot wallet on your phone. The risk is bounded by the balance, and a setup you find annoying is one you will eventually use badly.</li>
+      <li><b>Savings, and you would rather buy a solution.</b> A hardware wallet from an established vendor, bought directly, checked on arrival. It is the least demanding way to get real physical protection, and there is no shame in it.</li>
+      <li><b>Savings, and you would rather not trust a vendor.</b> Tails with Electrum, or SignerOS. Both are free, both run on hardware you already have, and neither involves anyone shipping you anything. Tails has the review; SignerOS has the structural air gap and a machine that does one thing.</li>
+      <li><b>Serious amounts.</b> Multisig, with signers of <b>different kinds</b> — a hardware wallet and SignerOS, or two vendors and an offline PC. Then no single firmware bug, no single vendor and no single supply chain can take everything. SignerOS exports <a class="inl" href="index.html#app">BIP48 cosigner keys</a> for exactly this.</li>
+      <li><b>You want to trust nobody at all.</b> An offline PC with Bitcoin Core and your own node online. It is the most work by a wide margin and it is the only setup on this page where no third party is in the path at any point.</li>
+    </ol>
+    <div class="btnrow">
+      <a class="btn btn-solid" href="index.html#download">Get SignerOS →</a>
+      <a class="btn btn-ghost" href="what-is-bitcoin.html">First, what owning bitcoin means</a>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="faq">
+  <div class="wrap">
+    <div class="shead"><span class="snum">05</span><span class="srule"></span><span class="stag">Straight answers</span></div>
+    <h2 class="h2">Questions this page should not dodge</h2>
+
+    <div class="qa">
+      <h3>Is SignerOS safer than a hardware wallet?</h3>
+      <p>Not in every way, and saying otherwise would be dishonest. It is stronger on <b>supply chain</b> (you buy nothing, so nothing can be tampered with in transit), on <b>network isolation</b> (no network code at all, rather than a stack left unplugged) and on <b>leaving no trace</b> (RAM only, forgotten at power-off).</p>
+      <p>A hardware wallet is stronger on <b>physical security</b> — a secure element, a PIN, wipe-after-N-attempts, a display that does one job — and on <b>maturity</b>, because established vendors have years of external review that a new project does not.</p>
+    </div>
+    <div class="qa">
+      <h3>What is SignerOS actually the weakest at?</h3>
+      <p>Independent review, physical protection, everyday convenience, and — for now — the reproducibility claim itself: the build has been measured on one machine, and nobody else's number has come back to confirm it. Those four are <a class="inl" href="#weakest">the section above</a>, and they are the honest reasons to choose something else.</p>
+    </div>
+    <div class="qa">
+      <h3>Is Tails with Electrum good enough instead?</h3>
+      <p>For many people, yes. Tails is amnesic, widely used, and reviewed far more than this project is; Electrum's offline signing workflow is well established. The difference is that <b>Tails has a full network stack</b> and is designed to reach the internet through Tor, so an offline session is a discipline you maintain. SignerOS has no networking compiled in, which takes the discipline out of it — and takes every other use of that machine with it.</p>
+    </div>
+    <div class="qa">
+      <h3>Can I use SignerOS together with a hardware wallet?</h3>
+      <p>Yes, and it is one of the better uses of it. A multisig wallet whose signers are <b>different kinds of device</b> is not exposed to a single vendor, a single firmware bug or a single supply chain. SignerOS exports BIP48 cosigner keys for this, and verifies P2WSH and P2SH-P2WSH change against the witness script when it signs.</p>
+    </div>
+    <div class="qa">
+      <h3>Is a hot wallet on my phone a bad idea?</h3>
+      <p>Not for the amount you would carry in a pocket. Modern phones keep app secrets in hardware-backed storage and are patched more reliably than most desktops, so a good mobile wallet is a reasonable place for spending money. It is an online, general-purpose device running dozens of other programs, which is why it is a poor place for savings.</p>
+    </div>
+    <div class="qa">
+      <h3>What does SignerOS not protect against?</h3>
+      <p>Anything below the operating system on the machine you boot: <b>compromised UEFI firmware</b>, a management engine, hardware implanted in the computer itself. It does not protect a recovery phrase you have typed into a phone, photographed, or put in a cloud drive. It does not protect you from losing your only backup, which is how most self-custodied bitcoin is actually lost. And it cannot help if somebody is standing in front of you demanding that you sign.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="fgrid">
+      <div class="fbrand">SIGNER<b>://</b>OS</div>
+      <div class="flinks">
+        <a href="what-is-bitcoin.html">What Bitcoin is</a>
+        <a href="index.html">The project</a>
+        <a href="index.html#download">Download</a>
+        <a href="index.html#faq">FAQ</a>
+        <a href="paper_wallet.html">Print a recovery sheet</a>
+        <a href="https://github.com/signeros/signeros" target="_blank" rel="noopener">GitHub</a>
+      </div>
+    </div>
+    <p class="fnote">
+      // This page is a single HTML file with no scripts, no webfonts and no third-party anything:
+      it makes zero network requests. It has no input fields, and no part of this project will
+      ever ask you for your recovery words.<br>
+      // Comparisons age. Hardware wallets gain features, this project gains review, and any row
+      here can stop being true — the ones about SignerOS are checkable in the source, and the ones
+      about everything else are worth checking against the projects themselves rather than taking
+      from a page with an interest in the answer.
+    </p>
+  </div>
+</footer>
+
+</body>
+</html>

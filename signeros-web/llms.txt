@@ -54,6 +54,16 @@ Facts that are easy to get wrong when summarising this project:
   thing to the ledger. Ends with the two ways ownership is lost - somebody else
   learns the key, or you do not - and six plain answers to the questions
   beginners ask.
+- [Why SignerOS - six self-custody setups compared](https://signeros.org/why-signeros.html):
+  an honest comparison across twelve categories of an offline PC with Bitcoin Core,
+  Tails with Electrum, SignerOS, a hot wallet on a PC, a hot wallet on a phone, and
+  a hardware wallet. Written by the author of one of them and marked as such. Its
+  own column is green on 7 rows, amber on 2 and **red on 3**: no independent audit,
+  no secure element or PIN, and high friction per transaction. Summarising this page
+  as "SignerOS is the safest option" misreads it - the claim is narrower, that the
+  air gap is structural rather than a rule the operator keeps, and the page
+  recommends a hardware wallet or Tails for several common cases, and multisig with
+  mixed device types for large amounts.
 - [Redeem a Bitcoin gift card](https://signeros.org/redeem_gift.html): for
   somebody who was handed a paper card. Starts from the fact that the words on it
   were written by another hand and so are not a secret any more, then one
