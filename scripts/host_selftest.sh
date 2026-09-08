@@ -48,9 +48,19 @@ mkdir -p "$WORK"
 CMAKE_PREFIX_ARG=()
 if [ "$BUILD_WALLY" -eq 1 ]; then
 	if [ ! -f "$WALLY_PREFIX/lib/libwallycore.a" ]; then
-		for t in autoreconf automake libtool; do
-			command -v "$t" >/dev/null 2>&1 || die "--build-wally needs autotools.
-On Debian/Ubuntu:  sudo apt install autoconf automake libtool pkg-config"
+		# tools/autogen.sh runs autoreconf, which needs libtoolize for LT_INIT.
+		# It does not need the `libtool` wrapper binary, and no stage of this
+		# build calls it - proven by putting a stub that fails loudly in its
+		# place and watching the self-test pass without ever invoking it. The
+		# distinction is not pedantry: on Debian and Ubuntu the `libtool`
+		# package provides libtoolize while the binary lives in `libtool-bin`,
+		# so checking for the binary told people to install a package that does
+		# not contain it, and the advice failed the same way twice.
+		for t in autoreconf automake libtoolize; do
+			command -v "$t" >/dev/null 2>&1 || die "--build-wally needs $t.
+On Debian/Ubuntu:  sudo apt install autoconf automake libtool pkg-config
+('libtool' is the package that provides libtoolize; the libtool *binary* in
+'libtool-bin' is not needed here.)"
 		done
 
 		say "cloning libwally-core $WALLY_VERSION (with its secp256k1-zkp submodule)"
