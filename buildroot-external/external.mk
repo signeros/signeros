@@ -7,6 +7,16 @@
 
 include $(sort $(wildcard $(BR2_EXTERNAL_SIGNEROS_PATH)/package/*/*.mk))
 
+# Libtool embeds the absolute build directory in PCRE2's RPATH. fix-rpath
+# later overwrites it with Xs, but leaves its length (and ELF layout) intact.
+# Prevent it at link time; these target libraries live in the default /usr/lib.
+# Keep this in the external tree so the pinned Buildroot checkout stays clean.
+define SIGNEROS_PCRE2_DISABLE_RPATH
+	$(SED) 's|^hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=""|g' $(@D)/libtool
+	$(SED) 's|^runpath_var=LD_RUN_PATH|runpath_var=SIGNEROS_UNUSED_RUNPATH|g' $(@D)/libtool
+endef
+PCRE2_POST_CONFIGURE_HOOKS += SIGNEROS_PCRE2_DISABLE_RPATH
+
 SIGNEROS_BOARD_DIR = $(BR2_EXTERNAL_SIGNEROS_PATH)/board/signeros
 
 ################################################################################

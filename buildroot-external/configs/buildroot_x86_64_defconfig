@@ -18,6 +18,9 @@ BR2_x86_64=y
 BR2_TOOLCHAIN_BUILDROOT_GLIBC=y
 BR2_TOOLCHAIN_BUILDROOT_CXX=y
 BR2_KERNEL_HEADERS_AS_KERNEL=y
+# GCC's custom configure command does not inherit Buildroot's --disable-nls.
+# Otherwise libstdc++ enables gettext iff the build host has msgfmt installed.
+BR2_EXTRA_GCC_CONFIG_OPTIONS="--disable-nls"
 
 #
 # Build posture: bit-identical rebuilds, and the smallest footprint that is

@@ -1187,6 +1187,15 @@ command line — so agreeing on it is agreeing on everything that executes. Two
 people on different machines should get the same answer; if they do not, that is
 a bug worth reporting.
 
+**v1.0.3 cross-machine mismatch (2026-09-08):** the downloaded release still
+fails independent rebuilding. Four initramfs files differ: three PCRE2 binaries
+retain the length of a removed build-directory RPATH, and libstdc++ enables NLS
+when the build host has `msgfmt`. The current tree disables both sources of
+variation at build time. These fixes change the expected hashes; they do not
+make the old v1.0.3 assets reproducible under the corrected recipe. See the
+[comparison report](docs/reproducibility-1.0.3.md) for evidence, validation and
+rebuild instructions. A release from the corrected source needs new hashes.
+
 **It was reported, and it was a bug.** Until 2026-08-25 this section was simply
 false. Two `make clean && make image` runs of the same commit produced two
 different `bzImage` hashes — on one machine, with nothing changed in between.
@@ -1238,7 +1247,8 @@ Secure Boot signature is made with your key, so the image differs per key.
 Reproducing the payload and signing it locally is the intended workflow, the same
 split Debian and Fedora use.
 
-An **unsigned** one now does match, which it did not until 2026-09-06. The
+The **unsigned** image wrapper was made deterministic on 2026-09-06; its
+embedded payload still had the v1.0.3 defects described above. The
 released 1.0.2 image and a local rebuild of the same commit differed in exactly
 14 bytes: the creation and write timestamps in each partition's FAT
 volume-label directory entry, which `mkfs.vfat` takes from the clock rather than
