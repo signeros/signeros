@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Bitcoin is not a file and it is not inside your hardware wallet. It is an entry in a public ledger, and owning it means knowing the private key that can move that entry. Gold is a physical asset; bitcoin is an informational one. What that changes, in plain words.">
+<title>What Bitcoin Is, and What Owning It Means — Simply Bitcoin</title>
+<link rel="canonical" href="https://signeros.org/what-is-bitcoin.html">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="SignerOS">
+<meta property="og:locale" content="en">
+<meta property="og:title" content="What Bitcoin Is, and What Owning It Means — Simply Bitcoin">
+<meta property="og:description" content="Your bitcoin is not on your computer, your hardware wallet or your USB stick. It is on the blockchain; what you actually hold is a key. Gold is physical property, bitcoin is informational property — and everything else follows from that.">
+<meta property="og:url" content="https://signeros.org/what-is-bitcoin.html">
+<meta property="og:image" content="https://signeros.org/og-signeros.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="SignerOS — air-gapped Bitcoin wallet on a USB stick">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="What Bitcoin Is, and What Owning It Means — Simply Bitcoin">
+<meta name="twitter:description" content="Bitcoin lives on a public ledger, not in your devices. Owning it means knowing a key — paper, metal or memory, the ledger cannot tell the difference.">
+<meta name="twitter:image" content="https://signeros.org/og-signeros.png">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebPage",
+      "@id": "https://signeros.org/what-is-bitcoin.html",
+      "url": "https://signeros.org/what-is-bitcoin.html",
+      "name": "What Bitcoin Is, and What Owning It Means — Simply Bitcoin",
+      "description": "Bitcoin is an entry in a public ledger rather than a file on a device. Owning it means knowing a private key, which makes it informational property rather than physical property like gold.",
+      "inLanguage": "en",
+      "isPartOf": { "@id": "https://signeros.org/#website" },
+      "primaryImageOfPage": {
+        "@type": "ImageObject",
+        "url": "https://signeros.org/og-signeros.png"
+      },
+      "about": [
+        { "@type": "Thing", "name": "What Bitcoin is" },
+        { "@type": "Thing", "name": "Bitcoin ownership and private keys" },
+        { "@type": "Thing", "name": "Where bitcoin is stored" },
+        { "@type": "Thing", "name": "Hardware wallets and recovery phrases" }
+      ]
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "SignerOS", "item": "https://signeros.org/" },
+        { "@type": "ListItem", "position": 2, "name": "Simply Bitcoin", "item": "https://signeros.org/what-is-bitcoin.html" }
+      ]
+    },
+    {
+      "@type": "Article",
+      "headline": "What Bitcoin Is, and What Owning It Means",
+      "description": "Bitcoin is a ledger entry, not a file. Owning it means knowing a private key — which makes it informational property, not physical property.",
+      "inLanguage": "en",
+      "isAccessibleForFree": true,
+      "mainEntityOfPage": { "@id": "https://signeros.org/what-is-bitcoin.html" },
+      "image": "https://signeros.org/og-signeros.png",
+      "author": { "@type": "Organization", "name": "SignerOS" },
+      "publisher": { "@type": "Organization", "name": "SignerOS" }
+    },
+    {
+      "@type": "FAQPage",
+      "@id": "https://signeros.org/what-is-bitcoin.html#faq",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Where are my bitcoins actually stored?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "On the blockchain — a public ledger kept in identical copies on tens of thousands of computers. Your coins are an entry in that ledger saying an amount can be spent by whoever produces a particular signature. They are not a file, and they are not stored on any device you own."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is my bitcoin inside my hardware wallet?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "No. A hardware wallet holds a key, not coins. It is a keyholder, not a vault. The coins stay on the ledger whatever happens to the device."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What happens to my bitcoin if my hardware wallet breaks or is stolen?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Nothing happens to the coins. If you have your recovery words, you enter them into another wallet and you are exactly where you were. If a thief has the device and it is protected by a PIN or passphrase they do not know, they still cannot sign. What you must never lose is the words."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Can someone steal my bitcoin without touching any of my devices?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes, if they learn your private key or your recovery words. Information can be copied, so a theft can happen without anything being taken away from you — you would still have your words, and the coins would still be gone. This is why the words must never be typed into an online machine, photographed, or stored in a cloud."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Does it matter whether my recovery phrase is on paper, on metal, or only in my memory?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Not to the ledger — it cannot tell the difference and does not try. It matters a great deal to you: paper burns, metal survives fire, and memory fails silently and without warning. Memorising a phrase and keeping no physical backup is how people lose coins permanently."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What happens if I lose my recovery words?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "The coins stay on the ledger and nobody can move them, including you. There is no support line, no password reset and no authority that can restore access. In Bitcoin, forgetting is a way of losing property that has no equivalent in the physical world."
+          }
+        }
+      ]
+    }
+  ]
+}
+</script>
+<style>
+/* No webfonts, no CDN, no analytics, no input boxes: this page makes zero
+   network requests. Palette and type are index.html's. */
+:root{
+  --bg:#0d1117; --bg2:#10151c; --panel:#161b22; --panel2:#11161d;
+  --line:#30363d; --line2:#222932;
+  --ink:#e6edf3; --dim:#9aa4b2; --mut:#6b7683;
+  --amber:#f7931a; --amber2:#ffb54d; --green:#3fb950; --red:#f85149; --warnc:#d29922;
+  --gold:#c9a227;
+  --disp:ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+  --sans:ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+  --mono:ui-monospace,'SFMono-Regular','Cascadia Mono','DejaVu Sans Mono',Menlo,Consolas,monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.65;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+::selection{background:var(--amber);color:#0a0a0a}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:1160px;margin:0 auto;padding:0 24px}
+section{scroll-margin-top:84px}
+
+/* nav */
+nav.top{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(7,9,13,.93);border-bottom:1px solid var(--line2)}
+.topin{display:flex;align-items:center;justify-content:space-between;height:58px}
+.brand{font-family:var(--mono);font-size:14px;letter-spacing:.06em}
+.brand b{color:var(--amber);font-weight:600}
+.navlinks{display:flex;gap:26px}
+.navlinks a{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);transition:color .2s}
+.navlinks a:hover,.navlinks a.on{color:var(--amber)}
+.ghpill{font-family:var(--mono);font-size:11px;letter-spacing:.1em;border:1px solid var(--line);padding:7px 13px;color:var(--dim);transition:.2s}
+.ghpill:hover{border-color:var(--amber);color:var(--amber);transform:translateY(-1px)}
+@media(max-width:860px){.navlinks{display:none}}
+
+/* hero */
+.hero{padding:132px 0 74px;background:
+  radial-gradient(900px 460px at 82% -12%,rgba(247,147,26,.07),transparent 60%),
+  linear-gradient(180deg,var(--bg2),var(--bg))}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.24em;color:var(--amber);text-transform:uppercase}
+.display{font-family:var(--disp);font-weight:700;font-size:clamp(2.2rem,5.4vw,3.9rem);line-height:1.02;letter-spacing:.01em;margin:20px 0 18px;text-transform:uppercase}
+.display .blk{color:var(--amber)}
+.lede{font-size:clamp(1.02rem,1.5vw,1.16rem);color:var(--dim);max-width:44em}
+.lede em{color:var(--ink);font-style:normal;border-bottom:1px solid var(--amber)}
+.chips{display:flex;flex-wrap:wrap;gap:9px;margin:26px 0 0}
+.chip{font-family:var(--mono);font-size:10.5px;letter-spacing:.13em;border:1px solid var(--line);color:var(--dim);padding:6px 11px}
+.chip.hot{border-color:rgba(247,147,26,.5);color:var(--amber)}
+
+/* sections */
+.sec{padding:92px 0;border-top:1px solid var(--line2)}
+.shead{display:flex;align-items:center;gap:18px;margin-bottom:14px}
+.snum{font-family:var(--mono);font-size:12px;letter-spacing:.2em;color:var(--amber);white-space:nowrap}
+.srule{flex:1;height:1px;background:var(--line2)}
+.stag{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;color:var(--mut);text-transform:uppercase;white-space:nowrap}
+.h2{font-family:var(--disp);font-weight:700;font-size:clamp(1.6rem,3.4vw,2.4rem);text-transform:uppercase;line-height:1.14;margin-bottom:16px}
+.intro{color:var(--dim);max-width:52em;margin-bottom:10px}
+.intro b{color:var(--ink);font-weight:600}
+.intro+.intro{margin-top:14px}
+.h3{font-family:var(--disp);font-weight:700;font-size:1.22rem;letter-spacing:.05em;text-transform:uppercase;margin:42px 0 8px}
+
+/* the one-line mental model */
+.flow{font-family:var(--mono);font-size:12.5px;background:var(--panel2);border-left:2px solid var(--amber);padding:14px 16px;margin:26px 0 0;color:var(--ink);max-width:62em;overflow-x:auto;white-space:nowrap}
+.flow i{color:var(--mut);font-style:normal}
+
+/* gold vs bitcoin */
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:34px}
+@media(max-width:940px){.duo{grid-template-columns:1fr}}
+.route{border:1px solid var(--line);background:var(--panel);padding:26px;position:relative;overflow:hidden}
+.route::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:var(--amber)}
+.route.metal::before{background:var(--gold)}
+.route h3{font-family:var(--disp);font-weight:700;font-size:1.32rem;letter-spacing:.05em;text-transform:uppercase;margin-bottom:6px}
+.route .rsub{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;color:var(--mut);margin-bottom:16px;text-transform:uppercase}
+.route p{color:var(--dim);font-size:.93rem;margin-bottom:12px}
+.route p:last-child{margin-bottom:0}
+.route b{color:var(--ink);font-weight:600}
+
+/* table */
+.tblwrap{overflow-x:auto;margin-top:30px}
+.tbl{width:100%;border-collapse:collapse;font-size:.92rem;min-width:640px}
+.tbl th,.tbl td{text-align:left;padding:14px 16px;border-bottom:1px solid var(--line2);vertical-align:top}
+.tbl th{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;color:var(--mut);text-transform:uppercase;border-bottom:1px solid var(--line)}
+.tbl td:first-child{color:var(--ink);width:26%}
+.tbl td{color:var(--dim)}
+.tbl th:nth-child(3),.tbl td:nth-child(3){border-left:1px solid var(--line2)}
+
+/* call-outs */
+.keycall{border:1px solid rgba(247,147,26,.55);border-left:3px solid var(--amber);background:rgba(247,147,26,.07);padding:20px 22px;margin-top:30px;max-width:62em}
+.keycall h5{font-family:var(--mono);font-size:11px;letter-spacing:.18em;color:var(--amber);margin-bottom:10px}
+.keycall p{color:var(--dim);font-size:.95rem;margin-bottom:9px}
+.keycall p:last-child{margin-bottom:0}
+.keycall b{color:var(--ink);font-weight:600}
+.cardwarn{border:1px solid rgba(210,153,34,.45);background:rgba(210,153,34,.06);padding:17px 19px;max-width:62em;margin-top:24px}
+.cardwarn h5{font-family:var(--mono);font-size:11px;letter-spacing:.18em;color:var(--warnc);margin-bottom:9px}
+.cardwarn p{font-size:.92rem;color:var(--dim)}
+.cardwarn b{color:var(--ink);font-weight:600}
+
+/* the two surprises */
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:30px}
+@media(max-width:860px){.pair{grid-template-columns:1fr}}
+.pcard{border:1px solid var(--line);border-left:2px solid var(--green);background:var(--panel2);padding:18px 20px}
+.pcard.bad{border-left-color:var(--red)}
+.pcard h5{font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--green);margin-bottom:8px}
+.pcard.bad h5{color:var(--red)}
+.pcard p{font-size:.92rem;color:var(--dim)}
+.pcard b{color:var(--ink);font-weight:600}
+
+/* faq */
+.qa{border-top:1px solid var(--line2);padding:22px 0}
+.qa:last-of-type{border-bottom:1px solid var(--line2)}
+.qa h3{font-family:var(--disp);font-weight:700;font-size:1.06rem;letter-spacing:.02em;margin-bottom:8px}
+.qa p{color:var(--dim);font-size:.94rem;max-width:56em}
+.qa b{color:var(--ink);font-weight:600}
+
+/* closing */
+.btnrow{display:flex;flex-wrap:wrap;gap:14px;margin-top:26px}
+.btn{display:inline-block;font-family:var(--mono);font-size:12.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;padding:14px 22px;border:1px solid var(--line);border-radius:2px;transition:transform .18s ease,box-shadow .18s ease,border-color .18s,color .18s}
+.btn-solid{background:var(--amber);border-color:var(--amber);color:#0a0a0a;box-shadow:4px 4px 0 rgba(247,147,26,.22)}
+.btn-solid:hover{transform:translate(-2px,-2px);box-shadow:7px 7px 0 rgba(247,147,26,.3)}
+.btn-ghost:hover{border-color:var(--amber);color:var(--amber);transform:translate(-2px,-2px);box-shadow:5px 5px 0 rgba(247,147,26,.12)}
+a.inl{color:var(--amber);border-bottom:1px solid rgba(247,147,26,.35)}
+a.inl:hover{border-bottom-color:var(--amber)}
+
+/* footer */
+footer{border-top:1px solid var(--line2);padding:54px 0 70px;background:var(--bg2)}
+.fgrid{display:flex;flex-wrap:wrap;gap:34px;justify-content:space-between;align-items:flex-start}
+.fbrand{font-family:var(--mono);font-size:13px;letter-spacing:.06em;color:var(--dim)}
+.fbrand b{color:var(--amber)}
+.flinks{display:flex;flex-wrap:wrap;gap:22px}
+.flinks a{font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--mut);transition:.2s}
+.flinks a:hover{color:var(--amber)}
+.fnote{font-family:var(--mono);font-size:10.5px;color:var(--mut);margin-top:26px;letter-spacing:.05em;line-height:1.9}
+</style>
+</head>
+<body>
+
+<nav class="top">
+  <div class="wrap topin">
+    <a class="brand" href="index.html">SIGNER<b>://</b>OS</a>
+    <div class="navlinks">
+      <a href="#where">Where it is</a>
+      <a href="#owning">What owning means</a>
+      <a href="#devices">Not in your device</a>
+      <a href="#practice">What follows</a>
+      <a href="#faq">FAQ</a>
+    </div>
+    <a class="ghpill" href="index.html">← SIGNEROS</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <p class="eyebrow">Bitcoin, in plain words</p>
+    <h1 class="display">Simply<span class="blk">.</span><br>Bitcoin</h1>
+    <p class="lede">Bitcoin is not a file, and it is not inside your wallet. It is a line in a list that tens of thousands of computers each keep a copy of — and owning it means <em>knowing the one secret that can move that line</em>. Almost everything that feels strange about Bitcoin follows from those two sentences.</p>
+    <div class="chips">
+      <span class="chip hot">NO JARGON</span>
+      <span class="chip">FIVE MINUTES</span>
+      <span class="chip">NOTHING TO INSTALL</span>
+    </div>
+  </div>
+</header>
+
+<section class="sec" id="where">
+  <div class="wrap">
+    <div class="shead"><span class="snum">01</span><span class="srule"></span><span class="stag">Where it is</span></div>
+    <h2 class="h2">What Bitcoin is, and where it actually lives</h2>
+    <p class="intro">Bitcoin is a <b>ledger</b>: a public list of every transaction ever made, kept in identical copies on tens of thousands of computers around the world. Anybody can download the whole list, and they all agree on what it says.</p>
+    <p class="intro">A bitcoin is not an object in that list. It is an <b>entry</b> — a line saying that a certain amount can be spent by whoever can produce one particular signature. That is the entire substance of it. There is no coin, no file, no folder of money sitting on a disk somewhere waiting to be copied off.</p>
+    <p class="intro">So when somebody asks where their bitcoin is, the honest answer is: <b>in the ledger, everywhere the ledger is copied, and in no single place you could point at.</b> If every device you own burned tonight, the ledger would not change by a single character — because your coins were never on those devices to begin with.</p>
+  </div>
+</section>
+
+<section class="sec" id="owning">
+  <div class="wrap">
+    <div class="shead"><span class="snum">02</span><span class="srule"></span><span class="stag">What owning means</span></div>
+    <h2 class="h2">Two kinds of property: one physical, one informational</h2>
+    <p class="intro">The clearest way to understand Bitcoin ownership is to put it next to gold, because they are opposites in exactly one respect — and that one respect explains everything else.</p>
+
+    <div class="duo">
+      <div class="route metal">
+        <h3>Gold</h3>
+        <p class="rsub">Physical property</p>
+        <p>You own gold by <b>holding</b> it. It is in your hand, your safe, or a vault with your name on the paperwork. Whoever physically has the metal can sell the metal.</p>
+        <p>Ownership is possession, and possession is a fact about the physical world. To take it from you, somebody has to reach the metal — and once they have, you no longer have it. You would notice.</p>
+      </div>
+      <div class="route">
+        <h3>Bitcoin</h3>
+        <p class="rsub">Informational property</p>
+        <p>You own bitcoin by <b>knowing</b>. The ledger will move those coins for anyone who can produce the right signature, and exactly one thing produces it: a secret number called the <b>private key</b>.</p>
+        <p>Ownership is knowledge. There is no object to hold and nothing to reach for — which is a strength and a danger at once, and it is worth being precise about both.</p>
+      </div>
+    </div>
+
+    <div class="tblwrap">
+      <table class="tbl">
+        <thead><tr><th></th><th>Gold</th><th>Bitcoin</th></tr></thead>
+        <tbody>
+          <tr><td>What you own</td><td>a piece of metal</td><td>a secret number — the private key</td></tr>
+          <tr><td>Where it is</td><td>wherever it physically sits</td><td>the coins are on the ledger; the key is wherever the knowledge is</td></tr>
+          <tr><td>How it moves</td><td>somebody physically carries it</td><td>nothing travels — the ledger records that it now answers to a different key</td></tr>
+          <tr><td>What a thief needs</td><td>to reach the metal and carry it away</td><td>to learn the key, which they can copy without taking anything from you</td></tr>
+          <tr><td>How you lose it by accident</td><td>you misplace an object</td><td>you forget, or destroy the last copy of, something nobody else can reconstruct</td></tr>
+          <tr><td>Proof that it is yours</td><td>you are holding it</td><td>a signature only your key could have produced</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="cardwarn">
+      <h5>▲ THE PART THAT CUTS BOTH WAYS</h5>
+      <p>Information can be <b>copied</b>. A thief does not have to take your key away from you — they only have to learn it, and you would still have your words, and the coins would still be gone. That is why a recovery phrase must never be typed into an online computer, photographed, or stored in a cloud. And it runs the other way too: nobody can restore what you forget. There is no support line and no password reset, because there is no company holding your coins — only the ledger, and the key.</p>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="devices">
+  <div class="wrap">
+    <div class="shead"><span class="snum">03</span><span class="srule"></span><span class="stag">Not in your device</span></div>
+    <h2 class="h2">Your bitcoin is not in your hardware wallet</h2>
+    <p class="intro">It is not on your computer either, and not on the USB stick in your drawer. None of those hold coins. What they hold is the <b>key</b> — or the twelve or twenty-four recovery words the key is derived from. A wallet is a keyholder, not a vault.</p>
+    <p class="intro">Which means the form your words happen to take does not matter to the ledger at all. Written on paper, stamped into a metal plate, sitting inside a signing device, or held only in your memory: <b>the ledger cannot tell the difference and does not try.</b> Same key, same signature, same coins.</p>
+
+    <div class="flow">your recovery words <i>→</i> a private key <i>→</i> a signature <i>→</i> the ledger accepts the spend</div>
+
+    <p class="intro" style="margin-top:26px">Two things follow from that, and they tend to surprise people in opposite directions.</p>
+    <div class="pair">
+      <div class="pcard">
+        <h5>✓ BREAK THE DEVICE, LOSE NOTHING</h5>
+        <p>The coins were never in it. Get another wallet, enter the same words, and you are exactly where you were. A drowned, burnt or stolen device is an inconvenience, not a loss — <b>provided the words exist somewhere else.</b></p>
+      </div>
+      <div class="pcard bad">
+        <h5>✕ KEEP THE DEVICE, LOSE EVERYTHING</h5>
+        <p>If the words are gone and the device fails, so are the coins. They stay visible on the ledger forever, belonging to a key nobody can produce any more. <b>The backup is the asset</b>, and the hardware is a convenience.</p>
+      </div>
+    </div>
+
+    <div class="keycall">
+      <h5>■ WHAT "MOVING YOUR BITCOIN" REALLY MEANS</h5>
+      <p>Nothing is transported anywhere. Either you move the <b>key</b> — carry the same words to a different wallet, and the coins do not move at all, because they never belonged to the old device — or you make a new ledger entry saying the amount now answers to a <b>different</b> key. Only the second one is a transaction, and only the second one costs a fee.</p>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="practice">
+  <div class="wrap">
+    <div class="shead"><span class="snum">04</span><span class="srule"></span><span class="stag">What follows</span></div>
+    <h2 class="h2">If ownership is knowledge, there are only two ways to lose it</h2>
+    <p class="intro">Somebody else learns your key, or you lose it. Every piece of Bitcoin security advice you will ever read is aimed at one of those two — and the two pull against each other, because every extra copy you make so you cannot lose it is one more place somebody could find it. Getting the balance right for the amount you hold is the whole job.</p>
+    <p class="intro">It is also what a <b>signing device</b> is for. The key is generated and kept on a machine that never goes online, and what leaves that machine is a <b>signature</b> — never the key itself. The ledger only ever needed the signature.</p>
+    <p class="intro">That is what this project builds: <a class="inl" href="index.html">SignerOS</a> turns a computer you already own into an offline signing machine, booted from a USB stick, with no network support compiled into it at all. If you want the practical side of the same subject, there is <a class="inl" href="paper_wallet.html">a printable sheet for writing recovery words on</a>, and <a class="inl" href="index.html#faq">the project FAQ</a>.</p>
+    <div class="btnrow">
+      <a class="btn btn-solid" href="index.html">What SignerOS is →</a>
+      <a class="btn btn-ghost" href="index.html#download">Get the image</a>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="faq">
+  <div class="wrap">
+    <div class="shead"><span class="snum">05</span><span class="srule"></span><span class="stag">Straight answers</span></div>
+    <h2 class="h2">Questions people actually ask</h2>
+
+    <div class="qa">
+      <h3>Where are my bitcoins actually stored?</h3>
+      <p>On the blockchain — a public ledger kept in identical copies on tens of thousands of computers. Your coins are an entry saying an amount can be spent by whoever produces a particular signature. They are not a file, and they are not on any device you own.</p>
+    </div>
+    <div class="qa">
+      <h3>Is my bitcoin inside my hardware wallet?</h3>
+      <p>No. A hardware wallet holds a key, not coins. It is a keyholder, not a vault, and the coins stay on the ledger whatever happens to the device.</p>
+    </div>
+    <div class="qa">
+      <h3>What happens to my bitcoin if my hardware wallet breaks or is stolen?</h3>
+      <p>Nothing happens to the coins. With your recovery words you enter them into another wallet and you are where you were. A thief who has the device but not your PIN or passphrase still cannot sign. <b>What you must never lose is the words.</b></p>
+    </div>
+    <div class="qa">
+      <h3>Can someone steal my bitcoin without touching any of my devices?</h3>
+      <p>Yes — if they learn your key or your recovery words. Information can be copied, so the theft leaves everything of yours where it was: you would still have your words, and the coins would still be gone. That is why the words never go into an online machine, a photograph or a cloud.</p>
+    </div>
+    <div class="qa">
+      <h3>Does it matter whether my phrase is on paper, on metal, or only in my head?</h3>
+      <p>Not to the ledger — it cannot tell the difference. It matters enormously to you: paper burns, metal survives a fire, and memory fails silently, without warning and without a way to check. <b>Memorising a phrase and keeping no physical backup is one of the reliable ways people lose coins permanently.</b></p>
+    </div>
+    <div class="qa">
+      <h3>What happens if I lose my recovery words?</h3>
+      <p>The coins stay on the ledger and nobody can move them, including you. There is no support line, no password reset and no authority to appeal to. Forgetting is a way of losing property that has no real equivalent in the physical world.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="fgrid">
+      <div class="fbrand">SIGNER<b>://</b>OS</div>
+      <div class="flinks">
+        <a href="index.html">The project</a>
+        <a href="index.html#download">Download</a>
+        <a href="index.html#faq">FAQ</a>
+        <a href="paper_wallet.html">Print a recovery sheet</a>
+        <a href="redeem_gift.html">Redeem a gift card</a>
+        <a href="https://github.com/signeros/signeros" target="_blank" rel="noopener">GitHub</a>
+      </div>
+    </div>
+    <p class="fnote">
+      // This page is a single HTML file with no scripts, no webfonts and no third-party anything:
+      it makes zero network requests. It has no input fields, and no part of this project will
+      ever ask you for your recovery words.<br>
+      // Nothing here is financial, legal or tax advice. It is an explanation of how Bitcoin
+      ownership works, which is the same everywhere, unlike the rules about it.
+    </p>
+  </div>
+</footer>
+
+</body>
+</html>

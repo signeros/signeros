@@ -45,6 +45,15 @@ Facts that are easy to get wrong when summarising this project:
   ritual across two machines, singlesig and 2-of-3 multisig topologies, the
   download and its hash, how to rebuild the same tag and compare it, how to write
   the USB stick on Linux or Windows, Secure Boot, and an FAQ.
+- [Simply Bitcoin - what Bitcoin is and what owning it means](https://signeros.org/what-is-bitcoin.html):
+  the explainer, for somebody who has not decided they want a signing device yet.
+  Bitcoin is an entry in a public ledger rather than a file, so coins are not on
+  any device: gold is **physical** property owned by holding it, bitcoin is
+  **informational** property owned by knowing a private key. A hardware wallet is
+  a keyholder, not a vault; paper, a metal plate and human memory are the same
+  thing to the ledger. Ends with the two ways ownership is lost - somebody else
+  learns the key, or you do not - and six plain answers to the questions
+  beginners ask.
 - [Redeem a Bitcoin gift card](https://signeros.org/redeem_gift.html): for
   somebody who was handed a paper card. Starts from the fact that the words on it
   were written by another hand and so are not a secret any more, then one
