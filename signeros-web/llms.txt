@@ -21,7 +21,7 @@ along that line:
 Facts that are easy to get wrong when summarising this project:
 
 - It is **not** a purpose-built appliance and not a product you buy. It is an
-  image (`signeros-<version>-x86_64.img`, currently 1.0.3) plus the Buildroot
+  image (`signeros-<version>-x86_64.img`, currently 1.0.4) plus the Buildroot
   tree that produces it, MIT-licensed, built from pinned sources and byte-for-byte
   reproducible: two clean builds of one commit give an identical `bzImage`.
 - The absence of networking is **structural, not a setting**. `CONFIG_NET` is not

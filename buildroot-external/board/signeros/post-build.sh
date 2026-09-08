@@ -86,6 +86,27 @@ find "$TARGET_DIR/usr/lib" -maxdepth 1 -name '*.la' -delete 2>/dev/null
 find "$TARGET_DIR/usr/lib" -maxdepth 1 -name '*-gdb.py' -delete 2>/dev/null
 rm -rf "$TARGET_DIR"/usr/share/gdb
 
+# Buildroot's pcre2 package installs three libraries and two programs, and this
+# image uses exactly one of them: libQt5Core links libpcre2-16, for
+# QRegularExpression. Nothing here links libpcre2-8 or libpcre2-posix - those
+# exist for pcre2grep and pcre2test, a grep and a test harness on an appliance
+# with no files to grep and no test suite to run. Together they are ~715 KiB of
+# permanently resident RAM, since the rootfs unpacks into tmpfs.
+#
+# They are also where three quarters of the v1.0.3 published-hash defect lived:
+# of the four files that made that release irreproducible, three were these,
+# each carrying the *length* of an erased build-directory RPATH. The link-time
+# fix in external.mk is what makes them deterministic; deleting them is what
+# makes the question moot, and one fewer file on the image is one fewer file
+# that can carry the next surprise. libpcre2-16 stays, so keep the glob
+# specific: guardrail 5 re-resolves every DT_NEEDED after this, which is what
+# turns "deleted one library too many" into a failed build rather than an image
+# that dies at the splash.
+rm -f "$TARGET_DIR"/usr/bin/pcre2grep \
+      "$TARGET_DIR"/usr/bin/pcre2test \
+      "$TARGET_DIR"/usr/lib/libpcre2-8.so* \
+      "$TARGET_DIR"/usr/lib/libpcre2-posix.so*
+
 # Stamp the build so the GUI's shutdown screen can show what is running.
 #
 # The version comes from VERSION at the repo root, the same line the image file

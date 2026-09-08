@@ -124,8 +124,8 @@ figures at the end of every build, because the unpacked one is permanently
 occupied physical memory:
 
 ```
-  production image, SignerOS 1.0.3
-  bootx64.efi .........  20768 KiB   ESP payload, 7% of 262144 KiB
+  production image, SignerOS 1.0.4
+  bootx64.efi .........  20772 KiB   ESP payload, 7% of 262144 KiB
                                      kernel + initramfs + command line,
                                      one UNSIGNED PE binary
   rootfs unpacked .....  44836 KiB   permanently resident RAM
@@ -1072,12 +1072,15 @@ Executed in this environment, on this tree:
   packages, re-running only `target-finalize`, the cpio generation and the kernel
   relink and xz pass — lands on the *same* bytes as the clean pair, so
   `make app` and `make reconfigure` are not quietly producing a different image
-  from the one a clean build gives. Re-measured on 1.0.3, after both fixes below:
-  `make clean && make image` reproduces the incremental tree's `rootfs.cpio`,
-  `bzImage` *and* `signeros-<version>-x86_64.img` byte for byte, and guardrail 4b
-  passes against a target tree the toolchain has just repopulated from nothing —
-  which is what proves the removal is a build step rather than something somebody
-  once deleted by hand
+  from the one a clean build gives. Re-measured on the 1.0.3 tree, after the
+  `/etc/shadow` and `-gdb.py` fixes below: `make clean && make image` reproduces
+  the incremental tree's `rootfs.cpio`, `bzImage` *and*
+  `signeros-<version>-x86_64.img` byte for byte, and guardrail 4b passes against a
+  target tree the toolchain has just repopulated from nothing — which is what
+  proves the removal is a build step rather than something somebody once deleted
+  by hand. Measured once more on the corrected recipe that became 1.0.4: a second
+  `build.sh` run reproduces the first's `rootfs.cpio`, `bzImage` and production
+  image byte for byte
 - **the assembled images too, since 2026-09-06.** Two `make image` runs give a
   `cmp`-identical `signeros-<version>-x86_64.img` and
   `signeros-test-<version>-x86_64.img`, which they did not before `--invariant`
@@ -1131,17 +1134,22 @@ Still unproven:
 - **a real touchscreen panel.** Touchscreens take Qt's `evdevtouch` handler
   rather than `touchpad.cpp`, and QEMU's `usb-tablet` is an absolute pointer, so
   neither the hardware runs above nor `make gui` is evidence about them.
-- **agreement across two machines.** It has now been *attempted*, once, and it
-  **disagreed**: a second machine built 1.0.2 and produced a different `bzImage`.
-  The cause was found and fixed the same day — a toolchain file carrying the
-  builder's absolute paths, described under
-  [Reproducibility](#reproducibility) — and it means every hash published before
-  that fix was only ever reproducible by a builder whose checkout sat at the same
-  path. What has *not* happened yet is the run that would close this: the same
-  two machines building the fixed tree and comparing again. Until that number
-  comes back, cross-machine reproducibility remains an argument from pinned
-  inputs, not a measurement — and the one measurement so far went against it,
-  which is exactly what publishing a hash to be contradicted is for.
+- **agreement across two machines.** It has now been *attempted* twice, and it
+  **disagreed both times**. On 1.0.2 a second machine produced a different
+  `bzImage`, from a toolchain file carrying the builder's absolute paths. On
+  1.0.3 — the release that was supposed to have settled this — the published
+  asset and an independent rebuild disagreed again, on four files, for two
+  further reasons: an erased build-directory `RPATH` whose *length* survives in
+  the ELF, and a libstdc++ that enables NLS if the build host happens to have
+  `msgfmt`. Both are described under [Reproducibility](#reproducibility), both
+  are fixed in 1.0.4, and each fix now has a guardrail of its own. What still
+  has *not* happened is the run that would close this: two machines building the
+  corrected tree and comparing. Not even the 1.0.3 investigation is that — it
+  reused this host's cached toolchain rather than building a second one from
+  scratch. So cross-machine reproducibility remains an argument from pinned
+  inputs plus two defects found and removed, not a measurement — and both
+  measurements so far went against it, which is exactly what publishing a hash
+  to be contradicted is for.
 
 What is no longer on that list is the entry UI. It was proven by hand, because
 nothing here can prove it otherwise — `test-gui` is a pixel check on the splash,
@@ -1152,7 +1160,7 @@ screen that takes typing inherits that: `make gui` first, then a stick.
 
 ## Versioning
 
-`VERSION` at the repo root holds one line - `1.0.3` at the time of writing - and
+`VERSION` at the repo root holds one line - `1.0.4` at the time of writing - and
 it is the only place the release version is written down. Everything that needs
 it reads it from there, so cutting a release is that one edit followed by a
 build:
@@ -1187,14 +1195,16 @@ command line — so agreeing on it is agreeing on everything that executes. Two
 people on different machines should get the same answer; if they do not, that is
 a bug worth reporting.
 
-**v1.0.3 cross-machine mismatch (2026-09-08):** the downloaded release still
-fails independent rebuilding. Four initramfs files differ: three PCRE2 binaries
-retain the length of a removed build-directory RPATH, and libstdc++ enables NLS
-when the build host has `msgfmt`. The current tree disables both sources of
-variation at build time. These fixes change the expected hashes; they do not
-make the old v1.0.3 assets reproducible under the corrected recipe. See the
-[comparison report](docs/reproducibility-1.0.3.md) for evidence, validation and
-rebuild instructions. A release from the corrected source needs new hashes.
+**Compare 1.0.4 or later.** The number published with every release before it
+cannot be matched by anybody, including us: three releases, three different
+causes, and every one of them found the same way — somebody rebuilt the image
+and reported that their number disagreed. 1.0.1 and 1.0.2 are below. 1.0.3 was
+the release that was supposed to have settled this, and it failed the first time
+anybody checked it against a rebuild; its two causes are at the end of this
+section. Both are fixed here, and both fixes change the payload by design, which
+is why the corrected build is **1.0.4** rather than a re-cut 1.0.3 — the v1.0.3
+assets are historical, and no recipe in this tree will ever produce their
+hashes again.
 
 **It was reported, and it was a bug.** Until 2026-08-25 this section was simply
 false. Two `make clean && make image` runs of the same commit produced two
@@ -1247,8 +1257,10 @@ Secure Boot signature is made with your key, so the image differs per key.
 Reproducing the payload and signing it locally is the intended workflow, the same
 split Debian and Fedora use.
 
-The **unsigned** image wrapper was made deterministic on 2026-09-06; its
-embedded payload still had the v1.0.3 defects described above. The
+The **unsigned** image wrapper was made deterministic on 2026-09-06 - and it is
+the *wrapper* that sentence is about: the payload it wraps still carried the two
+v1.0.3 defects described at the end of this section, so a matching wrapper was
+never the whole claim. The
 released 1.0.2 image and a local rebuild of the same commit differed in exactly
 14 bytes: the creation and write timestamps in each partition's FAT
 volume-label directory entry, which `mkfs.vfat` takes from the clock rather than
@@ -1284,6 +1296,58 @@ image has neither GDB nor Python.
 `BUILD_DIR` and the repo root, and fails the build naming any file that carries
 one. A hash comparison can only tell you *that* two builds disagree; this says
 *why*, on the machine where it happened, at the moment it happens.
+
+**And the second cross-machine comparison failed too, on 2026-09-08 - on 1.0.3,
+the release that was supposed to have fixed this.** The published v1.0.3 image
+and an independent rebuild of the same commit disagreed on `bzImage` again.
+Unpacking both initramfs archives found 445 entries whose names and cpio
+metadata agreed exactly, and four whose contents did not:
+
+```
+usr/bin/pcre2grep
+usr/bin/pcre2test
+usr/lib/libpcre2-posix.so.3.0.7
+usr/lib/libstdc++.so.6.0.33
+```
+
+Two causes, and the first is the instructive one, because **guardrail 4b passed
+on both builds and was right to.** Libtool links the PCRE2 programs and the
+POSIX library with an absolute build-directory `RPATH`, and Buildroot's
+`support/scripts/fix-rpath` sanitises it with patchelf - which overwrites the
+string with `X` bytes but *keeps its length*, and `DT_STRSZ`, the section
+offsets after it and the relocations with it. The path really is gone, which is
+the whole of what guardrail 4b can ask; what survives is **how many characters
+it used to be**. `libpcre2-posix.so.3.0.7` carries 61 placeholder bytes in the
+release and 65 in the rebuild; `pcre2grep` reports `DT_STRSZ=1240` against 1244.
+Rebuilding the old recipe in a directory four characters shorter reproduces all
+three release files byte for byte, which is what makes this a cause rather than
+a theory. `external.mk` now clears libtool's `hardcode_libdir_flag_spec` and
+disables its `LD_RUN_PATH` mechanism before the link, so no `RPATH` is written
+in the first place - these are target libraries in the default `/usr/lib`, so
+none was ever needed. Both halves are load-bearing: clearing only the first
+fixes the two executables and leaves the library dependent on the path.
+
+The second cause was the build *host* rather than the build directory. GCC's
+`libstdc++-v3` configure probes for `msgfmt` and uses gettext for exception
+messages when it finds one, so a builder with `gettext` installed shipped a
+libstdc++ that imports `gettext` and a builder without it shipped one that does
+not. `BR2_SYSTEM_ENABLE_NLS` was already off, but gcc-final runs a configure
+command of its own and never saw the generic `--disable-nls`; the defconfig now
+passes it explicitly through `BR2_EXTRA_GCC_CONFIG_OPTIONS`. That fix is
+checkable in a single run on a host that *has* `msgfmt` - the only kind of host
+that could have shown the defect: the configure log records `found
+/usr/bin/msgfmt` and `USE_NLS='no'` in the same run, and `config.h` leaves
+`_GLIBCXX_USE_NLS` undefined.
+
+Both are now asserted against *generated* files rather than against the
+defconfig - the libtool script PCRE2 was configured with, and the `config.h`
+libstdc++ was built with - because editing a defconfig does not rebuild a cached
+toolchain. A stale package is exactly how these defects would travel forward,
+and it is the one state no configuration file would admit to; the guardrail
+fails such a build with the command that fixes it.
+[docs/reproducibility-1.0.3.md](docs/reproducibility-1.0.3.md) is the full
+comparison, including the experiments that rebuild each differing release file
+from the old recipe.
 
 libwally-core is fetched by git tag with submodules rather than as a tarball with
 a recorded hash, because a hash committed here would have to be taken on trust

@@ -189,7 +189,10 @@ surviving kconfig, any BusyBox networking applet, any X11/Wayland/display-manage
 binary, any setuid/setgid file, any account in `/etc/shadow` whose password field is not
 `*`/`!`/`!!`, an unresolvable `DT_NEEDED` or a build-host `RUNPATH`, **any file whose contents
 name the build directory** (`BASE_DIR`/`HOST_DIR`/`BUILD_DIR`/the repo root - the
-check that a cross-machine `bzImage` mismatch is usually one of), a missing
+check that a cross-machine `bzImage` mismatch is usually one of), a PCRE2 libtool
+that would still embed a build-directory `RPATH` or a libstdc++ built with
+host-dependent NLS (both read out of `BUILD_DIR`, because a *stale package* is
+how those two travel and no configuration file admits to one), a missing
 `CONFIG_CMDLINE_OVERRIDE`, or a production command line containing
 `signeros.selftest=1` or a serial console. `scripts/test_in_qemu.sh` re-proves the
 runtime half inside the booted image (`socket()` returns `ENOSYS`, `/proc/net` absent,
@@ -352,6 +355,24 @@ If a guardrail check fails, the check is almost certainly right. Fix the cause.
   applet, no getty in `inittab` — which is why it survived). Fixed by
   `# BR2_TARGET_ENABLE_ROOT_LOGIN is not set`, and `post-build.sh` now asserts every
   shadow field, so it cannot come back quietly.
+  The *second* cross-machine comparison (2026-09-08) disagreed too, on **1.0.3**,
+  and both of its causes are worth knowing because guardrail 4b passed on them and
+  was right to. Four initramfs files differed. Three were PCRE2's: libtool linked
+  them with a build-directory `RPATH`, and Buildroot's `fix-rpath` has patchelf
+  overwrite the string with `X` bytes while **keeping its length** - so the path is
+  genuinely gone, which is all a path scan can ask, and `DT_STRSZ` still counts the
+  characters it used to be. `PCRE2_POST_CONFIGURE_HOOKS` in `external.mk` now clears
+  libtool's `hardcode_libdir_flag_spec` *and* its `LD_RUN_PATH` mechanism (both:
+  the first alone leaves the library path-dependent), so no `RPATH` is written at
+  all, and `post-build.sh` deletes `pcre2grep`, `pcre2test`, `libpcre2-8` and
+  `libpcre2-posix` outright - only `libpcre2-16` is used, by `libQt5Core`, and the
+  rest was 714 KiB of resident RAM that nothing linked. The fourth was libstdc++:
+  its configure probes the *build host* for `msgfmt` and enables gettext if it finds
+  one, and gcc-final's own configure command never saw Buildroot's `--disable-nls`,
+  so `BR2_EXTRA_GCC_CONFIG_OPTIONS="--disable-nls"` pins it. Every hash published
+  for 1.0.1, 1.0.2 and 1.0.3 is therefore unmatchable by anybody; **1.0.4** is the
+  first release built from the corrected recipe. `docs/reproducibility-1.0.3.md` is
+  the evidence.
 - **Debug a hash mismatch by layer, never with `diffoscope` on `bzImage`.** That file
   is xz-compressed, so one upstream byte diffuses across all of it. `rootfs.cpio` is
   left uncompressed for exactly this: `sha256sum` both, and if the cpio moved,
@@ -392,10 +413,15 @@ What is still unproven:
 - **a real touchscreen panel** — that is Qt's `evdevtouch`, not `touchpad.cpp`,
   and QEMU's `usb-tablet` is an absolute pointer, so neither the hardware runs
   nor `make gui` says anything about it.
-- **any cross-machine comparison.** Every hash this tree has produced came from
-  one host, one distribution, one host compiler. "Two people get the same answer"
-  is still an argument from pinned inputs; what closes it is somebody else's
-  number, which is why the release publishes one to be contradicted.
+- **a cross-machine comparison that *agrees*.** Two have been attempted and both
+  disagreed: 1.0.2 on the `-gdb.py` paths, 1.0.3 on the erased-`RPATH` length and
+  libstdc++'s NLS probe. Each cause was found, fixed and given a guardrail, but
+  every hash this tree has produced still came from one host, one distribution,
+  one host compiler - and not even the 1.0.3 investigation is a second full build,
+  since it reused this host's cached toolchain. "Two people get the same answer"
+  remains an argument from pinned inputs plus two defects removed; what closes it
+  is somebody else's number, which is why the release publishes one to be
+  contradicted.
 
 The mnemonic grids are no longer on that list, but nothing in this tree presses a
 key or clicks a cell either: `test-gui` is a pixel check on the splash, and the
