@@ -406,6 +406,29 @@ else
 	ok "no file on the image names the build directory"
 fi
 
+# Path scanning cannot detect erased RPATH bytes or host-dependent configure
+# probes. Check the build inputs too, including stale incremental packages.
+echo "--- guardrail: deterministic PCRE2 and libstdc++ configuration ------------"
+for libtool in "${BUILD_DIR:-/nonexistent}"/pcre2-*/libtool; do
+	[ -f "$libtool" ] || continue
+	if ! grep -qx 'hardcode_libdir_flag_spec=""' "$libtool" ||
+	   grep -qx 'runpath_var=LD_RUN_PATH' "$libtool"; then
+		fail "PCRE2 still embeds build-directory RPATHs. Rebuild it with:
+       make -C buildroot O=<output> pcre2-dirclean pcre2"
+	else
+		ok "PCRE2 does not embed build-directory RPATHs at link time"
+	fi
+done
+for gcc_config in "${BUILD_DIR:-/nonexistent}"/host-gcc-final-*/build/*/libstdc++-v3/config.h; do
+	[ -f "$gcc_config" ] || continue
+	if grep -q '^#define _GLIBCXX_USE_NLS 1' "$gcc_config"; then
+		fail "libstdc++ has host-dependent NLS enabled. Use the updated defconfig
+       (--disable-nls for GCC) and a clean toolchain build."
+	else
+		ok "libstdc++ NLS is disabled"
+	fi
+done
+
 # ---------------------------------------------------------------------------
 # 5. Dynamic-linking audit (the "missing shared library / RPATH" check)
 #
