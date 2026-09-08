@@ -1159,6 +1159,20 @@ nothing here can prove it otherwise — `test-gui` is a pixel check on the splas
 so no test in this tree presses a key, moves a cursor or clicks a cell. A new
 screen that takes typing inherits that: `make gui` first, then a stick.
 
+**How this tree is written.** Parts of it — code, guardrails, tests and this
+document — were written with the help of an AI assistant, and parts were not.
+That is worth stating plainly, and it is worth being equally plain about what it
+changes: nothing here asks you to trust the author's process, or the author. The
+build refuses to produce an image if a guardrail is lost. `host_selftest.sh`
+checks every exported key against a second implementation, written from scratch
+in `make_test_data.py` for the express purpose of not being the library it is
+checking. The QEMU harness re-proves the runtime properties inside the booted
+image rather than inferring them from the configuration. The published hash is
+one anybody with a Linux machine can contradict, and twice now somebody has.
+None of those checks care who or what wrote the line above them — which is the
+entire reason for having them, and the only honest answer to "who wrote this?"
+in a project nobody should take on trust.
+
 ---
 
 ## Versioning
