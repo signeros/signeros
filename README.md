@@ -127,7 +127,7 @@ figures at the end of every build, because the unpacked one is permanently
 occupied physical memory:
 
 ```
-  production image, SignerOS 1.0.4
+  production image, SignerOS 1.0.5
   bootx64.efi .........  20772 KiB   ESP payload, 7% of 262144 KiB
                                      kernel + initramfs + command line,
                                      one UNSIGNED PE binary
@@ -1237,7 +1237,7 @@ in a project nobody should take on trust.
 
 ## Versioning
 
-`VERSION` at the repo root holds one line - `1.0.4` at the time of writing - and
+`VERSION` at the repo root holds one line - `1.0.5` at the time of writing - and
 it is the only place the release version is written down. Everything that needs
 it reads it from there, so cutting a release is that one edit followed by a
 build:
