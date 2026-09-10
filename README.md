@@ -1109,6 +1109,14 @@ Executed in this environment, on this tree:
   `signeros.img` and `signeros-test.img`
 - `./scripts/test_in_qemu.sh` — both runs pass: the headless signing test under
   UEFI in QEMU, and the framebuffer rendering test on the production image
+- **the wallet-creation flow driven under QEMU**, when the `RDRAND` policy
+  changed: the entropy page's source line, the pad filled with pointer motion,
+  generation, and the seed page's provenance line, all read off screendumps
+  taken over QMP — then the same again on a `-cpu qemu64,+rdrand` machine, where
+  the line reads `cpu-rdseed=0w cpu-rdrand=32w` and the kernel pool is what
+  carried the decision. A pointer and a keyboard driven from outside the guest,
+  not a test in this tree: there is nothing here to re-run, only something that
+  was done
 - `./scripts/host_selftest.sh` — the signing core built against libwally
   **1.5.6**, signing the fixture, with every signature verified independently by
   `make_test_data.py`, and every exported key diffed against its derivation: the
@@ -1141,9 +1149,16 @@ Executed in this environment, on this tree:
   by hand. Measured once more while the PCRE2 and libstdc++ fixes were being
   validated: a second `build.sh` run reproduced the first's `rootfs.cpio`,
   `bzImage` and production image byte for byte. That pair predates the removal of
-  the unused PCRE2 files, so what 1.0.4 itself has behind it is one clean build,
-  not a matching pair - the published number is a number to be contradicted,
-  which is the only thing it was ever offered as
+  the unused PCRE2 files, so what 1.0.4 itself had behind it was one clean build
+  rather than a matching pair. **1.0.5 has the matching pair.** Three runs of
+  `d1d8f30` — one incremental, then two `make clean && make image` — give a
+  `cmp`-identical `rootfs.cpio`, `bzImage`, `bzImage-selftest` and both disk
+  images, and their two `output/target` trees are identical too (`diff -rq
+  --no-dereference`), so the agreement holds in the tree the artefacts are built
+  from and not only in the artefacts. Each clean run took about 50 minutes from
+  an empty `output/`. None of that touches the question below: it is still one
+  machine, and the published number is a number to be contradicted, which is the
+  only thing it was ever offered as
 - **the assembled images too, since 2026-09-06.** Two `make image` runs give a
   `cmp`-identical `signeros-<version>-x86_64.img` and
   `signeros-test-<version>-x86_64.img`, which they did not before `--invariant`
@@ -1194,6 +1209,10 @@ Still unproven:
   had Secure Boot switched off. [Secure Boot and the unified kernel image](#secure-boot-and-the-unified-kernel-image)
   describes what the build does and what enrolment requires; none of it has been
   executed.
+- **the entropy page's "waiting for the kernel pool" warning.** It needs a
+  kernel that reports itself unseeded, and the command line is compiled into the
+  kernel, so there is no way to ask QEMU for one. Everything either side of that
+  branch has been rendered and read; the branch itself has not.
 - **a real touchscreen panel.** Touchscreens take Qt's `evdevtouch` handler
   rather than `touchpad.cpp`, and QEMU's `usb-tablet` is an absolute pointer, so
   neither the hardware runs above nor `make gui` is evidence about them.

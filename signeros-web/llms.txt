@@ -21,7 +21,7 @@ along that line:
 Facts that are easy to get wrong when summarising this project:
 
 - It is **not** a purpose-built appliance and not a product you buy. It is an
-  image (`signeros-<version>-x86_64.img`, currently 1.0.4) plus the Buildroot
+  image (`signeros-<version>-x86_64.img`, currently 1.0.5) plus the Buildroot
   tree that produces it, MIT-licensed, built from pinned sources and byte-for-byte
   reproducible: two clean builds of one commit give an identical `bzImage`.
 - The absence of networking is **structural, not a setting**. `CONFIG_NET` is not
@@ -32,6 +32,14 @@ Facts that are easy to get wrong when summarising this project:
   case, not the design target.
 - Nothing derived from a seed is ever saved. A created wallet writes **public
   keys only**: account xpubs, output descriptors and BIP48 multisig cosigner keys.
+- Creating a wallet **refuses rather than guesses**. Four sources are mixed -
+  the kernel pool, the CPU's RDSEED, timing jitter and the operator's own
+  movement - but only two of them count as permission to generate: a seeded
+  kernel CRNG, or RDSEED. RDRAND is mixed in and never counted (it is a DRBG,
+  and parts have shipped that returned a constant from it while reporting
+  success), and the kernel is told not to credit the CPU towards its own seeding
+  either (`random.trust_cpu=0`), so the two counted sources are genuinely two.
+  There is no "continue anyway" button.
 - Released images are **unsigned for Secure Boot** on purpose; you sign with your
   own key and enrol your own certificate, or you turn Secure Boot off.
 - Nothing on the site, and nothing in the software, ever asks anybody to type

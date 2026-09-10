@@ -53,7 +53,7 @@
       "alternateName": "SignerOS air-gapped Bitcoin signing OS",
       "description": "A bootable USB image that turns an ordinary x86-64 PC into an air-gapped Bitcoin signing device. It creates wallets, exports watch-only keys and signs PSBT files. No network support is compiled into it, it cannot read the host machine's drives, it runs entirely in RAM and it writes nothing derived from a seed to any medium.",
       "url": "https://signeros.org/",
-      "softwareVersion": "1.0.4",
+      "softwareVersion": "1.0.5",
       "applicationCategory": [
         "SecurityApplication",
         "FinanceApplication"
@@ -150,7 +150,7 @@
           "name": "Should I download the release or build it myself?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "Download it to try it — that is what it is published for, and an afternoon spent watching the thing work is not wasted. Build it before you trust a wallet to it. The two are not rivals: everyone who builds the same version gets an identical result, so building it and finding the same number we published is what turns \"their file\" into \"the file I checked myself\". It also gets you the one thing a published image cannot have — a signature made with a key you hold instead of one somebody else does. And if your number ever comes out different from ours, say so publicly. That is the whole point of doing it this way."
+            "text": "Download it to try it — that is what it is published for, and an afternoon spent watching the thing work is not wasted. Build it before you trust a wallet to it. The two are not rivals: the build is meant to give everyone who compiles the same version an identical result, so building it and finding the same number we published is what turns \"their file\" into \"the file I checked myself\". It also gets you the one thing a published image cannot have — a signature made with a key you hold instead of one somebody else does. And if your number ever comes out different from ours, say so publicly. That is the whole point of doing it this way."
           }
         },
         {
@@ -696,8 +696,9 @@ footer{border-top:1px solid var(--line);padding:54px 0 44px;background:var(--bg2
         <div class="apage">
           <p class="alabel">▸ “WHERE YOUR SEED COMES FROM”</p>
           <p class="note" style="margin-top:0">// A wallet is exactly as safe as the randomness it was made from, so this screen does not rely on any single source of it. It mixes four together — including your own hand moving the mouse, which is the one source no software anywhere can watch. Only one of the four has to be unpredictable for the result to be safe, and if the machine cannot offer a source it trusts, it refuses to generate at all rather than asking you to decide.</p>
+          <p class="note">// One source is deliberately not allowed to be that reason on its own. Processors carry two random instructions: one is the raw physical source, the other is a mathematical generator sitting in front of it, reseeded in a way nobody outside the chip can inspect &mdash; and chips have shipped that answered it with the same constant every time while reporting success. It still goes into the mixture, and the screen still says it is there; it is simply never what the machine takes as permission to make a key. Neither is the operating system's own pool, if that pool was only ever told it was ready by the same chip &mdash; so this machine tells it not to count that either.</p>
           <p class="alabel">▸ WHAT THE SCREEN REPORTS</p>
-          <div class="psbtsrc">this computer's own randomness <span style="color:var(--green)">ready</span>   ·   the processor's built-in generator <span style="color:var(--green)">available</span></div>
+          <div class="psbtsrc">this computer's own randomness <span style="color:var(--green)">ready</span>   ·   the processor's true-random source <span style="color:var(--green)">available</span>   ·   its fallback generator <span style="color:var(--dim)">available, not counted</span></div>
           <div class="pad">Move the mouse around in here<br>(or tap, or just type - anything counts)</div>
           <div class="meter"><i style="width:56%"></i></div>
           <p class="note" style="margin-top:0">143 of 256 movements collected.</p>
@@ -1103,25 +1104,25 @@ footer{border-top:1px solid var(--line);padding:54px 0 44px;background:var(--bg2
     <div class="dlgrid">
       <div class="dlcard rv">
         <p class="dllabel">LATEST RELEASE</p>
-        <p class="dlname">signeros-1.0.4-x86_64.img</p>
+        <p class="dlname">signeros-1.0.5-x86_64.img</p>
         <div class="dlmeta">
-          <span class="hl">1.0.4</span>
+          <span class="hl">1.0.5</span>
           <span>385 MiB WRITTEN</span>
           <span>ANY MODERN PC</span>
           <span>MIT</span>
         </div>
-        <a class="btn btn-solid" href="https://github.com/signeros/signeros/releases/download/v1.0.4/signeros-1.0.4-x86_64.img">▼ Download the image</a>
+        <a class="btn btn-solid" href="https://github.com/signeros/signeros/releases/download/v1.0.5/signeros-1.0.5-x86_64.img">▼ Download the image</a>
         <p class="dlsub">Also: <a href="https://github.com/signeros/signeros/releases" target="_blank" rel="noopener">every version and its release notes</a> · <a href="https://github.com/signeros/signeros" target="_blank" rel="noopener">the source code</a>, which anybody is free to read.<br><br>What you get is a ready-made image of a complete USB stick — the startup files and the area your transaction files will live in are already in it. You do not format anything and you do not choose any settings; you write the image and the stick is done.</p>
         <p class="vwarn" style="margin-top:20px">▲ The image we publish is <b>not</b> signed for Secure Boot, because that signature would have to be made with a key held by someone other than you. It boots with Secure Boot switched off. If you would rather leave Secure Boot switched on, build the image yourself with a key of your own — <a class="extlink" href="#secureboot">section 07</a> walks through it.</p>
       </div>
       <div class="verify rv" style="--d:.12s">
         <h3>Check what you downloaded</h3>
         <p class="vsub">The quick check: that the file arrived intact and is the one that was published. Run one command and compare the result with this, character by character.</p>
-        <div class="hashbox"><div class="hash" id="imgHash">5ba68eadd1915e98e21660178e8e4ca6f89aa42b520808d013f606f540104cbc</div><button class="copy" data-copy="imgHash">COPY</button></div>
+        <div class="hashbox"><div class="hash" id="imgHash">756a7fe9a48956c7730e87259040f4a153aa33f64b72c24a2657a20244258343</div><button class="copy" data-copy="imgHash">COPY</button></div>
         <p class="dllabel">LINUX / MACOS</p>
-        <div class="cmd"><b>$</b> sha256sum signeros-1.0.4-x86_64.img</div>
+        <div class="cmd"><b>$</b> sha256sum signeros-1.0.5-x86_64.img</div>
         <p class="dllabel">WINDOWS (POWERSHELL)</p>
-        <div class="cmd"><b>&gt;</b> Get-FileHash signeros-1.0.4-x86_64.img -Algorithm SHA256</div>
+        <div class="cmd"><b>&gt;</b> Get-FileHash signeros-1.0.5-x86_64.img -Algorithm SHA256</div>
         <p class="vwarn">✕ Not the same? Delete the file and download it again. Never start a computer from an image you could not confirm.</p>
         <p class="vsub" style="margin-top:22px">Then be clear about what that proves: the file matches the number on this page. It does not prove the number itself is honest, because we published both. Only building it yourself settles that — which is the next step, and it is the one that makes this signer genuinely yours.</p>
       </div>
@@ -1131,13 +1132,13 @@ footer{border-top:1px solid var(--line);padding:54px 0 44px;background:var(--bg2
       <h3>Rebuild it, and compare the payload</h3>
       <p class="vsub">You need a Linux computer and some patience: everything is compiled from scratch, so the first run takes 30-90 minutes and later ones take minutes. You do not need the file you downloaded — this is the same source the released image was made from.</p>
       <div class="cmd"><b>$</b> git clone https://github.com/signeros/signeros signeros &amp;&amp; cd signeros</div>
-      <div class="cmd"><b>$</b> git checkout v1.0.4</div>
+      <div class="cmd"><b>$</b> git checkout v1.0.5</div>
       <div class="cmd"><b>$</b> ./scripts/build.sh</div>
       <p class="dllabel" style="margin-top:20px">THE NUMBER THAT MATTERS</p>
       <p class="vsub">Check the file called <code>bzImage</code> rather than the disk image. That single file is the whole of what the machine actually runs, so agreeing on it is agreeing on everything. The disk image around it matches too, since September 2026 &mdash; before that the formatting step wrote the build clock into it, so it never did &mdash; but it stops matching the moment you sign it for Secure Boot with a key of your own, which is two honest builds differing rather than something being wrong.</p>
       <div class="cmd"><b>$</b> sha256sum output/images/bzImage</div>
-      <div class="hashbox" style="margin-top:12px"><div class="hash" id="bzHash">468d92f13edd2aefbb5f812cf32d28d3b99c2b02e383c63f1357912b87bfcca3</div><button class="copy" data-copy="bzHash">COPY</button></div>
-      <p class="vsub" style="margin-top:14px">The build prints this number for you when it finishes, so the command above is only there if you want to check again later. Compare it with the one above, which is what 1.0.4 builds to here and what its release page carries. Two people on two different computers should get the same one. If yours comes out different, say so publicly — that is the check doing its job.</p>
+      <div class="hashbox" style="margin-top:12px"><div class="hash" id="bzHash">bc1aef30b66d1eb9538ad5894e0503ae8b0bd164e5fee603eacd9e15acc7ea67</div><button class="copy" data-copy="bzHash">COPY</button></div>
+      <p class="vsub" style="margin-top:14px">The build prints this number for you when it finishes, so the command above is only there if you want to check again later. Compare it with the one above, which is what 1.0.5 builds to here and what its release page carries. Two people on two different computers should get the same one. If yours comes out different, say so publicly — that is the check doing its job.</p>
       <p class="vsub" style="margin-top:14px">One thing has to be the same for the comparison to mean anything: the version of Buildroot the build uses. <code>build.sh</code> pins it and prints it beside the number, so leaving it alone is all you have to do — but if you deliberately pass <code>--br-version</code> to use a different one, your number will differ for that reason alone.</p>
       <p class="vwarn" style="margin-top:20px">▲ An honest exception, for every version up to and including 1.0.3: the numbers published with those releases cannot be matched by anybody, including us. Three separate faults, and every one of them was found the same way — somebody did exactly what this page asks, rebuilt the image, and reported that their number disagreed. In 1.0.1, one small file inside the image — the one recording that nobody may log in with a password — was rebuilt with a fresh random value every time. Up to and including 1.0.2, the image carried a leftover file from the compiler that recorded the folder on the builder&rsquo;s own computer where the image had been made, so a rebuild could only match if it happened in a folder of the same name. And 1.0.3, the release that was meant to have settled this, turned out to depend on the builder&rsquo;s computer twice over: three small files inside it remembered the <em>length</em> of that folder name even after the name itself had been stripped out, and one library was built differently depending on whether the builder happened to have a translation tool installed. All three are fixed in 1.0.4, each with a check the build now runs against itself, so none of them can come back quietly. Repairing the last two changes the image, which means 1.0.3&rsquo;s published numbers stay unmatchable forever — that is the price of the fix, and pretending otherwise would be the same mistake again. If you are comparing numbers, use 1.0.4 or later.</p>
       <p class="dllabel" style="margin-top:20px">AND WATCH IT PROVE ITSELF</p>
@@ -1172,7 +1173,7 @@ footer{border-top:1px solid var(--line);padding:54px 0 44px;background:var(--bg2
       <p class="osub">If you have the source — because you built the image, or just downloaded the source — the script that writes the stick comes with it. It reads the make and size of the drive back to you and asks you to confirm before touching it, then writes the image and reads it back to check the stick is correct.</p>
       <div class="cmd"><b>$</b> sudo ./scripts/flash_usb.sh /dev/sdX --expand-data</div>
       <p class="osub" style="margin-top:14px">It writes <code>output/images/signeros.img</code> by default. For an image you downloaded instead, point it at the file:</p>
-      <div class="cmd"><b>$</b> sudo IMAGE=~/Downloads/signeros-1.0.4-x86_64.img ./scripts/flash_usb.sh /dev/sdX --expand-data</div>
+      <div class="cmd"><b>$</b> sudo IMAGE=~/Downloads/signeros-1.0.5-x86_64.img ./scripts/flash_usb.sh /dev/sdX --expand-data</div>
       <p class="osub" style="margin-top:14px"><code>--expand-data</code> gives the rest of the stick over to your transaction files afterwards, which is what you want on anything bigger than the image itself.</p>
       <div class="easy">
         <h4>◆ NO SOURCE CODE, OR PREFER TO CLICK?</h4>
@@ -1329,7 +1330,7 @@ footer{border-top:1px solid var(--line);padding:54px 0 44px;background:var(--bg2
       </details>
       <details>
         <summary>Should I download the release or build it myself?</summary>
-        <div class="a">Download it to try it — that is what it is published for, and an afternoon spent watching the thing work is not wasted. Build it before you trust a wallet to it. The two are not rivals: everyone who builds the same version gets an identical result, so building it and finding the same number we published is what turns "their file" into "the file I checked myself". It also gets you the one thing a published image cannot have — a signature made with a key you hold instead of one somebody else does. And if your number ever comes out different from ours, say so publicly. That is the whole point of doing it this way.</div>
+        <div class="a">Download it to try it — that is what it is published for, and an afternoon spent watching the thing work is not wasted. Build it before you trust a wallet to it. The two are not rivals: the build is meant to give everyone who compiles the same version an identical result, so building it and finding the same number we published is what turns "their file" into "the file I checked myself". It also gets you the one thing a published image cannot have — a signature made with a key you hold instead of one somebody else does. And if your number ever comes out different from ours, say so publicly. That is the whole point of doing it this way.</div>
       </details>
       <details>
         <summary>Is it free?</summary>
