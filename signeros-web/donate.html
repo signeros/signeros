@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Donate to SignerOS, on-chain or over Lightning. On-chain doubles as the end-to-end test of your own air-gapped setup; Lightning is for a few sats from a phone. What each is good for, and what a donation does and does not buy.">
+<title>Donate to SignerOS — Bitcoin On-Chain or Lightning</title>
+<link rel="canonical" href="https://signeros.org/donate.html">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="SignerOS">
+<meta property="og:locale" content="en">
+<meta property="og:title" content="Donate to SignerOS — Bitcoin On-Chain or Lightning">
+<meta property="og:description" content="Two ways to support an open-source air-gapped Bitcoin signer: an on-chain address that doubles as your first real test transaction, and a Lightning address for a few sats from a phone.">
+<meta property="og:url" content="https://signeros.org/donate.html">
+<meta property="og:image" content="https://signeros.org/og-signeros.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="SignerOS — air-gapped Bitcoin wallet on a USB stick">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Donate to SignerOS — Bitcoin On-Chain or Lightning">
+<meta name="twitter:description" content="On-chain or Lightning, no tiers and no perks. The on-chain route is also the cheapest way to prove your own signing setup works end to end.">
+<meta name="twitter:image" content="https://signeros.org/og-signeros.png">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebPage",
+      "@id": "https://signeros.org/donate.html",
+      "url": "https://signeros.org/donate.html",
+      "name": "Donate to SignerOS — Bitcoin On-Chain or Lightning",
+      "description": "The two donation routes for SignerOS, what each costs, and what a donation does and does not buy.",
+      "inLanguage": "en",
+      "isPartOf": { "@id": "https://signeros.org/#website" },
+      "primaryImageOfPage": { "@type": "ImageObject", "url": "https://signeros.org/og-signeros.png" },
+      "about": [
+        { "@type": "Thing", "name": "Bitcoin donation" },
+        { "@type": "Thing", "name": "Lightning Network payment" },
+        { "@type": "Thing", "name": "Open source funding" }
+      ]
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "SignerOS", "item": "https://signeros.org/" },
+        { "@type": "ListItem", "position": 2, "name": "Donate", "item": "https://signeros.org/donate.html" }
+      ]
+    },
+    {
+      "@type": "FAQPage",
+      "@id": "https://signeros.org/donate.html#faq",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Can SignerOS sign a Lightning payment?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "No, and it never will. Lightning needs a node that is online, watching the chain and able to answer its channel partner within seconds. SignerOS has no network code compiled into its kernel at all, so it is the wrong shape for Lightning by construction. The Lightning address on this page is paid from an ordinary online wallet on your phone or desktop, exactly like any other Lightning payment. Only the on-chain route involves SignerOS."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Which should I use, on-chain or Lightning?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Lightning for a small amount from a phone: it is near-instant and the fee is a rounding error, so a few thousand sats arrives as a few thousand sats. On-chain if the amount is larger, or if you want the donation to double as a full end-to-end test of your own air-gapped setup, which is the more useful reason of the two. A tiny on-chain payment is a bad idea when the network is busy, because the miner fee can rival the amount."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What does a donation buy?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Nothing, deliberately. There are no tiers, no perks, no priority support, no listing and no influence over what gets built. SignerOS is MIT-licensed and stays free whether anybody donates or not, so a donation is a thank-you rather than a purchase. Donations are not tax-deductible anywhere, no receipt or invoice is issued, and a bitcoin payment cannot be refunded by the recipient."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is there something more useful than money?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes, and it is genuinely worth more. Build the image yourself on your own machine and publish the bzImage hash you get. The project's reproducibility claim currently rests on one host, one distribution and one host compiler, so a second person's number either confirms it or finds a bug worth more than any donation. A boot report from hardware nobody here owns, and testing Secure Boot with an enrolled certificate, are the other two gaps."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is the donation address a multisig address?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "It is a native SegWit P2WSH address: bech32, mainnet, witness version 0 with a 32-byte script hash. Anything that can pay a bc1 address can pay it. A wallet old enough to reject bech32 entirely is also old enough to be worth replacing."
+          }
+        }
+      ]
+    }
+  ]
+}
+</script>
+<style>
+/* No webfonts, no CDN, no analytics, no input boxes: zero network requests.
+   The two QR codes are inline SVG rather than images for the same reason, and
+   because a QR generated from the string printed beside it cannot drift from it.
+   Palette and type are index.html's. */
+:root{
+  --bg:#0d1117; --bg2:#10151c; --panel:#161b22; --panel2:#11161d;
+  --line:#30363d; --line2:#222932;
+  --ink:#e6edf3; --dim:#9aa4b2; --mut:#6b7683;
+  --amber:#f7931a; --amber2:#ffb54d; --green:#3fb950; --red:#f85149; --warnc:#d29922;
+  --volt:#7ee787;
+  --disp:ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+  --sans:ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+  --mono:ui-monospace,'SFMono-Regular','Cascadia Mono','DejaVu Sans Mono',Menlo,Consolas,monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.65;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+::selection{background:var(--amber);color:#0a0a0a}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:1160px;margin:0 auto;padding:0 24px}
+section{scroll-margin-top:84px}
+
+nav.top{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(7,9,13,.93);border-bottom:1px solid var(--line2)}
+.topin{display:flex;align-items:center;justify-content:space-between;height:58px}
+.brand{font-family:var(--mono);font-size:14px;letter-spacing:.06em}
+.brand b{color:var(--amber);font-weight:600}
+.navlinks{display:flex;gap:26px}
+.navlinks a{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);transition:color .2s}
+.navlinks a:hover,.navlinks a.on{color:var(--amber)}
+.ghpill{font-family:var(--mono);font-size:11px;letter-spacing:.1em;border:1px solid var(--line);padding:7px 13px;color:var(--dim);transition:.2s}
+.ghpill:hover{border-color:var(--amber);color:var(--amber);transform:translateY(-1px)}
+@media(max-width:860px){.navlinks{display:none}}
+
+.hero{padding:132px 0 74px;background:
+  radial-gradient(900px 460px at 82% -12%,rgba(247,147,26,.07),transparent 60%),
+  linear-gradient(180deg,var(--bg2),var(--bg))}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.24em;color:var(--amber);text-transform:uppercase}
+.display{font-family:var(--disp);font-weight:700;font-size:clamp(2.2rem,5.4vw,3.9rem);line-height:1.02;letter-spacing:.01em;margin:20px 0 18px;text-transform:uppercase}
+.display .blk{color:var(--amber)}
+.lede{font-size:clamp(1.02rem,1.5vw,1.16rem);color:var(--dim);max-width:47em}
+.lede em{color:var(--ink);font-style:normal;border-bottom:1px solid var(--amber)}
+
+.sec{padding:86px 0;border-top:1px solid var(--line2)}
+.shead{display:flex;align-items:center;gap:18px;margin-bottom:14px}
+.snum{font-family:var(--mono);font-size:12px;letter-spacing:.2em;color:var(--amber);white-space:nowrap}
+.srule{flex:1;height:1px;background:var(--line2)}
+.stag{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;color:var(--mut);text-transform:uppercase;white-space:nowrap}
+.h2{font-family:var(--disp);font-weight:700;font-size:clamp(1.6rem,3.4vw,2.4rem);text-transform:uppercase;line-height:1.14;margin-bottom:16px}
+.intro{color:var(--dim);max-width:54em;margin-bottom:10px}
+.intro b{color:var(--ink);font-weight:600}
+.intro+.intro{margin-top:14px}
+
+/* reveal on scroll */
+.rv{opacity:0;transform:translateY(22px);transition:opacity .7s ease,transform .7s cubic-bezier(.2,.7,.2,1);transition-delay:var(--d,0s)}
+.rv.in{opacity:1;transform:none}
+@media(prefers-reduced-motion:reduce){.rv{opacity:1;transform:none;transition:none}}
+
+/* the two routes, side by side */
+.routes{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.sec.pay{padding-top:56px}
+@media(max-width:900px){.routes{grid-template-columns:1fr}}
+.route{border:1px solid var(--line);background:var(--panel);padding:26px;position:relative;overflow:hidden;display:flex;flex-direction:column}
+.route::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:var(--amber)}
+.route.ln::before{background:var(--volt)}
+.route h3{font-family:var(--disp);font-weight:700;font-size:1.16rem;letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px}
+.route .rsub{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--mut);text-transform:uppercase;margin-bottom:18px}
+.route .rsub b{color:var(--amber);font-weight:600}
+.route.ln .rsub b{color:var(--volt)}
+.route p{color:var(--dim);font-size:.92rem;margin-bottom:10px}
+.route b{color:var(--ink);font-weight:600}
+
+/* QR + string */
+.qrbox{position:relative;width:210px;height:210px;background:#fff;padding:11px;border:1px solid var(--line);box-shadow:8px 8px 0 rgba(247,147,26,.15);margin:0 auto 22px}
+.route.ln .qrbox{box-shadow:8px 8px 0 rgba(126,231,135,.14)}
+.qrbox svg{width:100%;height:100%;display:block;image-rendering:pixelated}
+.scanline{position:absolute;left:11px;right:11px;height:2px;background:rgba(247,147,26,.85);box-shadow:0 0 12px rgba(247,147,26,.8);animation:scan 3s ease-in-out infinite;pointer-events:none}
+.route.ln .scanline{background:rgba(126,231,135,.85);box-shadow:0 0 12px rgba(126,231,135,.75)}
+@keyframes scan{0%,100%{top:11px}50%{top:calc(100% - 13px)}}
+@media(prefers-reduced-motion:reduce){.scanline{animation:none;opacity:.4}}
+.dlabel{font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;color:var(--mut)}
+.addrbox{display:flex;gap:10px;align-items:stretch;margin-top:12px}
+.addr{flex:1;font-family:var(--mono);font-size:12.5px;word-break:break-all;background:var(--panel2);border:1px solid var(--line);padding:14px 16px;color:var(--amber2);line-height:1.7}
+.route.ln .addr{color:var(--volt)}
+.copy{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;border:1px solid var(--line);background:transparent;color:var(--dim);padding:0 15px;cursor:pointer;transition:.2s;white-space:nowrap}
+.copy:hover{border-color:var(--amber);color:var(--amber)}
+.copy.did{border-color:var(--green);color:var(--green)}
+.opencta{display:inline-block;margin-top:14px;font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);border:1px solid var(--line);padding:11px 16px;transition:.2s}
+.opencta:hover{border-color:var(--volt);color:var(--volt)}
+.rfoot{margin-top:auto;padding-top:18px}
+.rnote{font-family:var(--mono);font-size:10.5px;color:var(--mut);letter-spacing:.04em;line-height:1.9;border-top:1px dashed var(--line2);padding-top:14px}
+.rnote b{color:var(--dim);font-weight:600}
+
+/* comparison table */
+.tblwrap{overflow-x:auto;margin-top:30px;border:1px solid var(--line2)}
+.ctbl{width:100%;border-collapse:collapse;font-size:.88rem;min-width:640px}
+.ctbl th,.ctbl td{text-align:left;padding:13px 16px;border-bottom:1px solid var(--line2);vertical-align:top}
+.ctbl thead th{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--dim);text-transform:uppercase;border-bottom:1px solid var(--line);background:var(--bg2)}
+.ctbl thead th.oc{color:var(--amber)} .ctbl thead th.lnh{color:var(--volt)}
+.ctbl tbody th{font-family:var(--sans);font-weight:600;font-size:.88rem;color:var(--ink);width:190px;border-right:1px solid var(--line2)}
+.ctbl td{color:var(--dim);width:36%}
+.ctbl td b{font-family:var(--mono);font-size:10px;letter-spacing:.1em;display:block;margin-bottom:3px;font-weight:600}
+.g b{color:var(--green)} .a b{color:var(--warnc)} .r b{color:var(--red)}
+
+.keycall{border:1px solid rgba(247,147,26,.55);border-left:3px solid var(--amber);background:rgba(247,147,26,.07);padding:20px 22px;margin-top:30px;max-width:62em}
+.keycall h5{font-family:var(--mono);font-size:11px;letter-spacing:.18em;color:var(--amber);margin-bottom:10px}
+.keycall p{color:var(--dim);font-size:.95rem;margin-bottom:9px}
+.keycall p:last-child{margin-bottom:0}
+.keycall b{color:var(--ink);font-weight:600}
+
+.bias{border:1px solid rgba(210,153,34,.45);background:rgba(210,153,34,.06);padding:18px 20px;max-width:56em;margin-top:26px}
+.bias h5{font-family:var(--mono);font-size:11px;letter-spacing:.18em;color:var(--warnc);margin-bottom:9px}
+.bias p{font-size:.93rem;color:var(--dim);margin-bottom:9px}
+.bias p:last-child{margin-bottom:0}
+.bias b{color:var(--ink);font-weight:600}
+
+/* what it does / does not buy */
+.buy{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:30px}
+@media(max-width:860px){.buy{grid-template-columns:1fr}}
+.bcard{border:1px solid var(--line);background:var(--panel2);padding:20px 22px}
+.bcard.no{border-left:2px solid var(--red)}
+.bcard.yes{border-left:2px solid var(--green)}
+.bcard h5{font-family:var(--mono);font-size:11px;letter-spacing:.14em;margin-bottom:12px}
+.bcard.no h5{color:var(--red)} .bcard.yes h5{color:var(--green)}
+.bcard ul{list-style:none}
+.bcard li{color:var(--dim);font-size:.91rem;padding:7px 0 7px 20px;position:relative;border-bottom:1px dashed var(--line2)}
+.bcard li:last-child{border-bottom:0}
+.bcard li::before{position:absolute;left:0;top:7px;font-family:var(--mono);font-size:11px}
+.bcard.no li::before{content:"✗";color:var(--red)}
+.bcard.yes li::before{content:"✓";color:var(--green)}
+.bcard b{color:var(--ink);font-weight:600}
+
+/* steps */
+.olist{list-style:none;counter-reset:st;max-width:58em;margin-top:26px}
+.olist li{counter-increment:st;position:relative;padding:14px 0 14px 52px;border-bottom:1px dashed var(--line2);color:var(--dim);font-size:.93rem}
+.olist li::before{content:counter(st,decimal-leading-zero);position:absolute;left:0;top:15px;font-family:var(--mono);font-size:12px;color:var(--amber)}
+.olist b{color:var(--ink);font-weight:600}
+
+.qa{border-top:1px solid var(--line2);padding:22px 0}
+.qa:last-of-type{border-bottom:1px solid var(--line2)}
+.qa h3{font-family:var(--disp);font-weight:700;font-size:1.06rem;letter-spacing:.02em;margin-bottom:8px}
+.qa p{color:var(--dim);font-size:.94rem;max-width:58em;margin-bottom:9px}
+.qa p:last-child{margin-bottom:0}
+.qa b{color:var(--ink);font-weight:600}
+
+.btnrow{display:flex;flex-wrap:wrap;gap:14px;margin-top:28px}
+.btn{display:inline-block;font-family:var(--mono);font-size:12.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;padding:14px 22px;border:1px solid var(--line);border-radius:2px;transition:transform .18s ease,box-shadow .18s ease,border-color .18s,color .18s}
+.btn-solid{background:var(--amber);border-color:var(--amber);color:#0a0a0a;box-shadow:4px 4px 0 rgba(247,147,26,.22)}
+.btn-solid:hover{transform:translate(-2px,-2px);box-shadow:7px 7px 0 rgba(247,147,26,.3)}
+.btn-ghost:hover{border-color:var(--amber);color:var(--amber);transform:translate(-2px,-2px);box-shadow:5px 5px 0 rgba(247,147,26,.12)}
+a.inl{color:var(--amber);border-bottom:1px solid rgba(247,147,26,.35)}
+a.inl:hover{border-bottom-color:var(--amber)}
+
+footer{border-top:1px solid var(--line2);padding:54px 0 70px;background:var(--bg2)}
+.fgrid{display:flex;flex-wrap:wrap;gap:34px;justify-content:space-between;align-items:flex-start}
+.fbrand{font-family:var(--mono);font-size:13px;letter-spacing:.06em;color:var(--dim)}
+.fbrand b{color:var(--amber)}
+.flinks{display:flex;flex-wrap:wrap;gap:22px}
+.flinks a{font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--mut);transition:.2s}
+.flinks a:hover{color:var(--amber)}
+.fnote{font-family:var(--mono);font-size:10.5px;color:var(--mut);margin-top:26px;letter-spacing:.05em;line-height:1.9}
+</style>
+</head>
+<body>
+
+<nav class="top">
+  <div class="wrap topin">
+    <a class="brand" href="index.html">SIGNER<b>://</b>OS</a>
+    <div class="navlinks">
+      <a href="#onchain">On-chain</a>
+      <a href="#lightning">Lightning</a>
+      <a href="#which">Which one</a>
+      <a href="#buys">What it buys</a>
+      <a href="#better">Better than money</a>
+      <a href="#faq">FAQ</a>
+    </div>
+    <a class="ghpill" href="index.html">← SIGNEROS</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <p class="eyebrow">Support the project</p>
+    <h1 class="display">Donate<span class="blk">.</span><br>Two ways</h1>
+    <p class="lede">Make your first SignerOS test transaction a small <em>on-chain</em> one to the address below — or support the project over <em>Lightning</em>.</p>
+  </div>
+</header>
+
+<!-- ══════════ THE TWO ROUTES ══════════
+     No heading and no paragraph here on purpose: this is what the reader came
+     for, and every sentence in front of it is a sentence between somebody and
+     the address they are trying to copy. The explaining happens below. -->
+<section class="sec pay" id="pay">
+  <div class="wrap">
+    <div class="routes">
+
+      <div class="route rv" id="onchain" style="--d:.1s">
+        <h3>Bitcoin on-chain</h3>
+        <p class="rsub">Mainnet · <b>Native SegWit (bech32)</b> · P2WSH</p>
+        <div class="qrbox">
+          <!--
+            QR of the bitcoin: URI printed below it, generated offline and pasted in as
+            markup so this page still fetches nothing at all. Regenerate with segno
+            (apt install python3-segno) if the address ever changes:
+
+              import io, segno
+              b = io.BytesIO()
+              segno.make('bitcoin:bc1q...', error='m') \
+                   .save(b, kind='svg', xmldecl=False, nl=False, scale=1,
+                         border=2, omitsize=True, dark='#0d1117',
+                         light='#ffffff', svgclass=None, lineclass=None)
+              print(b.getvalue().decode())
+
+            Verified the way the gift-card and recovery-sheet codes were: the emitted
+            <path> parsed back into a module matrix and decoded by an unrelated
+            implementation - both format-info copies cross-checked, BCH and
+            Reed-Solomon syndromes clean, payload compared byte for byte with the
+            string in the .addr below. Scan it once yourself after any change.
+          -->
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 41 41"><path fill="#fff" d="M0 0h41v41h-41z"/><path stroke="#0d1117" d="M2 2.5h7m2 0h1m3 0h2m1 0h1m1 0h1m1 0h5m1 0h1m3 0h7m-37 1h1m5 0h1m4 0h2m2 0h1m2 0h2m1 0h2m2 0h1m1 0h1m2 0h1m5 0h1m-37 1h1m1 0h3m1 0h1m1 0h1m6 0h1m3 0h3m2 0h1m1 0h1m1 0h1m1 0h1m1 0h3m1 0h1m-37 1h1m1 0h3m1 0h1m1 0h4m1 0h3m1 0h1m1 0h1m2 0h4m2 0h1m1 0h1m1 0h3m1 0h1m-37 1h1m1 0h3m1 0h1m1 0h2m2 0h1m5 0h4m1 0h1m1 0h2m1 0h1m1 0h1m1 0h3m1 0h1m-37 1h1m5 0h1m1 0h3m2 0h1m4 0h1m1 0h2m5 0h1m2 0h1m5 0h1m-37 1h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7m-29 1h1m3 0h1m1 0h1m5 0h2m2 0h1m1 0h3m-29 1h1m1 0h5m2 0h2m2 0h1m4 0h1m1 0h1m1 0h1m2 0h3m2 0h5m-34 1h3m1 0h1m2 0h1m2 0h1m1 0h4m6 0h4m1 0h2m1 0h1m1 0h1m1 0h1m-36 1h1m3 0h1m1 0h1m1 0h3m2 0h1m6 0h1m1 0h1m4 0h1m2 0h1m2 0h1m1 0h2m-36 1h1m1 0h3m2 0h1m4 0h1m2 0h1m1 0h1m2 0h1m4 0h2m3 0h2m2 0h2m-35 1h3m1 0h5m1 0h1m1 0h1m2 0h1m2 0h1m1 0h1m2 0h1m1 0h1m1 0h2m1 0h1m1 0h1m-34 1h2m1 0h1m3 0h3m2 0h2m1 0h2m1 0h2m1 0h2m1 0h2m1 0h1m2 0h1m3 0h1m-36 1h2m2 0h7m2 0h1m1 0h1m1 0h1m3 0h2m4 0h1m4 0h2m2 0h1m-37 1h1m2 0h2m5 0h5m1 0h3m2 0h3m3 0h1m1 0h2m1 0h1m3 0h1m-37 1h2m1 0h1m2 0h4m1 0h2m2 0h2m8 0h2m1 0h1m1 0h1m1 0h3m-33 1h4m3 0h1m2 0h1m1 0h2m2 0h1m1 0h1m1 0h2m4 0h2m1 0h1m1 0h1m-34 1h3m2 0h6m2 0h1m1 0h2m2 0h1m1 0h1m2 0h1m2 0h1m2 0h1m3 0h3m-34 1h1m1 0h1m1 0h2m1 0h3m2 0h1m2 0h4m6 0h2m2 0h1m-31 1h1m3 0h1m1 0h1m1 0h1m4 0h3m1 0h2m1 0h1m1 0h2m2 0h1m1 0h3m1 0h1m1 0h1m-37 1h1m3 0h2m3 0h3m1 0h2m3 0h2m1 0h3m1 0h2m1 0h2m3 0h1m1 0h1m-36 1h2m1 0h4m1 0h2m1 0h5m2 0h1m1 0h1m3 0h2m1 0h1m4 0h1m1 0h3m-37 1h1m1 0h1m1 0h1m2 0h3m1 0h1m3 0h2m3 0h3m1 0h1m1 0h2m2 0h3m2 0h1m-34 1h3m1 0h1m4 0h2m1 0h1m3 0h1m1 0h2m3 0h1m4 0h7m-37 1h2m1 0h1m1 0h1m3 0h2m1 0h5m4 0h1m1 0h1m2 0h1m1 0h2m3 0h1m-34 1h1m3 0h3m1 0h1m2 0h2m1 0h1m2 0h2m1 0h3m2 0h3m2 0h4m1 0h2m-37 1h1m3 0h1m2 0h1m2 0h2m1 0h1m2 0h1m4 0h1m1 0h2m2 0h4m2 0h1m-34 1h1m1 0h1m2 0h3m3 0h4m2 0h2m1 0h1m1 0h1m2 0h8m1 0h3m-29 1h2m3 0h2m1 0h2m1 0h7m1 0h2m3 0h1m1 0h1m-35 1h7m4 0h1m2 0h4m3 0h1m6 0h1m1 0h1m1 0h1m1 0h3m-37 1h1m5 0h1m1 0h1m1 0h1m3 0h8m6 0h1m3 0h1m-33 1h1m1 0h3m1 0h1m1 0h1m6 0h2m4 0h1m3 0h1m1 0h10m-37 1h1m1 0h3m1 0h1m1 0h1m2 0h3m1 0h1m2 0h1m1 0h2m1 0h1m1 0h2m2 0h2m1 0h2m2 0h1m-37 1h1m1 0h3m1 0h1m1 0h1m2 0h1m3 0h2m2 0h1m4 0h1m1 0h2m1 0h1m1 0h1m1 0h4m-37 1h1m5 0h1m2 0h4m1 0h2m3 0h3m1 0h1m2 0h6m1 0h1m2 0h1m-37 1h7m1 0h4m3 0h3m1 0h1m2 0h1m2 0h2m2 0h1m2 0h1m1 0h3"/></svg>
+          <div class="scanline"></div>
+        </div>
+        <p class="dlabel">DONATION ADDRESS · BITCOIN ON-CHAIN</p>
+        <div class="addrbox">
+          <div class="addr" id="donAddr">bc1qhxds906mu0gqdnxtrfu0uadtc5ul6fgx0sp238ly87dnpn9xk86stu90m3</div>
+          <button class="copy" data-copy="donAddr">COPY</button>
+        </div>
+        <a class="opencta" href="bitcoin:bc1qhxds906mu0gqdnxtrfu0uadtc5ul6fgx0sp238ly87dnpn9xk86stu90m3">OPEN IN A BITCOIN WALLET →</a>
+        <div class="rfoot">
+          <p class="rnote"><b>// CHECK THE NETWORK.</b> Bitcoin's own chain — not Lightning, not BEP-20, not ERC-20, not wrapped BTC. Sent on the wrong one it is gone.</p>
+        </div>
+      </div>
+
+      <div class="route ln rv" id="lightning" style="--d:.18s">
+        <h3>Lightning</h3>
+        <p class="rsub">Instant · <b>Lightning Address</b> · LNURL-pay</p>
+        <div class="qrbox">
+          <!--
+            QR of lightning:signeros@walletofsatoshi.com - the same string printed
+            below it. Same generator and the same independent decode check as the
+            on-chain code above; see that comment for the command.
+          -->
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 33 33"><path fill="#fff" d="M0 0h33v33h-33z"/><path stroke="#0d1117" d="M2 2.5h7m2 0h1m1 0h1m1 0h1m2 0h5m1 0h7m-29 1h1m5 0h1m4 0h1m1 0h4m5 0h1m5 0h1m-29 1h1m1 0h3m1 0h1m1 0h1m2 0h2m1 0h1m3 0h1m1 0h1m1 0h1m1 0h3m1 0h1m-29 1h1m1 0h3m1 0h1m1 0h3m1 0h4m1 0h1m1 0h1m2 0h1m1 0h3m1 0h1m-29 1h1m1 0h3m1 0h1m1 0h1m2 0h1m1 0h1m2 0h1m1 0h3m1 0h1m1 0h3m1 0h1m-29 1h1m5 0h1m1 0h2m2 0h1m1 0h2m4 0h1m1 0h1m5 0h1m-29 1h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7m-21 1h2m1 0h2m1 0h1m1 0h1m-17 1h1m1 0h5m2 0h1m1 0h2m4 0h1m4 0h5m-25 1h3m2 0h1m1 0h2m1 0h1m6 0h6m1 0h3m-28 1h3m1 0h6m1 0h1m2 0h2m3 0h1m2 0h2m-24 1h2m5 0h1m1 0h3m2 0h1m2 0h3m1 0h1m2 0h1m2 0h1m-26 1h2m1 0h1m2 0h2m1 0h1m4 0h1m2 0h1m4 0h2m-23 1h2m1 0h1m2 0h4m2 0h10m1 0h2m-28 1h2m3 0h1m3 0h6m1 0h1m4 0h2m-24 1h1m2 0h3m1 0h2m1 0h1m2 0h1m1 0h1m5 0h2m1 0h2m-25 1h2m1 0h3m3 0h1m1 0h1m1 0h1m2 0h1m5 0h1m2 0h3m-29 1h1m4 0h1m1 0h1m1 0h2m1 0h1m3 0h1m1 0h1m1 0h9m-29 1h1m1 0h1m3 0h2m1 0h2m1 0h1m2 0h3m2 0h1m5 0h1m-27 1h1m2 0h1m8 0h1m1 0h1m3 0h2m5 0h1m1 0h1m-28 1h1m2 0h1m2 0h1m5 0h1m2 0h3m2 0h5m1 0h1m1 0h1m-21 1h1m1 0h1m2 0h2m1 0h1m2 0h2m3 0h1m1 0h3m-29 1h7m2 0h1m2 0h9m1 0h1m1 0h2m-26 1h1m5 0h1m1 0h1m1 0h2m1 0h1m2 0h1m2 0h2m3 0h2m1 0h2m-29 1h1m1 0h3m1 0h1m1 0h1m1 0h3m1 0h1m2 0h1m2 0h5m1 0h1m-27 1h1m1 0h3m1 0h1m1 0h3m5 0h1m1 0h3m2 0h1m1 0h4m-29 1h1m1 0h3m1 0h1m1 0h2m1 0h1m2 0h2m2 0h3m1 0h1m1 0h1m1 0h2m-28 1h1m5 0h1m4 0h2m1 0h3m3 0h2m1 0h1m1 0h1m1 0h1m-28 1h7m1 0h1m1 0h2m1 0h5m1 0h1m1 0h4m1 0h1"/></svg>
+          <div class="scanline"></div>
+        </div>
+        <p class="dlabel">LIGHTNING ADDRESS</p>
+        <div class="addrbox">
+          <div class="addr" id="lnAddr">signeros@walletofsatoshi.com</div>
+          <button class="copy" data-copy="lnAddr">COPY</button>
+        </div>
+        <a class="opencta" href="lightning:signeros@walletofsatoshi.com">OPEN IN A LIGHTNING WALLET →</a>
+        <div class="rfoot">
+          <p class="rnote"><b>// SIGNEROS IS NOT INVOLVED.</b> Lightning needs a wallet that is online, so this is paid from your phone like any other payment. The air-gapped machine never sees it.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ 01 WHICH ONE ══════════ -->
+<section class="sec" id="which">
+  <div class="wrap">
+    <div class="shead rv"><span class="snum">01</span><span class="srule"></span><span class="stag">The difference</span></div>
+    <h2 class="h2 rv">What each one actually costs you.</h2>
+    <p class="intro rv" style="--d:.06s">Not a ranking. These are two different payment systems that happen to move the same money, and the row that decides it for most people is the first one.</p>
+    <div class="tblwrap rv" style="--d:.1s">
+      <table class="ctbl">
+        <thead>
+          <tr><th>&nbsp;</th><th class="oc">Bitcoin on-chain</th><th class="lnh">Lightning</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th>Fee on a small amount</th>
+            <td class="a"><b>CAN DOMINATE</b> A miner fee is charged per transaction, not per satoshi. When the network is busy the fee on a 5,000-sat donation can be larger than the donation.</td>
+            <td class="g"><b>NEGLIGIBLE</b> Routing fees are typically a few sats. A 5,000-sat donation arrives as roughly 5,000 sats.</td>
+          </tr>
+          <tr>
+            <th>How long it takes</th>
+            <td class="a"><b>MINUTES TO HOURS</b> One block is ten minutes on average, and a low fee can mean a long wait.</td>
+            <td class="g"><b>SECONDS</b> Usually before you have put the phone down.</td>
+          </tr>
+          <tr>
+            <th>Sensible amount</th>
+            <td class="g"><b>ANY, UPWARDS</b> The fee stops mattering as the amount grows, and there is no channel capacity to run into.</td>
+            <td class="a"><b>SMALL</b> Fine up to a few hundred thousand sats. Large payments can fail to find a route.</td>
+          </tr>
+          <tr>
+            <th>Can SignerOS sign it?</th>
+            <td class="g"><b>YES — THAT IS THE POINT</b> This is an ordinary PSBT: build it online, sign it offline, broadcast it online.</td>
+            <td class="r"><b>NO, AND IT NEVER WILL</b> Lightning needs a node that is online and watching the chain. There is no network code in this kernel at all.</td>
+          </tr>
+          <tr>
+            <th>Privacy</th>
+            <td class="a"><b>PUBLIC FOREVER</b> The payment, the amount and the coins you spent are on a public ledger that nobody can edit.</td>
+            <td class="g"><b>NOT ON A LEDGER</b> The payment is not published on-chain. Your own wallet provider still sees it.</td>
+          </tr>
+          <tr>
+            <th>What can go wrong</th>
+            <td class="a"><b>WRONG NETWORK</b> Sending "BTC" from an exchange over the wrong chain loses it. The address must be paid on Bitcoin's own network.</td>
+            <td class="g"><b>IT JUST FAILS</b> A Lightning payment that cannot be delivered comes back to you rather than disappearing.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="keycall rv" style="--d:.14s">
+      <h5>▲ THE ONE THAT IS WORTH DOING</h5>
+      <p>If you are going to use SignerOS for real money, <b>make your first signed transaction a small on-chain one to the address above</b>. It exercises every part of the chain you are about to trust — the USB stick boots, your words derive the wallet you expected, the change output verifies, the signature is valid and the broadcast lands — while the amount at risk is a few thousand sats rather than your savings.</p>
+      <p>If it does not work, you have found that out for the price of a coffee, and the project would rather have the bug report than the sats.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ 02 WHAT IT BUYS ══════════ -->
+<section class="sec" id="buys">
+  <div class="wrap">
+    <div class="shead rv"><span class="snum">02</span><span class="srule"></span><span class="stag">Terms, such as they are</span></div>
+    <h2 class="h2 rv">A donation buys nothing. That is deliberate.</h2>
+    <p class="intro rv" style="--d:.06s">SignerOS is free under the MIT licence and stays free whether this page ever collects anything. There is no product, so a donation cannot be a purchase — and pretending otherwise would create exactly the sort of obligation an audit-it-yourself project should not have.</p>
+    <div class="buy">
+      <div class="bcard no rv" style="--d:.1s">
+        <h5>WHAT IT DOES NOT GET YOU</h5>
+        <ul>
+          <li>No tiers, badges, perks or supporter listing.</li>
+          <li><b>No priority support</b> — issues are answered in whatever order they can be.</li>
+          <li><b>No influence over the roadmap.</b> Paying for a feature is not a thing here; open an issue and argue for it like everyone else.</li>
+          <li>No receipt, invoice or VAT document, and <b>it is not tax-deductible</b> anywhere.</li>
+          <li><b>No refunds are possible.</b> A bitcoin payment cannot be reversed by the recipient.</li>
+          <li>No warranty of any kind, before or after. The disclaimer at the foot of every page still applies in full.</li>
+        </ul>
+      </div>
+      <div class="bcard yes rv" style="--d:.16s">
+        <h5>WHAT IT ACTUALLY PAYS FOR</h5>
+        <ul>
+          <li><b>Hardware to test on</b> — the gap in this project's evidence is machines nobody here owns. Second-hand laptops with unfamiliar trackpads, and a real touchscreen panel, are the top of that list.</li>
+          <li><b>The domain and the time</b>, which is the whole of the running cost: no servers, no analytics, no CDN, nothing to bill monthly.</li>
+          <li>Someone eventually being paid to look at this code who is not its author.</li>
+          <li>Being able to keep saying no to the alternatives — sponsors, affiliate links to hardware wallets, a paid tier, telemetry.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="bias rv" style="--d:.2s">
+      <h5>▲ ONE HONEST NOTE ABOUT THIS PAGE</h5>
+      <p>This is the only page on the site that asks you for anything, and it is written by the person the money goes to. Treat the claims above the way you should treat every other claim here: <b>the code is public, so check it rather than believe it</b>. Nothing on this page changes what the software does.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ 03 BETTER THAN MONEY ══════════ -->
+<section class="sec" id="better">
+  <div class="wrap">
+    <div class="shead rv"><span class="snum">03</span><span class="srule"></span><span class="stag">Worth more than sats</span></div>
+    <h2 class="h2 rv">Three things this project needs more than money.</h2>
+    <p class="intro rv" style="--d:.06s">Each of these is a hole in the evidence that no amount of funding closes, because what they need is a <b>second person</b>. If you were going to donate and would rather spend an evening than a payment, do one of these instead.</p>
+    <ol class="olist rv" style="--d:.1s">
+      <li><b>Build the image and publish the hash you get.</b> The reproducibility claim has been measured, but on one host, one distribution and one host compiler. Two cross-machine comparisons have been attempted and both <em>disagreed</em> — each cause was found and fixed, and each was a real bug. A third number from somebody else's machine either closes the question or finds the next one. Compare <b>bzImage</b>, not the <b>.img</b>, and the release notes say why.</li>
+      <li><b>Boot it on hardware nobody here owns and say what happened.</b> Especially a real touchscreen panel, which has never been tested, and any laptop whose trackpad behaves oddly — that driver cannot be exercised in QEMU, so every claim about it comes from the machines the author happens to have.</li>
+      <li><b>Try Secure Boot properly.</b> Signing with your own key and enrolling the certificate into <em>db</em> has never been done on any firmware, EDK2 included. Every machine this has run on had Secure Boot switched off.</li>
+    </ol>
+    <div class="btnrow rv" style="--d:.14s">
+      <a class="btn btn-solid" href="https://github.com/signeros/signeros/issues" target="_blank" rel="noopener">Open an issue →</a>
+      <a class="btn btn-ghost" href="index.html#download">Download &amp; build</a>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ 04 FAQ ══════════ -->
+<section class="sec" id="faq">
+  <div class="wrap">
+    <div class="shead rv"><span class="snum">04</span><span class="srule"></span><span class="stag">Questions</span></div>
+    <h2 class="h2 rv">Before you send anything.</h2>
+
+    <div class="qa rv">
+      <h3>Can SignerOS sign a Lightning payment?</h3>
+      <p>No, and it never will. Lightning needs a node that is online, watching the chain and able to answer its channel partner within seconds. <b>SignerOS has no network code compiled into its kernel at all</b>, so it is the wrong shape for Lightning by construction rather than by omission.</p>
+      <p>The Lightning address on this page is paid from an ordinary online wallet on your phone or desktop, exactly like any other Lightning payment. Only the on-chain route involves SignerOS.</p>
+    </div>
+
+    <div class="qa rv">
+      <h3>Which should I use?</h3>
+      <p><b>Lightning</b> for a small amount from a phone: near-instant, and the fee is a rounding error, so a few thousand sats arrives as a few thousand sats. <b>On-chain</b> if the amount is larger, or if you want the donation to double as a full end-to-end test of your own setup — which is the more useful reason of the two.</p>
+      <p>A tiny on-chain payment when the network is busy is the one combination to avoid: the miner fee can rival the amount.</p>
+    </div>
+
+    <div class="qa rv">
+      <h3>Is the on-chain address a multisig address?</h3>
+      <p>It is a native SegWit <b>P2WSH</b> address: bech32, mainnet, witness version 0 with a 32-byte script hash. Anything that can pay a <b>bc1</b> address can pay it, and every modern wallet and exchange can. A wallet old enough to reject bech32 outright is old enough to be worth replacing.</p>
+    </div>
+
+    <div class="qa rv">
+      <h3>Can I donate from an exchange?</h3>
+      <p>You can, but withdraw on <b>Bitcoin's own network</b> and nothing else. Exchange withdrawal screens offer several networks under the name "BTC", and BEP-20, ERC-20, wrapped BTC or Lightning sent to the on-chain address above will not arrive and cannot be recovered. Check the minimum withdrawal too — it is often larger than a donation.</p>
+      <p>If you are paying over Lightning instead, an exchange that supports Lightning withdrawals will usually accept the <em>signeros@walletofsatoshi.com</em> address directly.</p>
+    </div>
+
+    <div class="qa rv">
+      <h3>How do I know this page has not been tampered with?</h3>
+      <p>You do not, and no page can prove that about itself — which is why every donation address in this project appears in exactly one place. If an address here ever disagrees with the one in the <a class="inl" href="https://github.com/signeros/signeros" target="_blank" rel="noopener">repository</a>, believe neither and open an issue. <b>Check any address against a second source before sending a large amount</b>, on this site or any other.</p>
+    </div>
+
+    <div class="qa rv">
+      <h3>I would rather not donate at all.</h3>
+      <p>Then do not, with no hard feelings and nothing withheld. Nothing on this site is gated, nothing asks who you are, and the software does not know whether you paid. Using it, reading the code and telling somebody it exists are all worth more than the average donation anyway.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="fgrid">
+      <div class="fbrand">SIGNER<b>://</b>OS<br>Air-gapped Bitcoin signing OS</div>
+      <div class="flinks">
+        <a href="index.html">Home</a>
+        <a href="what-is-bitcoin.html">Simply Bitcoin</a>
+        <a href="why-signeros.html">Why SignerOS</a>
+        <a href="index.html#download">Download</a>
+        <a href="index.html#faq">FAQ</a>
+        <a href="redeem_gift.html">Redeem a gift card</a>
+        <a href="https://github.com/signeros/signeros" target="_blank" rel="noopener">Source code</a>
+      </div>
+    </div>
+    <p class="fnote">No trackers · no analytics · no cookies · no webfonts · no CDN — this page makes no requests, and the QR codes above are inline SVG for that reason.<br>
+    DISCLAIMER — SignerOS is provided as-is, without warranty of any kind, and a donation changes none of that. Bitcoin is unforgiving: check any address against a second source before sending, test with small amounts first, and never type recovery words that hold real money into anything except a machine you started from SignerOS yourself.</p>
+  </div>
+</footer>
+
+<script>
+(function(){
+"use strict";
+function $(s,c){return (c||document).querySelector(s)}
+function $$(s,c){return Array.prototype.slice.call((c||document).querySelectorAll(s))}
+
+/* ---------- reveal on scroll ---------- */
+var RM = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+if(RM || !('IntersectionObserver' in window)){
+  $$('.rv').forEach(function(el){el.classList.add('in')});
+}else{
+  var io = new IntersectionObserver(function(es){
+    es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } });
+  },{threshold:.12,rootMargin:'0px 0px -8% 0px'});
+  $$('.rv').forEach(function(el){io.observe(el)});
+}
+
+/* ---------- copy buttons ---------- */
+$$('.copy').forEach(function(b){
+  b.addEventListener("click",function(){
+    var src=$("#"+b.dataset.copy); if(!src) return;
+    var txt=src.textContent.trim();
+    function ok(){ var o=b.textContent; b.textContent="COPIED ✓"; b.classList.add("did");
+      setTimeout(function(){b.textContent=o;b.classList.remove("did")},1400); }
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(txt).then(ok).catch(function(){fallback()});
+    } else fallback();
+    function fallback(){
+      var ta=document.createElement("textarea"); ta.value=txt; document.body.appendChild(ta);
+      ta.select(); try{document.execCommand("copy");ok()}catch(e){} document.body.removeChild(ta);
+    }
+  });
+});
+
+/* ---------- nav highlight ----------
+   Observe whatever each nav link actually points at, not 'section[id]':
+   the two payment routes are cards inside one section, so a selector on
+   sections would leave those two links permanently unlit. */
+var links={}, targets=[];
+$$('.navlinks a').forEach(function(a){
+  var id=a.getAttribute('href').replace(/^#/,''), el=id&&document.getElementById(id);
+  if(el){ links[id]=a; targets.push(el); }
+});
+if('IntersectionObserver' in window && targets.length){
+  var io2=new IntersectionObserver(function(es){
+    es.forEach(function(e){
+      var a=links[e.target.id]; if(!a||!e.isIntersecting) return;
+      $$('.navlinks a').forEach(function(x){x.classList.remove('on')});
+      a.classList.add('on');
+    });
+  },{rootMargin:'-45% 0px -50% 0px'});
+  targets.forEach(function(t){io2.observe(t)});
+}
+})();
+</script>
+</body>
+</html>

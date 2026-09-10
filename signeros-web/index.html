@@ -511,12 +511,6 @@ details .a code{font-size:.85em}
 /* donate */
 .donate{text-align:center}
 .donate .h2{margin-bottom:10px}
-.dongrid{display:grid;grid-template-columns:auto 1fr;gap:46px;align-items:center;text-align:left;margin-top:46px;max-width:820px;margin-left:auto;margin-right:auto}
-.qrbox{position:relative;width:224px;height:224px;background:#fff;padding:12px;border:1px solid var(--line);box-shadow:8px 8px 0 rgba(247,147,26,.15)}
-.qrbox img{width:100%;height:100%;object-fit:contain;display:block}
-.scanline{position:absolute;left:12px;right:12px;height:2px;background:rgba(247,147,26,.85);box-shadow:0 0 12px rgba(247,147,26,.8);animation:scan 3s ease-in-out infinite;pointer-events:none}
-@keyframes scan{0%,100%{top:14px}50%{top:calc(100% - 16px)}}
-.qr-fallback{display:none;place-items:center;position:absolute;inset:12px;background:#fff;color:#333;font-family:var(--mono);font-size:10px;text-align:center;line-height:1.8}
 .addrbox{display:flex;gap:10px;align-items:stretch;margin-top:16px}
 .addr{flex:1;font-family:var(--mono);font-size:12.5px;word-break:break-all;background:var(--panel2);border:1px solid var(--line);padding:15px 17px;color:var(--amber2);line-height:1.7;text-align:left}
 .dlabel{font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;color:var(--mut);text-align:left}
@@ -533,7 +527,7 @@ footer{border-top:1px solid var(--line);padding:54px 0 44px;background:var(--bg2
 .disc{margin-top:36px;padding-top:22px;border-top:1px dashed var(--line2);font-family:var(--mono);font-size:10.5px;color:var(--mut);line-height:1.9;max-width:70em}
 
 @media(max-width:960px){
-  .hero-grid,.cols,.dlgrid,.sbgrid,.dongrid{grid-template-columns:1fr}
+  .hero-grid,.cols,.dlgrid,.sbgrid{grid-template-columns:1fr}
   .col-stick{position:static}
   .hero{padding-top:120px}
   .seed-grid{grid-template-columns:repeat(3,1fr)}
@@ -555,7 +549,7 @@ footer{border-top:1px solid var(--line);padding:54px 0 44px;background:var(--bg2
   *,*::before,*::after{animation:none!important;transition:none!important}
   .rv,.hfade{opacity:1;transform:none}
   .lm>span{transform:none}
-  .noise,.scanline,.scrollcue{display:none}
+  .noise,.scrollcue{display:none}
 }
 </style>
 </head>
@@ -573,7 +567,7 @@ footer{border-top:1px solid var(--line);padding:54px 0 44px;background:var(--bg2
       <a href="#download">Download</a>
       <a href="#flash">Write USB</a>
       <a href="#secureboot">Secure Boot</a>
-      <a href="#donate">Donation</a>
+      <a href="donate.html">Donation</a>
       <a href="#faq">FAQ</a>
       <a href="#paper">On Paper</a>
     </div>
@@ -1346,24 +1340,24 @@ footer{border-top:1px solid var(--line);padding:54px 0 44px;background:var(--bg2
 </section>
 
 <!-- ══════════ 09 DONATE ══════════ -->
+<!-- The full version of this - both routes, the comparison and the terms -
+     lives on donate.html. What stays here is the one-click on-chain path,
+     because the common case should not cost a page load. Keep the address in
+     both places byte-identical, or delete it from one of them. -->
 <section class="sec donate" id="donate">
   <div class="wrap">
     <div class="shead rv"><span class="snum">10</span><span class="srule"></span><span class="stag">Support</span></div>
     <h2 class="h2 lm rv" style="text-align:center"><span>Make your first test transaction our tip jar.</span></h2>
-    <p class="intro rv" style="margin:0 auto;max-width:44em;text-align:center;--d:.1s">The nicest way to try SignerOS end-to-end: make your very first signed transaction a small one to the donation address below. A few thousand sats is plenty — and it proves the whole loop works on your machine before anything that matters depends on it.</p>
-    <div class="dongrid rv" style="--d:.15s">
-      <div class="qrbox">
-        <img src="donation_qr.png" alt="Bitcoin donation QR code" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'">
-        <div class="qr-fallback">QR IMAGE MISSING<br>— point this tag to a<br>PNG in your repo:<br>donation_qr.png</div>
-        <div class="scanline"></div>
+    <p class="intro rv" style="margin:0 auto;max-width:44em;text-align:center;--d:.1s">The nicest way to try SignerOS end-to-end: make your very first signed transaction a small one to the donation address below. A few thousand sats is plenty — and it proves the whole loop works on your machine before anything that matters depends on it. Prefer <b>Lightning</b>, or want to know what a donation does and does not buy? That is all on the <a class="extlink" href="donate.html">donation page</a>.</p>
+    <div class="rv" style="--d:.15s;max-width:820px;margin:38px auto 0">
+      <p class="dlabel" style="text-align:center">DONATION ADDRESS · BITCOIN ON-CHAIN</p>
+      <div class="addrbox">
+        <div class="addr" id="donAddr">bc1qhxds906mu0gqdnxtrfu0uadtc5ul6fgx0sp238ly87dnpn9xk86stu90m3</div>
+        <button class="copy doncopy" data-copy="donAddr">COPY</button>
       </div>
-      <div>
-        <p class="dlabel">DONATION ADDRESS · BITCOIN ON-CHAIN</p>
-        <div class="addrbox">
-          <div class="addr" id="donAddr">bc1qhxds906mu0gqdnxtrfu0uadtc5ul6fgx0sp238ly87dnpn9xk86stu90m3</div>
-          <button class="copy doncopy" data-copy="donAddr">COPY</button>
-        </div>
-        <p class="dnote">// Bitcoin on-chain only. Every sat is a thank-you — there are no tiers, no perks, just the project moving forward.</p>
+      <p class="dnote" style="text-align:center">// Bitcoin on-chain only, on Bitcoin's own network. Every sat is a thank-you — there are no tiers, no perks, just the project moving forward.</p>
+      <div style="text-align:center;margin-top:26px">
+        <a class="btn btn-solid" href="donate.html">Both ways to donate →</a>
       </div>
     </div>
   </div>
@@ -1374,7 +1368,7 @@ footer{border-top:1px solid var(--line);padding:54px 0 44px;background:var(--bg2
     <div class="fgrid">
       <div class="fcol"><b>SIGNEROS</b><br>Air-gapped Bitcoin signing OS<br>MIT © <span id="yr"></span> <a href="https://github.com/signeros/signeros" target="_blank" rel="noopener">&lt;MFA&gt;</a></div>
       <div class="fcol"><b>PROJECT</b><br><a href="what-is-bitcoin.html">Simply Bitcoin</a><br><a href="why-signeros.html">Why SignerOS</a><br><a href="https://github.com/signeros/signeros" target="_blank" rel="noopener">Source code</a><br><a href="#download">Download &amp; build</a><br><a href="#secureboot">Secure Boot</a></div>
-      <div class="fcol"><b>SUPPORT</b><br><a href="#donate">Donate (BTC)</a><br><a href="#faq">FAQ</a><br><a href="#flash">USB guide</a></div>
+      <div class="fcol"><b>SUPPORT</b><br><a href="donate.html">Donate (BTC &amp; Lightning)</a><br><a href="#faq">FAQ</a><br><a href="#flash">USB guide</a></div>
       <div class="fcol"><b>ON PAPER</b><br><a href="redeem_gift.html">Redeem a gift card</a><br><a href="gift_wallet.html">Print a gift card</a><br><a href="paper_wallet.html">Print a recovery sheet</a></div>
       <div class="fcol"><b>PRIVACY</b><br>No trackers · no analytics<br>No cookies · single HTML file<br>No webfonts, no CDN:<br>this page makes no requests.</div>
     </div>

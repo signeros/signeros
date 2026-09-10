@@ -1,0 +1,4 @@
+# Puts a "Sponsor" button on the repository that points at the project's own
+# donation page (on-chain Bitcoin and Lightning). No platform account, no
+# processor and no third party is involved: `custom` is a plain link.
+custom: ["https://signeros.org/donate.html"]

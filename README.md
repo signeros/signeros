@@ -3,7 +3,10 @@
 **[signeros.org](https://signeros.org/)** — the project page: what it is, every
 screen of it, the download and how to check it, and the printable
 [gift card](https://signeros.org/gift_wallet.html) and
-[recovery sheet](https://signeros.org/paper_wallet.html).
+[recovery sheet](https://signeros.org/paper_wallet.html). If you want to put
+something in the tin, the on-chain and Lightning addresses are on
+[the donation page](https://signeros.org/donate.html) — see
+[Supporting this](#supporting-this) for what that does and does not buy.
 
 A single-purpose, air-gapped, stateless x86_64 live USB operating system that
 does exactly three things: create a Bitcoin wallet, export watch-only keys for
@@ -1539,6 +1542,37 @@ an *unsigned* image with `UEFI device has been blocked by the current security
 policy`, either sign it or turn Secure Boot off. On HP machines note that
 "boot from external media" is a separate policy from Secure Boot, and both have to
 allow it.
+
+## Supporting this
+
+There is nothing to buy and nothing to register for, and there never will be.
+If you want to put something in the tin, the two addresses are on
+**<https://signeros.org/donate.html>** — Bitcoin on-chain, or Lightning.
+
+A donation buys nothing: no tiers, no perks, no priority on issues and no
+influence over what gets built. It is not tax-deductible and cannot be
+refunded. The nicest way to use the on-chain one is to make it your *first*
+signed transaction on a machine you have just built, because that exercises the
+whole loop for the price of a coffee.
+
+Note that **SignerOS cannot sign a Lightning payment and never will** — Lightning
+needs a node that is online, and there is no network code in this kernel. The
+Lightning address is paid from an ordinary online wallet; only the on-chain route
+involves this software at all.
+
+Three contributions are worth more than any donation, and each of them is a hole
+in [Verification](#verification) that only somebody else can fill:
+
+1. **Build a tag and publish the `bzImage` hash you get.** The reproducibility
+   claim has been measured, but on one host, one distribution and one host
+   compiler. Two cross-machine comparisons have been attempted and both
+   disagreed; each cause was a real bug, found and fixed. A third number either
+   closes the question or finds the next one.
+2. **Boot it on hardware nobody here owns and report what happened** — a real
+   touchscreen panel above all, and any laptop whose trackpad misbehaves. That
+   driver cannot be exercised in QEMU.
+3. **Try Secure Boot properly**: sign with your own key and enrol the certificate
+   into `db`. That has never been done on any firmware, EDK2 included.
 
 ## License
 

@@ -36,6 +36,11 @@ Facts that are easy to get wrong when summarising this project:
   own key and enrol your own certificate, or you turn Secure Boot off.
 - Nothing on the site, and nothing in the software, ever asks anybody to type
   recovery words into a web page. There is no input box on any page.
+- The donation page offers **Lightning**, and that says nothing about the
+  software: SignerOS cannot sign a Lightning payment and never will, because
+  Lightning needs a node that is online and this kernel has no network code.
+  The Lightning address is paid from an ordinary online wallet. Only the
+  on-chain route involves SignerOS at all.
 
 ## Pages
 
@@ -76,6 +81,16 @@ Facts that are easy to get wrong when summarising this project:
   template that folds into four panels — occasion picker, a note the giver types,
   and ruled lines where the recovery words are written **by hand**. Printed blank;
   it has no field for a seed and never will.
+- [Donate to SignerOS — on-chain or Lightning](https://signeros.org/donate.html):
+  the two donation routes, each with the destination string and a QR generated
+  from that same string. On-chain is a bech32 P2WSH mainnet address and doubles
+  as a full end-to-end test of the reader's own signing setup; Lightning is a
+  Lightning Address for a few sats from a phone, paid from an online wallet with
+  no involvement from SignerOS. Also states plainly what a donation does **not**
+  buy — no tiers, no perks, no priority support, no influence over the roadmap,
+  no receipt, not tax-deductible, no refunds — and lists three contributions the
+  project values above money: a reproducible-build hash from a second machine, a
+  boot report from untested hardware, and a real Secure Boot enrolment.
 - [Printable recovery sheet](https://signeros.org/paper_wallet.html): an A4 sheet
   for 12 or 24 words plus the master fingerprint, with what the machine does with
   them explained on the back.
