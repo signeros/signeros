@@ -8,6 +8,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include <cstdint>
 #include <cstdio>
 #include <cstring>
 #include <string>
@@ -280,13 +281,90 @@ bool runFileNameChecks(std::string *err)
 // broken pool would visibly lose: that a source was actually available, that
 // two draws from the same pool differ, and that the result is a mnemonic the
 // signing path accepts.
+//
+// It also proves the two decisions that stand in front of all of that, and
+// those are the only part of this file that can be tested exhaustively: which
+// reports are allowed to produce a key, and which runs of CPU words count. Both
+// are pure functions precisely so that this can happen here - an unseeded
+// kernel and a stuck RDRAND are not states a test can ask a real machine for.
 // ---------------------------------------------------------------------------
 bool runEntropyChecks(std::string *err)
 {
+    auto bad = [&](const char *what) {
+        if (err) *err = what;
+        return false;
+    };
+
     emit(std::string("entropy-kernel-ready=") +
          (kernelEntropyReady() ? "yes" : "no") +
          " cpu-rdseed=" + (cpuHasRdseed() ? "yes" : "no") +
          " cpu-rdrand=" + (cpuHasRdrand() ? "yes" : "no"));
+
+    // The refusal policy, as a table. Row 2 is the whole of GitHub issue #3:
+    // RDRAND on its own, with the kernel admitting it is not seeded, used to be
+    // accepted here.
+    {
+        struct Case {
+            const char *name;
+            bool kernelOk;
+            bool kernelReady;
+            std::size_t rdseed;
+            std::size_t rdrand;
+            bool allowed;
+        };
+        static const Case cases[] = {
+            { "seeded kernel alone",            true,  true,   0,  0, true  },
+            { "unseeded kernel + rdrand alone", true,  false,  0, 32, false },
+            { "unseeded kernel + rdseed",       true,  false, 32,  0, true  },
+            { "unreadable kernel + rdseed",     false, false, 32,  0, true  },
+            { "seeded kernel + rdrand",         true,  true,   0, 32, true  },
+            { "jitter and the operator only",   true,  false,  0,  0, false },
+            { "nothing at all",                 false, false,  0,  0, false },
+        };
+        for (const Case &c : cases) {
+            EntropyReport r;
+            r.kernelOk = c.kernelOk;
+            r.kernelWasReady = c.kernelReady;
+            r.rdseedWords = c.rdseed;
+            r.rdrandWords = c.rdrand;
+            if (entropyPolicySatisfied(r) != c.allowed) {
+                if (err) *err = std::string("the entropy policy answered wrongly "
+                                            "for: ") + c.name;
+                return false;
+            }
+        }
+        emit("entropy-policy-cases=" +
+             std::to_string(sizeof(cases) / sizeof(cases[0])) + " ok");
+    }
+
+    // The sanity check, fed the shapes no working CPU will produce on demand.
+    {
+        const std::uint64_t ones = ~UINT64_C(0);
+        const std::uint64_t good[4]  = { 0x0123456789abcdefULL, 2, 3, 4 };
+        const std::uint64_t zeros[4] = { 0, 0, 0, 0 };
+        const std::uint64_t stuck[4] = { ones, ones, ones, ones };
+        const std::uint64_t same[4]  = { 7, 7, 7, 7 };
+        const std::uint64_t oneBad[4] = { 1, 2, ones, 4 };
+        const std::uint64_t repeat[4] = { 1, 2, 3, 1 };
+
+        if (!cpuWordsLookSane(good, 4))
+            return bad("cpuWordsLookSane rejected a run of distinct words");
+        if (cpuWordsLookSane(zeros, 4))
+            return bad("cpuWordsLookSane accepted all zeroes");
+        if (cpuWordsLookSane(stuck, 4))
+            return bad("cpuWordsLookSane accepted all ones");
+        if (cpuWordsLookSane(same, 4))
+            return bad("cpuWordsLookSane accepted a stuck register");
+        if (cpuWordsLookSane(oneBad, 4))
+            return bad("cpuWordsLookSane accepted a run containing all-ones");
+        if (cpuWordsLookSane(repeat, 4))
+            return bad("cpuWordsLookSane accepted a repeated word");
+        if (cpuWordsLookSane(good, 1))
+            return bad("cpuWordsLookSane accepted a run it could not check");
+        if (cpuWordsLookSane(good, 0) || cpuWordsLookSane(nullptr, 4))
+            return bad("cpuWordsLookSane accepted an empty run");
+        emit("entropy-cpu-sanity=ok");
+    }
 
     SecureBuffer<32> a, b;
     EntropyPool pool;

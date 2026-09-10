@@ -292,10 +292,20 @@ If a guardrail check fails, the check is almost certainly right. Fix the cause.
   have used was behind a `#`. The file is read by a person picking a line, not by a
   machine consuming all of them. Do not "tidy" the duplicates back into comments.
 - **Entropy is mixed, never chosen.** `core/entropy.cpp` folds the kernel CSPRNG,
-  the CPU's `RDSEED`, timing jitter and the operator's own pointer/key events
-  through HMAC-SHA512, and refuses to generate at all if neither the kernel nor
-  the CPU could be read. Signing is unaffected by any of this (RFC6979), so this
-  is the only code path where RNG quality is load-bearing.
+  the CPU's `RDSEED`, `RDRAND`, timing jitter and the operator's own pointer/key
+  events through HMAC-SHA512. Everything is *mixed*; only two things are
+  *counted*, and `entropyPolicySatisfied()` is that whole decision: a seeded
+  kernel CRNG, or `RDSEED`. **`RDRAND` alone is not enough** - it is a DRBG whose
+  reseeding nobody outside the CPU can inspect, and AMD has shipped parts that
+  returned a constant from it with the carry flag set to say it worked. So the
+  words each instruction produced are counted separately (`rdseedWords` /
+  `rdrandWords`; one combined total is exactly how RDRAND came to pass for
+  RDSEED here) and each run goes through `cpuWordsLookSane()` - all-zeroes,
+  all-ones, any repeat at all - before it may be credited. Both are pure
+  functions so `runEntropyChecks()` can table-test them: an unseeded kernel and
+  a stuck RDRAND are not states a test can ask a real machine for. Signing is
+  unaffected by any of this (RFC6979), so this is the only code path where RNG
+  quality is load-bearing.
 - **The exported xpubs are checked against a second implementation.**
   `--self-test` prints each account xpub and first address; `host_selftest.sh`
   diffs them against `make_test_data.py wallet-expect`. It caught a real one

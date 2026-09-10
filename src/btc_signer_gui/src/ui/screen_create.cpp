@@ -445,20 +445,8 @@ QWidget *CreateScreen::buildEntropyPage()
     entropyHint_->setWordWrap(true);
     v->addWidget(entropyHint_);
 
-    connect(pad_, &EntropyPad::collected, this, [this]() {
-        entropyBar_->setValue(pad_->percent());
-        const bool ready = pool_.userTargetReached();
-        generateBtn_->setEnabled(ready);
-        entropyHint_->setStyleSheet(
-            QStringLiteral("color: %1;").arg(ready ? theme::ok() : theme::textDim()));
-        entropyHint_->setText(
-            ready ? QStringLiteral("Enough. %1 movements collected - press "
-                                   "Generate when you are ready.")
-                        .arg(pool_.userSamples())
-                  : QStringLiteral("%1 of %2 movements collected.")
-                        .arg(pool_.userSamples())
-                        .arg(EntropyPool::kUserSampleTarget));
-    });
+    connect(pad_, &EntropyPad::collected, this,
+            [this]() { entropySampleCollected(); });
 
     outer->addWidget(theme::centeredColumn(column, theme::px(900), page), 1);
 
@@ -1017,28 +1005,13 @@ void CreateScreen::goTo(Page page)
 
     switch (page) {
     case kEntropyPage:
+        // Only the trail is restarted: the pool keeps what it has, so coming
+        // back from "Back" with the bar already full has to read as full - it
+        // said "300 of 256 movements collected" in the dim colour when this
+        // was its own copy of the same three lines.
         pad_->restart();
-        entropyBar_->setValue(pad_->percent());
-        generateBtn_->setEnabled(pool_.userTargetReached());
-        entropyHint_->setStyleSheet(
-            QStringLiteral("color: %1;").arg(theme::textDim()));
-        entropyHint_->setText(
-            QStringLiteral("%1 of %2 movements collected.")
-                .arg(pool_.userSamples())
-                .arg(EntropyPool::kUserSampleTarget));
-        entropySources_->setText(
-            QStringLiteral("kernel pool <span style='color:%1'>%2</span>   ·   "
-                           "CPU RDSEED <span style='color:%3'>%4</span>   ·   "
-                           "CPU RDRAND <span style='color:%5'>%6</span>")
-                .arg(QString::fromLatin1(kernelEntropyReady() ? theme::ok() : theme::warn()),
-                     kernelEntropyReady() ? QStringLiteral("ready")
-                                          : QStringLiteral("still filling"),
-                     QString::fromLatin1(cpuHasRdseed() ? theme::ok() : theme::textDim()),
-                     cpuHasRdseed() ? QStringLiteral("available")
-                                    : QStringLiteral("not on this CPU"),
-                     QString::fromLatin1(cpuHasRdrand() ? theme::ok() : theme::textDim()),
-                     cpuHasRdrand() ? QStringLiteral("available")
-                                    : QStringLiteral("not on this CPU")));
+        entropySampleCollected();
+        refreshEntropySources();
         break;
 
     case kSeedPage:
@@ -1091,6 +1064,80 @@ void CreateScreen::goTo(Page page)
     }
 
     setFocus();
+}
+
+// ---------------------------------------------------------------------------
+// The entropy page
+// ---------------------------------------------------------------------------
+
+void CreateScreen::entropySampleCollected()
+{
+    entropyBar_->setValue(pad_->percent());
+    const bool ready = pool_.userTargetReached();
+    generateBtn_->setEnabled(ready);
+    entropyHint_->setStyleSheet(
+        QStringLiteral("color: %1;").arg(ready ? theme::ok() : theme::textDim()));
+    entropyHint_->setText(
+        ready ? QStringLiteral("Enough. %1 movements collected - press "
+                               "Generate when you are ready.")
+                    .arg(pool_.userSamples())
+              : QStringLiteral("%1 of %2 movements collected.")
+                    .arg(pool_.userSamples())
+                    .arg(EntropyPool::kUserSampleTarget));
+
+    // These same events are what fills the kernel's pool, through the input
+    // layer, so a machine that arrived here unseeded can leave the page seeded.
+    // Every sixteenth sample, and only until the answer is yes: a getrandom(2)
+    // per mouse move would be a syscall a pixel, and the pool does not turn
+    // over between two of them.
+    if (!kernelReadySeen_ && (pool_.userSamples() % 16) == 0)
+        refreshEntropySources();
+}
+
+void CreateScreen::refreshEntropySources()
+{
+    if (!kernelReadySeen_)
+        kernelReadySeen_ = kernelEntropyReady();
+
+    const bool haveSeed = cpuHasRdseed();
+    const bool haveRand = cpuHasRdrand();
+
+    QString line =
+        QStringLiteral("kernel pool <span style='color:%1'>%2</span>   ·   "
+                       "CPU RDSEED <span style='color:%3'>%4</span>   ·   "
+                       "CPU RDRAND <span style='color:%5'>%6</span>")
+            .arg(QString::fromLatin1(kernelReadySeen_ ? theme::ok() : theme::warn()),
+                 kernelReadySeen_ ? QStringLiteral("ready")
+                                  : QStringLiteral("still filling"),
+                 QString::fromLatin1(haveSeed ? theme::ok() : theme::textDim()),
+                 haveSeed ? QStringLiteral("available")
+                          : QStringLiteral("not on this CPU"),
+                 // Dim rather than green even when it is there: RDRAND is mixed
+                 // in, but it is never a reason to proceed, and a green
+                 // "available" next to a red kernel pool would say the opposite.
+                 QString::fromLatin1(theme::textDim()),
+                 haveRand ? QStringLiteral("available, not counted")
+                          : QStringLiteral("not on this CPU"));
+
+    // Neither of the two sources that count is here yet, so Generate will
+    // refuse. Saying so now is the difference between a refusal the operator
+    // saw coming and one that arrives when they press the button.
+    if (!kernelReadySeen_ && !haveSeed) {
+        line += QStringLiteral("<br><span style='color:%1'>%2</span>")
+                    .arg(QString::fromLatin1(theme::warn()),
+                         haveRand
+                             ? QStringLiteral(
+                                   "Waiting for the kernel pool. This CPU has no "
+                                   "RDSEED, and RDRAND alone is not something to "
+                                   "mint a key from - keep moving, that is what "
+                                   "seeds the pool.")
+                             : QStringLiteral(
+                                   "Waiting for the kernel pool. This CPU offers no "
+                                   "hardware generator at all - keep moving, that "
+                                   "is what seeds the pool."));
+    }
+
+    entropySources_->setText(line);
 }
 
 // ---------------------------------------------------------------------------
@@ -1825,11 +1872,7 @@ void CreateScreen::keyPressEvent(QKeyEvent *event)
         // a QString to get it.
         pool_.mixUserEvent(k, static_cast<int>(event->modifiers()), 0x4B45u);
         pad_->update();
-        entropyBar_->setValue(pad_->percent());
-        generateBtn_->setEnabled(pool_.userTargetReached());
-        entropyHint_->setText(QStringLiteral("%1 of %2 movements collected.")
-                                  .arg(pool_.userSamples())
-                                  .arg(EntropyPool::kUserSampleTarget));
+        entropySampleCollected();
         return;
     }
 

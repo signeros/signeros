@@ -24,12 +24,18 @@
 //      non-blocking, because a getrandom(2) that waits for an unseeded pool has
 //      no bound and this process is a kiosk with no shell behind it - so
 //      "is it seeded" is asked rather than waited on, and reported either way.
-//   2. The CPU's own hardware TRNG, read directly with RDSEED (RDRAND as a
-//      fallback), bypassing the kernel entirely. An unprivileged instruction,
-//      so no device node and no permission is involved. This is a genuinely
-//      separate path to the same silicon the kernel used - it is here so that a
-//      compromised kernel pool is not the only thing standing between the user
-//      and a predictable seed, and vice versa.
+//   2. The CPU's own hardware TRNG, read directly with RDSEED, bypassing the
+//      kernel entirely. An unprivileged instruction, so no device node and no
+//      permission is involved. This is a genuinely separate path to the same
+//      silicon the kernel used - it is here so that a compromised kernel pool
+//      is not the only thing standing between the user and a predictable seed,
+//      and vice versa.
+//   2b. RDRAND, when the CPU has no RDSEED or RDSEED runs dry. It is mixed in
+//      like everything else, and it is deliberately NOT one of the sources
+//      this file will proceed on alone: RDRAND is a DRBG, so what comes out is
+//      AES-CTR over a seed nobody outside the CPU can inspect, and "it
+//      answered" is not evidence that anything unpredictable happened behind
+//      it. See entropyPolicySatisfied().
 //   3. Timing jitter: the low bits of the timestamp counter sampled across a
 //      short unpredictable-latency loop. Weak on its own, free, and independent
 //      of both of the above.
@@ -56,11 +62,25 @@ struct EntropyReport {
     bool kernelOk = false;          // a full block was read from the kernel
     bool kernelWasReady = false;    // ...and it came from an initialised CRNG,
                                     // rather than best-effort /dev/urandom
-    bool cpuRdseed = false;         // RDSEED is present and produced values
-    bool cpuRdrand = false;         // RDRAND is present (fallback, or as well)
-    std::size_t cpuSamples = 0;     // 64-bit words obtained from the CPU TRNG
+
+    // Words that were drawn AND passed cpuWordsLookSane(), counted per
+    // instruction rather than together. The two are not interchangeable - one
+    // is the entropy source, the other is a generator standing in front of it -
+    // and the refusal in finalise() turns on which of them actually produced
+    // something, so a single combined total would be a number that cannot
+    // answer the question being asked of it. That total is exactly what this
+    // used to be.
+    std::size_t rdseedWords = 0;
+    std::size_t rdrandWords = 0;
+    std::size_t cpuRejected = 0;    // drawn, then discarded as not random-looking
+
+    bool cpuRdseed = false;         // RDSEED contributed at least one counted word
+    bool cpuRdrand = false;         // RDRAND contributed at least one counted word
+
     std::size_t jitterSamples = 0;
     std::size_t userSamples = 0;    // events the operator contributed
+
+    std::size_t cpuWords() const { return rdseedWords + rdrandWords; }
 
     // A one-line human summary of the above, for the screen and the self-test.
     std::string describe() const;
@@ -75,6 +95,25 @@ bool cpuHasRdrand();
 // (getrandom(GRND_NONBLOCK) succeeds). False means a read would block, which on
 // this appliance means "keep moving the mouse".
 bool kernelEntropyReady();
+
+// True when a run of 64-bit words from a hardware generator looks like output
+// rather than a stuck register.
+//
+// This exists because the documented way RDRAND fails is not that the carry
+// flag goes clear. It is that the instruction reports success and hands back a
+// constant: AMD shipped silicon that returned all-ones from it, which is why
+// Linux runs its own sanity check at boot and clears the feature bit when it
+// fails (arch/x86/kernel/cpu/rdrand.c). That check protects the kernel's use of
+// the instruction and nothing else - CPUID still advertises it, so a userspace
+// reader like this one gets the constant unless it looks for itself.
+//
+// Pure, and declared here rather than hidden in the .cpp, so the self-test can
+// feed it the broken cases. No real CPU will produce those on demand.
+bool cpuWordsLookSane(const std::uint64_t *words, std::size_t n);
+
+// Whether a report describes randomness this machine is willing to mint a key
+// from. See the comment on the implementation for why RDRAND is not in it.
+bool entropyPolicySatisfied(const EntropyReport &report);
 
 // ---------------------------------------------------------------------------
 // EntropyPool
@@ -119,9 +158,10 @@ public:
     // and write `bytes` of final entropy to `out`.
     //
     // Refuses - returns false, writes nothing - unless at least one source we
-    // can stand behind contributed: an initialised kernel CRNG, or the CPU's
-    // own generator. There is no "best effort" and no override here: a seed
-    // that might be guessable is worse than no wallet at all.
+    // can stand behind contributed: an initialised kernel CRNG, or RDSEED.
+    // RDRAND alone is not enough (entropyPolicySatisfied()). There is no "best
+    // effort" and no override here: a seed that might be guessable is worse
+    // than no wallet at all.
     bool finalise(unsigned char *out, std::size_t bytes,
                   EntropyReport *report, std::string *err);
 

@@ -148,6 +148,17 @@ private:
     void goTo(Page page);
 
     void setWordCount(int words);
+
+    // One collected sample - a pointer move, a tap or a keystroke - has already
+    // gone into the pool by the time this runs; this is everything the entropy
+    // page shows about it. Shared by the pad's signal and by keyPressEvent(),
+    // which used to keep their own slightly different copies of it.
+    void entropySampleCollected();
+    // Which sources this machine actually has, restated. Not a constant: the
+    // kernel pool fills from the very events being collected here, so the line
+    // has to be able to change from "still filling" to "ready" while the
+    // operator watches.
+    void refreshEntropySources();
     void generate();
 
     // Verification entry, driven by the on-screen keyboard and by
@@ -210,6 +221,10 @@ private:
     QLabel *entropySources_ = nullptr;
     QLabel *entropyHint_ = nullptr;
     QPushButton *generateBtn_ = nullptr;
+    // The kernel pool never goes back to unseeded, so the question is asked
+    // until the answer is yes and then not again: refreshEntropySources() runs
+    // per sample, and a getrandom(2) per mouse move would be a syscall a pixel.
+    bool kernelReadySeen_ = false;
 
     // --- seed
     SeedView *seedView_ = nullptr;

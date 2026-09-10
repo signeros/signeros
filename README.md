@@ -473,22 +473,45 @@ HMAC-SHA512 chain, `state ← HMAC-SHA512(key = state, msg = sample)`:
 | Source | Why it is in the list |
 |---|---|
 | Kernel CSPRNG | seeded from interrupt timing and from the CPU at boot, before userspace exists. Read **non-blocking**: a `getrandom(2)` that waits on an unseeded pool has no bound, and a kiosk with no shell behind it cannot survive a syscall that never returns. Whether it was actually seeded is reported, not assumed |
-| CPU TRNG, read directly with `RDSEED` (`RDRAND` as fallback) | the same silicon through a completely different door, bypassing the kernel. An unprivileged instruction, so no device node and no permission is involved - `/dev/hwrng` is root-only on this image and deliberately unused |
+| CPU TRNG, read directly with `RDSEED` | the same silicon through a completely different door, bypassing the kernel. An unprivileged instruction, so no device node and no permission is involved - `/dev/hwrng` is root-only on this image and deliberately unused |
+| `RDRAND`, where the CPU has no `RDSEED` or `RDSEED` runs dry | mixed in like everything else, and **never counted as a reason to proceed** - see below |
 | Timing jitter | the low bits of the timestamp counter across an unpredictable-latency loop. Weak alone, free, independent of both of the above |
 | The operator's own movement | pointer motion, taps and keystrokes with the time each arrived. Physical, outside the machine, and the only source a purely software attacker cannot observe |
 
 One unpredictable source among them is enough: an attacker would have to
 compromise **all** of them simultaneously for the result to be guessable.
 
-At least one source has to be one the device can stand behind - a seeded kernel
-CRNG, or the CPU's own generator. If the kernel says it is not seeded yet *and*
-the CPU offers neither instruction, generation is refused outright. There is no
-override, because a signer that asks "randomness looks weak, continue anyway?"
-has already lost the argument: the operator has no way to evaluate the question
-and every incentive to press yes.
+At least one source has to be one the device can stand behind, and that list has
+exactly two entries: **a seeded kernel CRNG, or `RDSEED`**. If neither is
+present, generation is refused outright. There is no override, because a signer
+that asks "randomness looks weak, continue anyway?" has already lost the
+argument: the operator has no way to evaluate the question and every incentive
+to press yes.
 
-The screen states which sources actually contributed on this boot, and the seed
-page prints the same line again above the words.
+**`RDRAND` is not on that list**, and it used to be. It is a DRBG: what it
+returns is AES-CTR over a seed nobody outside the CPU can inspect, so "it
+answered" is not evidence that anything unpredictable happened behind it -
+whereas `RDSEED` is the conditioned output of the entropy source itself. The
+failure is not hypothetical either: AMD has shipped parts that returned a
+constant from `RDRAND` while still setting the carry flag to say it had
+succeeded, which is why Linux runs its own sanity check at boot and clears the
+feature bit when it fails. That check covers the kernel's use of the instruction
+and nothing else - CPUID still advertises it, so a userspace reader gets the
+constant unless it looks for itself. So every run of words the CPU gives up is
+checked here for exactly that shape - all-zeroes, all-ones, or any repeat at all
+- and a run that fails is still folded into the pool but counted as nothing.
+
+The consequence on a machine with `RDRAND` but no `RDSEED` is that generation
+waits for the kernel pool. In practice it does not wait long: the movements the
+entropy page asks for are themselves what seeds that pool, through the input
+layer, so it fills while the operator is filling the bar. The page says which
+sources it has as it goes, and says outright when it is waiting - a refusal
+should be one the operator saw coming, not one that arrives when they press the
+button.
+
+The seed page prints the same line again above the words, per instruction and in
+words: `cpu-rdseed=28w cpu-rdrand=4w`. One combined total is what let `RDRAND`
+pass for `RDSEED` here in the first place.
 
 ### Why you have to type all of them back
 
