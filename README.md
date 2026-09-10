@@ -472,7 +472,7 @@ HMAC-SHA512 chain, `state ← HMAC-SHA512(key = state, msg = sample)`:
 
 | Source | Why it is in the list |
 |---|---|
-| Kernel CSPRNG | seeded from interrupt timing and from the CPU at boot, before userspace exists. Read **non-blocking**: a `getrandom(2)` that waits on an unseeded pool has no bound, and a kiosk with no shell behind it cannot survive a syscall that never returns. Whether it was actually seeded is reported, not assumed |
+| Kernel CSPRNG | credited from interrupt and input timing only - the boot command line carries `random.trust_cpu=0 random.trust_bootloader=0`, so this source cannot be the CPU wearing a second hat (see below). Read **non-blocking**: a `getrandom(2)` that waits on an unseeded pool has no bound, and a kiosk with no shell behind it cannot survive a syscall that never returns. Whether it was actually seeded is reported, not assumed |
 | CPU TRNG, read directly with `RDSEED` | the same silicon through a completely different door, bypassing the kernel. An unprivileged instruction, so no device node and no permission is involved - `/dev/hwrng` is root-only on this image and deliberately unused |
 | `RDRAND`, where the CPU has no `RDSEED` or `RDSEED` runs dry | mixed in like everything else, and **never counted as a reason to proceed** - see below |
 | Timing jitter | the low bits of the timestamp counter across an unpredictable-latency loop. Weak alone, free, independent of both of the above |
@@ -512,6 +512,40 @@ button.
 The seed page prints the same line again above the words, per instruction and in
 words: `cpu-rdseed=28w cpu-rdrand=4w`. One combined total is what let `RDRAND`
 pass for `RDSEED` here in the first place.
+
+#### The kernel pool is not allowed to be the CPU again
+
+Refusing to mint a key on `RDRAND` alone is only worth something if the *other*
+accepted source is genuinely something else, and by default it is not.
+`random_init_early()` reads `RDSEED`/`RDRAND` before interrupts are even
+enabled and credits the full 512 bits, because `random.trust_cpu` defaults to
+`y`. On any x86 with `RDRAND`, the kernel CRNG is therefore "seeded" from the
+first instant of boot on the CPU's word and nothing else - so on a machine whose
+`RDRAND` is broken or lying, *both* of the sources this device will stand behind
+are that same broken `RDRAND`, one of them answering through the kernel.
+
+So the built-in command line carries `random.trust_cpu=0` and
+`random.trust_bootloader=0` (the firmware's seed is, on most x86 machines,
+`RDRAND` at one further remove). Neither throws anything away: the CPU's output
+is still *mixed* into the kernel pool, it is only not *counted* towards
+initialisation. What is left crediting the pool is interrupt and input timing -
+`add_input_randomness()` is worth up to 11 bits an event - which is to say the
+operator, which is to say the same 256 movements the entropy screen was going to
+ask for regardless.
+
+Neither parameter has a kconfig symbol any more, so there is nothing in a
+defconfig to assert and a kernel upgrade could quietly restore the defaults
+without any visible change: the machine would boot and sign exactly as before.
+`post-build.sh` therefore checks the built-in command line for both, alongside
+`lockdown=confidentiality` and the IOMMU flags.
+
+The one place this could bite is the headless self-test, which runs seconds
+after boot with no operator anywhere near it - so it waits for the pool, up to
+ten seconds, and says so (`entropy-waiting-for-kernel-pool=yes`). The kiosk
+never waits, and does not need to: reading `/dev/urandom` on an unseeded pool
+makes the kernel run its own timing-jitter seeder,
+`try_to_generate_entropy()`, which is what the refusal's "try again" is
+counting on.
 
 ### Why you have to type all of them back
 

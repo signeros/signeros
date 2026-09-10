@@ -409,6 +409,12 @@ bool EntropyPool::finalise(unsigned char *out, std::size_t bytes,
             // than guaranteed, which is exactly why kernelWasReady is reported
             // separately and why this alone is not allowed to be the only
             // source.
+            //
+            // The read is worth making even when it is refused as a source: an
+            // unseeded read makes the kernel run try_to_generate_entropy(), its
+            // own timing-jitter seeder (drivers/char/random.c). That is what
+            // makes the refusal's "try again" honest advice rather than a
+            // shrug - the attempt that failed also pushed the pool along.
             const int fd = ::open("/dev/urandom", O_RDONLY | O_CLOEXEC);
             if (fd >= 0) {
                 while (got < kKernelBytes) {

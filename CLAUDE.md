@@ -306,6 +306,17 @@ If a guardrail check fails, the check is almost certainly right. Fix the cause.
   a stuck RDRAND are not states a test can ask a real machine for. Signing is
   unaffected by any of this (RFC6979), so this is the only code path where RNG
   quality is load-bearing.
+
+  The other half of that policy is on the **kernel command line**:
+  `random.trust_cpu=0 random.trust_bootloader=0`. Both default to `y` and
+  neither has a kconfig symbol any more, and the first one is why the two
+  accepted sources were not actually two - `random_init_early()` credits
+  RDSEED/RDRAND 512 bits before interrupts are enabled, so on any x86 with
+  RDRAND the pool is "seeded" from the CPU's word alone at the first instant of
+  boot. Off, the CPU's output is still mixed and simply not credited, and what
+  seeds the pool is interrupt and input timing - the operator. `post-build.sh`
+  checks the built-in command line for both, because losing them costs nothing
+  visible: the machine boots and signs exactly as before.
 - **The exported xpubs are checked against a second implementation.**
   `--self-test` prints each account xpub and first address; `host_selftest.sh`
   diffs them against `make_test_data.py wallet-expect`. It caught a real one

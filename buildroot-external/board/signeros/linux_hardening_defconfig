@@ -179,10 +179,35 @@ CONFIG_INITRAMFS_COMPRESSION_NONE=y
 #   lockdown=confidentiality
 #       Blocks every remaining path from userspace into kernel memory.
 #
+#   random.trust_cpu=0 random.trust_bootloader=0
+#       Stop the kernel CRNG from declaring itself seeded on the strength of
+#       the CPU's own RNG, or of a seed the firmware handed it.
+#
+#       Both default to TRUE (drivers/char/random.c), and the first one is not
+#       a small default: random_init_early() reads RDSEED/RDRAND before
+#       interrupts are even enabled and credits the full 512 bits, so on any
+#       x86 with RDRAND the pool is "seeded" from the first instant of boot,
+#       having been told so by the CPU and nothing else.
+#
+#       That matters here because core/entropy.cpp treats the kernel pool and
+#       the CPU TRNG as two independent sources and will mint a key on the
+#       strength of either. With the default they are not independent: on a
+#       machine whose RDRAND is broken or lying, "the kernel says it is seeded"
+#       is that same broken RDRAND answering through a second mouth.
+#
+#       Nothing is thrown away - the CPU's output is still MIXED into the pool,
+#       it is only not COUNTED - so what is left is that the pool is credited
+#       from interrupt and input timing. The cost is that on a machine with no
+#       RDSEED the pool starts empty; the entropy screen collects 256 physical
+#       movements before it will generate, each worth up to 11 bits through
+#       add_input_randomness(), and those are the same events that fill this
+#       pool. The wait is the operator filling the bar they were going to fill
+#       anyway.
+#
 #   signeros.*
 #       Read by /etc/init.d/S01mount-data and the kiosk (see signeros.conf).
 CONFIG_CMDLINE_BOOL=y
-CONFIG_CMDLINE="ro quiet loglevel=3 console=tty1 consoleblank=0 vt.global_cursor_default=0 rdinit=/sbin/init intel_iommu=on amd_iommu=on iommu=force iommu.strict=1 iommu.passthrough=0 efi=disable_early_pci_dma init_on_alloc=1 init_on_free=1 slab_nomerge page_alloc.shuffle=1 randomize_kstack_offset=on vsyscall=none lockdown=confidentiality mitigations=auto,nosmt signeros.data_label=PSBT_DATA"
+CONFIG_CMDLINE="ro quiet loglevel=3 console=tty1 consoleblank=0 vt.global_cursor_default=0 rdinit=/sbin/init intel_iommu=on amd_iommu=on iommu=force iommu.strict=1 iommu.passthrough=0 efi=disable_early_pci_dma init_on_alloc=1 init_on_free=1 slab_nomerge page_alloc.shuffle=1 randomize_kstack_offset=on vsyscall=none lockdown=confidentiality mitigations=auto,nosmt random.trust_cpu=0 random.trust_bootloader=0 signeros.data_label=PSBT_DATA"
 CONFIG_CMDLINE_OVERRIDE=y
 
 CONFIG_TMPFS=y
@@ -624,9 +649,11 @@ CONFIG_RTC_CLASS=y
 CONFIG_RTC_DRV_CMOS=y
 CONFIG_RTC_HCTOSYS=y
 CONFIG_HW_RANDOM=y
-# CONFIG_RANDOM_TRUST_CPU no longer exists; the equivalent is the
-# random.trust_cpu= kernel command line parameter.
-# CONFIG_RANDOM_TRUST_BOOTLOADER is not set
+# Neither CONFIG_RANDOM_TRUST_CPU nor CONFIG_RANDOM_TRUST_BOOTLOADER exists as
+# a kconfig symbol any more, and both parameters now default to y. A
+# "# ... is not set" line here would therefore be worse than nothing: it reads
+# as a decision and changes nothing. The decision is on the command line, as
+# random.trust_cpu=0 and random.trust_bootloader=0 - see section 2b.
 CONFIG_TTY=y
 CONFIG_SERIAL_8250=y
 CONFIG_SERIAL_8250_CONSOLE=y

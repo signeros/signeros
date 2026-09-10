@@ -6,6 +6,7 @@
 #include <fcntl.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
+#include <time.h>
 #include <unistd.h>
 
 #include <cstdint>
@@ -299,6 +300,39 @@ bool runEntropyChecks(std::string *err)
          (kernelEntropyReady() ? "yes" : "no") +
          " cpu-rdseed=" + (cpuHasRdseed() ? "yes" : "no") +
          " cpu-rdrand=" + (cpuHasRdrand() ? "yes" : "no"));
+
+    // The kernel command line carries random.trust_cpu=0, so the pool is
+    // credited from interrupt and input timing alone - and this runs seconds
+    // after boot with no operator anywhere near it. On a machine with no RDSEED
+    // the pool can still be filling, and refusing here would make a build gate
+    // that fails on how busy the machine happened to be.
+    //
+    // The kiosk must never wait for this: a full-screen application with no
+    // shell behind it cannot survive a syscall that does not return, which is
+    // why finalise() asks rather than blocks. A headless test is the opposite -
+    // a batch job with nobody watching, where waiting is exactly right.
+    //
+    // Reading /dev/urandom is what does the work rather than what passes the
+    // time: on an unseeded pool the read makes the kernel run
+    // try_to_generate_entropy(), its own timing-jitter seeder
+    // (drivers/char/random.c). So this asks, and in asking helps.
+    if (!kernelEntropyReady() && !cpuHasRdseed()) {
+        emit("entropy-waiting-for-kernel-pool=yes");
+        for (int i = 0; i < 100 && !kernelEntropyReady(); ++i) {
+            unsigned char probe[32];
+            const int fd = ::open("/dev/urandom", O_RDONLY | O_CLOEXEC);
+            if (fd >= 0) {
+                if (::read(fd, probe, sizeof(probe)) < 0)
+                    ; // best effort: the point is the read, not the bytes
+                ::close(fd);
+            }
+            secureWipe(probe, sizeof(probe));
+            struct timespec ts { 0, 100 * 1000 * 1000 };   // 100ms, so 10s in all
+            ::nanosleep(&ts, nullptr);
+        }
+        emit(std::string("entropy-kernel-pool-ready-after-wait=") +
+             (kernelEntropyReady() ? "yes" : "no"));
+    }
 
     // The refusal policy, as a table. Row 2 is the whole of GitHub issue #3:
     // RDRAND on its own, with the kernel admitting it is not seeded, used to be

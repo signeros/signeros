@@ -267,8 +267,16 @@ else
 	else
 		info "built-in command line:"
 		printf '    %s\n' "$CMDLINE"
+		# random.trust_cpu=0 is in this list rather than left to the
+		# defconfig because it is the one option here that a kernel
+		# upgrade could quietly undo: it has no kconfig symbol to assert,
+		# both parameters default to y, and losing it costs nothing
+		# visible - the machine boots and signs exactly as before, while
+		# "the kernel pool is seeded" silently goes back to meaning "this
+		# CPU has RDRAND". See section 2b of linux_hardening_defconfig.
 		for tok in rdinit=/sbin/init lockdown=confidentiality iommu.strict=1 \
 		           iommu.passthrough=0 init_on_alloc=1 init_on_free=1 \
+		           random.trust_cpu=0 random.trust_bootloader=0 \
 		           signeros.data_label=; do
 			case " $CMDLINE " in
 			*" $tok"*) ;;
